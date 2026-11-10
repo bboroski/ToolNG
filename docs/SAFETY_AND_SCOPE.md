@@ -33,3 +33,12 @@ These are ToolzNG's product differentiators, not a verified claim that no other 
 ## Product promise
 
 ToolzNG provides evidence and cautious guidance. It does not claim to overclock iOS, guarantee backup integrity, or repair every connection problem automatically. Keep UI labels, README copy, and release notes aligned with behavior actually implemented.
+
+
+## ToolzNG 0.4 local intelligence
+
+- LinkDNA stores only a local FNV-1a digest of Windows-visible Apple hardware-ID/manufacturer strings and Apple service state. It is a local change detector, not a cryptographic identity and not a cable fingerprint. The baseline is stored in %LOCALAPPDATA%\ToolzNG\link-profile.ini.
+- PulseVault appends timestamps, arrival/removal event type, and visible Apple-interface count to %LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl. At 256 KiB, the previous journal is rotated to .old. It does not record serial numbers or personal files.
+- Backup Freshness Radar reads only the last-write timestamp of Info.plist; it does not open backup payloads or prove backup completeness.
+- Evidence Seal writes a SHA-256 sidecar for the exported report. This detects later file changes but does not authenticate the source observations.
+- DuckFix Route Export writes a checklist. It does not make repairs or execute commands.
