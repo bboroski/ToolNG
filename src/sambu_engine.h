@@ -59,14 +59,22 @@ typedef struct SambuEvidence {
     int service_running;
     int backup_scan_complete;
     int backup_found;
-    int backup_marker_valid;
-    int backup_folders_seen;
+    int backup_marker_valid; /* true when at least one discovered folder has valid markers */
+    uint32_t backup_folders_seen;
+    uint32_t backup_folders_valid;
     int backup_age_known;
     uint32_t backup_age_days;
     uint32_t recent_usb_removals;
     int usb_watch_registered;
     int stability_window_elapsed;
 } SambuEvidence;
+
+enum {
+    SAMBU_QUALITY_DEVICE_WITHOUT_SCAN = 1u << 0,
+    SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT = 1u << 1,
+    SAMBU_QUALITY_BACKUP_SET_INCOMPLETE = 1u << 2,
+    SAMBU_QUALITY_STABILITY_WITHOUT_WATCH = 1u << 3
+};
 
 typedef struct SambuAssessment {
     SambuFinding finding;
@@ -81,6 +89,7 @@ typedef struct SambuAssessment {
     int marker_points;      /* 0..15 */
     int stability_points;   /* 0..10 */
     uint32_t evidence_mask;
+    uint32_t quality_flags;
 } SambuAssessment;
 
 typedef struct SambuLedgerEntry {
@@ -124,6 +133,7 @@ SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
                                   uint32_t finding_code,
                                   uint64_t now_ms);
 const char *sambu_pattern_key(SambuPattern pattern);
+const char *sambu_quality_key(uint32_t quality_flags);
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger);
 
 /* B — validate the dependency graph before the application starts. */

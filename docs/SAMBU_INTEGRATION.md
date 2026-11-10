@@ -4,48 +4,102 @@
 **Core revision:** 1.2.0  
 **Report contract:** `toolzng.diagnostic.v1`
 
-This integration ports engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's runtime, or claim that ToolzNG can control private iOS functions.
+This integration ports selected engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's host runtime, or claim that ToolzNG controls private iOS functions.
 
 ## The five governing letters
 
 | Letter | SAMBU law | ToolzNG implementation |
 |---|---|---|
-| S | Safety and staged sovereignty | A fail-closed action gate. Read-only inspection is available to the application; report writing, clipboard use and export require a user-origin action. Device mutation and network upload remain denied. |
-| A | Adaptive exploration | A deterministic assessment selects the highest-priority next step from measured Windows evidence. It is a rules engine, not a machine-learning claim. |
-| M | Managed recovery and memory | A 32-entry in-memory ledger deduplicates finding codes and tracks first/last observation plus occurrence count. It never stores raw Hardware IDs, backup paths, source text or device content. |
-| B | Branchable, board-layered design | The assessment/policy/ledger core is isolated in portable `sambu_engine.c/.h`. A dependency graph is validated before the Win32 window starts. Presentation and export are separate graph branches. |
-| U | Unforced interoperability and user sovereignty | Stable finding IDs and a versioned report schema support future consumers. Export stays local and user initiated; there is no required account, cloud service or external runtime. |
+| S | Safety and staged sovereignty | Fail-closed capability gate. Unknown operation and unknown origin are rejected. Device mutation and network upload are always denied. |
+| A | Adaptive exploration | Deterministic assessment from measured Windows evidence; no machine-learning claim. |
+| M | Managed recovery and memory | Bounded 32-entry finding ledger with monotonic timestamps and a 10-minute recurrence window. Raw Hardware IDs, backup paths and device payloads are not stored in the ledger. |
+| B | Branchable, board-layered design | Portable C17 assessment core, policy gate, platform adapter, memory, presentation and export layers. Dependency graph validated before the Win32 window starts. |
+| U | Unforced interoperability and user sovereignty | Stable finding IDs, additive report evidence fields and local user-initiated export. No account or cloud service required. |
 
-The laws form a repeatable loop: **S** constrains the action → **A** evaluates evidence → **M** remembers a bounded result → **B** isolates the implementation → **U** preserves the user's ability to inspect and export it.
+The laws form a repeatable loop: S constrains the action → A evaluates evidence → M remembers a bounded result → B isolates the implementation → U preserves the user's ability to inspect and export it.
+
+## SAMBU Quality Gate — revision 1.2.0
+
+The 1.2.0 assessment validates evidence before awarding points.
+
+### Typed backup evidence
+
+SambuEvidence now carries exact discovered and valid folder counts:
+
+- backup_folders_seen: number of discovered backup folders inspected;
+- backup_folders_valid: number of inspected folders with both expected marker files;
+- backup_marker_valid: compatibility indicator that at least one discovered folder passed marker checks.
+
+A complete marker set requires a backup root, at least one discovered folder, consistent counters, at least one valid folder, and equality between valid and discovered counts. Partial validation never receives the full marker bonus.
+
+The invariant is:
+
+    backup_folders_valid <= backup_folders_seen
+    (backup_folders_valid > 0) == backup_marker_valid
+    valid backup set = backup root exists AND seen > 0 AND valid == seen
+
+### Integrity flags
+
+| Flag | Meaning | Effect |
+|---|---|---|
+| DEVICE_WITHOUT_SCAN | A device signal is present without a completed scan. | Device visibility is not credited; confidence becomes 25%. |
+| BACKUP_COUNTS_INCONSISTENT | Counts or compatibility marker disagree. | Backup marker evidence is not credited; confidence becomes 25%. |
+| BACKUP_SET_INCOMPLETE | One or more discovered backup folders lack expected markers. | Full marker bonus is withheld; finding becomes backup structure; confidence becomes 25%. |
+| STABILITY_WITHOUT_WATCH | A stability window elapsed while no USB watcher was registered. | Stability evidence and bonus are withheld; confidence becomes 25%. |
+
+More than one flag maps to multiple_integrity_warnings. A zero flag set maps to clean.
+
+### Confidence mapping
+
+| Condition | Confidence |
+|---|---:|
+| Completed scan, active watcher, no integrity warnings | 100% |
+| Completed scan, watcher unavailable before the observation window expires, no integrity warnings | 85% |
+| Scan incomplete, no integrity warnings | 40% |
+| Any Quality Gate integrity warning | 25% |
+
+Confidence is a data-completeness and consistency indicator for this local diagnostic procedure. It is not a statistical probability that the iPhone is healthy.
+
+### Score contract
+
+| Signal | Contribution |
+|---|---:|
+| Completed scan and visible Apple USB interface | +40 |
+| Apple Mobile Device Service running | +25 |
+| Backup root found | +10 |
+| Every discovered backup folder has expected markers | +15 |
+| Device confirmed, watcher active, observation window elapsed and no recent removals | +10 |
+
+The maximum remains 100. A partial marker set does not receive the +15 marker credit. A scan-incomplete device signal does not receive the +40 device credit. A stability window without its watcher does not receive the +10 stability credit.
+
+Finding priority remains deterministic: scan unavailable → device not visible → Apple service unavailable → unstable USB → incomplete backup structure → stale verified backup marker → backup not verified → Windows-side checks passed.
 
 ## Articulatory families mapped to ToolzNG
 
-SAMBU's articulatory syntax defines ten consonant families. ToolzNG uses each family as an architectural lens:
-
 | Family | SAMBU semantic field | Concrete ToolzNG role |
 |---|---|---|
-| K | Structure | The separate C17 engine module and validated dependency graph |
-| T | Flow | The ordered diagnostic path and next-step selection |
+| K | Structure | Separate C17 engine module and validated dependency graph |
+| T | Flow | Ordered diagnostic path and next-step selection |
 | R | Value | Typed evidence fields, integer bounds and stable finding codes |
-| M | Memory | The bounded, deduplicating finding ledger |
+| M | Memory | Bounded, deduplicating finding ledger |
 | S | Safeguard | Fail-closed permissions and prohibition of automatic device mutation |
-| V | Measure | Readiness score, confidence and evidence bitmask |
+| V | Measure | Readiness score, confidence, evidence mask and quality flags |
 | D | Evidence | Stable assessment identifiers, report schema and SHA-256 report seal |
 | N | Coordination | Bounded USB event observation and local PulseVault journal |
 | P | Transform | Explicit conversion of assessment results into a local report or user-selected export |
-| L | Language | Stable machine identifiers separated from Russian presentation text, leaving room for RU/EN labels |
+| L | Language | Stable machine identifiers separated from user-facing text |
 
-The five vowel grades also map cleanly to a diagnostic lifecycle:
+The five vowel grades map to the diagnostic lifecycle:
 
-- **A — initiate:** begin a user-requested scan.
-- **E — inspect:** collect Windows-visible PnP, service and backup-marker evidence.
-- **I — transform:** calculate readiness and evidence flags.
-- **O — compose:** select one prioritized finding from the collected signals.
-- **U — complete:** produce a local report or export only after an explicit user action.
+- A — initiate: begin a user-requested scan.
+- E — inspect: collect Windows-visible PnP, service and backup-marker evidence.
+- I — transform: calculate readiness, evidence flags and quality warnings.
+- O — compose: select one prioritized finding from the collected signals.
+- U — complete: produce a local report or export only after an explicit user action.
 
-The four grammatical endings are treated as API design rules: `-va` names an operation, `-ven` a resource or entity, `-vir` a dependency/relationship, and `-vum` an observed state/result. They inform naming and boundaries; they are not inserted as decorative syntax into C.
+The four grammatical endings inform API design roles: operation, resource/entity, dependency/relationship, and observed state/result. They are not inserted as decorative syntax into C.
 
-## Assessment contract
+## Memory and recurrence
 
 The engine retains the original signal weights but now distinguishes **verified negative** from **not measured**. The weights are not silently treated as zero when Windows could not complete a check.
 
@@ -63,11 +117,7 @@ The existing `confidence_percent` field remains as a compatibility alias for cov
 
 The finding priority keeps uncertainty explicit: scan unavailable → device not visible → Apple service status unknown → service confirmed unavailable → unstable USB → backup scan incomplete → invalid backup markers → stale backup marker → backup not verified → USB stability unconfirmed → Windows-side checks passed.
 
-## Memory, privacy and compatibility
-
-The ledger retains only numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes; repeated finding transitions increment a lifetime counter and an active 10-minute episode window. Repeated UI refreshes of an unchanged finding do not create new episodes. Patterns are labelled single (1), recurrent (2–3), or persistent (4+). The ledger is in-memory only and resets when the application exits, matching SAMBU's explicit-export memory model.
-
-The report schema is additive and versioned. Consumers should rely on stable finding codes and schema version, not on Russian display strings. The SHA-256 sidecar detects later file changes; it does not prove that the observations themselves are true.
+SHA-256 sidecar detects later changes to the saved report. It does not prove that the recorded observations were true.
 
 ## Verification
 
@@ -76,27 +126,29 @@ The CTest target checks:
 - incomplete-scan handling, evidence coverage and normalized score contributions;
 - distinction between unknown service/backup/stability states and verified negative findings;
 - finding priority for stale backups and unstable USB;
-- bounded/deduplicated ledger behavior;
-- recurrence windows and single/recurrent/persistent pattern classification;
-- dependency-graph validation;
-- stable engine and report identifiers.
+- backup counter consistency and all-folders-complete semantics;
+- quality flags for incomplete backup sets and absent USB watcher;
+- bounded / deduplicated ledger behavior;
+- recurrence windows and single / recurrent / persistent classification;
+- dependency graph validation;
+- stable engine, finding and report identifiers.
 
-The portable C17 engine can be built and tested without the Win32 GUI (for example, in Linux CI):
+Portable build:
 
-```bash
+~~~bash
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
-```
+~~~
 
-Build the desktop application and run the same tests on Windows with:
+Windows x64 build:
 
-```powershell
+~~~powershell
 cmake -S . -B build -A x64
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
-```
+~~~
 
 ## Explicit non-goals
 
-This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup contents, upload data, or run arbitrary plugins. No SAMBU Python component is represented as a native ToolzNG feature.
+This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup payloads, upload data, run arbitrary plugins or perform hardware cable diagnostics. No SAMBU Python component is represented as a native ToolzNG feature.
