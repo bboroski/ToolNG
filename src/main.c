@@ -395,8 +395,8 @@ static void append_pulse_vault(const UsbPulseEvent *event)
     }
     GetLocalTime(&st);
     swprintf_s(line, ARRAYSIZE(line),
-        L"{\\"time\\":\\"%04u-%02u-%02uT%02u:%02u:%02u\\","
-        L"\\"event\\":\\"%ls\\",\\"devices\\":%u}\\r\\n",
+        L"{\"time\":\"%04u-%02u-%02uT%02u:%02u:%02u\","
+        L"\"event\":\"%ls\",\"devices\":%u}\r\n",
         st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
         event->arrival ? L"arrival" : L"removal", g_app.device_count);
     bytes = WideCharToMultiByte(CP_UTF8, 0, line, -1, utf8,
