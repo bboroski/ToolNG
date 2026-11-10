@@ -84,8 +84,9 @@ static int test_assessment_and_coverage(void)
     evidence.backup_marker_valid = 1;
     evidence.backup_folders_seen = 1u;
     evidence.backup_folders_valid = 1u;
-    evidence.usb_watch_registered = 1;
-    evidence.stability_window_elapsed = 1;
+    /* Only the completed PnP scan is measurable in this partial case. */
+    evidence.usb_watch_registered = 0;
+    evidence.stability_window_elapsed = 0;
     result = sambu_assess(&evidence);
     CHECK(result.readiness_score == 100);
     CHECK(result.score_coverage_percent == 40u);
