@@ -1,8 +1,6 @@
 # SAMBU engineering core in ToolzNG
 
 **Integration baseline:** ToolzNG 0.6.1, C17 / Win32  
-**Core revision:** 1.1.0 + workflow runtime 1.1.0  
-**Integration baseline:** ToolzNG 0.5.x, C17 / Win32  
 **Core revision:** 1.2.0  
 **Report contract:** `toolzng.diagnostic.v1`
 
@@ -44,23 +42,25 @@ The invariant is:
 
 | Flag | Meaning | Effect |
 |---|---|---|
-| DEVICE_WITHOUT_SCAN | A device signal is present without a completed scan. | Device visibility is not credited; confidence becomes 25%. |
-| BACKUP_COUNTS_INCONSISTENT | Counts or compatibility marker disagree. | Backup marker evidence is not credited; confidence becomes 25%. |
-| BACKUP_SET_INCOMPLETE | One or more discovered backup folders lack expected markers. | Full marker bonus is withheld; finding becomes backup structure; confidence becomes 25%. |
-| STABILITY_WITHOUT_WATCH | A stability window elapsed while no USB watcher was registered. | Stability evidence and bonus are withheld; confidence becomes 25%. |
+| DEVICE_WITHOUT_SCAN | A device signal is present without a completed scan. | Device visibility is not credited; the scan weight remains unmeasured. |
+| BACKUP_COUNTS_INCONSISTENT | Counts or compatibility marker disagree. | Backup marker points are withheld and an integrity warning is exposed; coverage is unchanged by the warning. |
+| BACKUP_SET_INCOMPLETE | One or more discovered backup folders lack expected markers. | The +15 complete-marker bonus is withheld and the finding becomes backup structure; completed checks still count toward coverage. |
+| STABILITY_WITHOUT_WATCH | A stability window elapsed while no USB watcher was registered. | The stability weight remains unmeasured; coverage is reduced rather than forcing a fixed value. |
 
 More than one flag maps to multiple_integrity_warnings. A zero flag set maps to clean.
 
-### Confidence mapping
+### Evidence coverage and normalized readiness
 
-| Condition | Confidence |
+The engine sums the weights of checks that actually completed. The coverage percentage is that measured weight divided by 100. The `confidence_percent` field remains as a backward-compatible alias for this coverage; it is not a statistical probability.
+
+| Measurement state | Coverage contribution |
 |---|---:|
-| Completed scan, active watcher, no integrity warnings | 100% |
-| Completed scan, watcher unavailable before the observation window expires, no integrity warnings | 85% |
-| Scan incomplete, no integrity warnings | 40% |
-| Any Quality Gate integrity warning | 25% |
+| Completed Windows PnP scan | 40% |
+| Completed Apple service query | 25% |
+| Completed backup directory enumeration | 25% |
+| Registered USB watcher plus elapsed observation window for a visible device | 10% |
 
-Confidence is a data-completeness and consistency indicator for this local diagnostic procedure. It is not a statistical probability that the iPhone is healthy.
+Readiness is normalized over measured weight: `earned points / measured weight × 100`. A completed check that finds an absent or incomplete item is a measured negative result; a check that could not run is unknown and contributes no coverage. Quality flags never force coverage to 25%.
 
 ### Score contract
 
@@ -74,7 +74,7 @@ Confidence is a data-completeness and consistency indicator for this local diagn
 
 The maximum remains 100. A partial marker set does not receive the +15 marker credit. A scan-incomplete device signal does not receive the +40 device credit. A stability window without its watcher does not receive the +10 stability credit.
 
-Finding priority remains deterministic: scan unavailable → device not visible → Apple service unavailable → unstable USB → incomplete backup structure → stale verified backup marker → backup not verified → Windows-side checks passed.
+Finding priority remains deterministic: scan unavailable → device not visible → Apple service unknown → Apple service confirmed unavailable → unstable USB → backup scan unknown → incomplete backup structure → stale verified backup marker → backup not verified → USB stability unconfirmed → Windows-side checks passed.
 
 ## Articulatory families mapped to ToolzNG
 
@@ -85,7 +85,7 @@ Finding priority remains deterministic: scan unavailable → device not visible 
 | R | Value | Typed evidence fields, integer bounds and stable finding codes |
 | M | Memory | Bounded, deduplicating finding ledger |
 | S | Safeguard | Fail-closed permissions and prohibition of automatic device mutation |
-| V | Measure | Readiness score, confidence, evidence mask and quality flags |
+| V | Measure | Readiness score, measured coverage, evidence mask and separate quality flags |
 | D | Evidence | Stable assessment identifiers, report schema and SHA-256 report seal |
 | N | Coordination | Bounded USB event observation and local PulseVault journal |
 | P | Transform | Explicit conversion of assessment results into a local report or user-selected export |

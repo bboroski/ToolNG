@@ -33,6 +33,7 @@ static void set_complete_healthy_evidence(SambuEvidence *evidence)
     evidence->backup_found = 1;
     evidence->backup_marker_valid = 1;
     evidence->backup_folders_seen = 1;
+    evidence->backup_folders_valid = 1;
     evidence->usb_watch_registered = 1;
     evidence->stability_window_elapsed = 1;
 }
@@ -83,8 +84,8 @@ static int test_assessment_and_coverage(void)
     evidence.backup_marker_valid = 1;
     evidence.backup_folders_seen = 1u;
     evidence.backup_folders_valid = 1u;
-    evidence.usb_watch_registered = 1;
-    evidence.stability_window_elapsed = 1;
+    evidence.usb_watch_registered = 0;
+    evidence.stability_window_elapsed = 0;
     result = sambu_assess(&evidence);
     CHECK(result.readiness_score == 100);
     CHECK(result.score_coverage_percent == 40u);
@@ -229,6 +230,8 @@ static int test_finding_priority(void)
 
     evidence.backup_found = 1;
     evidence.backup_marker_valid = 1;
+    evidence.backup_folders_seen = 1u;
+    evidence.backup_folders_valid = 1u;
     evidence.usb_watch_registered = 0;
     evidence.stability_window_elapsed = 0;
     result = sambu_assess(&evidence);
@@ -303,7 +306,8 @@ static int test_quality_gate(void)
     CHECK(result.finding == SAMBU_FINDING_SCAN_UNAVAILABLE);
     CHECK(result.quality_flags == SAMBU_QUALITY_DEVICE_WITHOUT_SCAN);
     CHECK(result.readiness_score == 0);
-    CHECK(result.confidence_percent == 25u);
+    CHECK(result.confidence_percent == 0u);
+    CHECK(result.score_coverage_percent == 0u);
     CHECK((result.evidence_mask & SAMBU_EVIDENCE_DEVICE_VISIBLE) == 0u);
     CHECK(strcmp(sambu_quality_key(result.quality_flags),
                  "device_without_completed_scan") == 0);
@@ -311,7 +315,9 @@ static int test_quality_gate(void)
     memset(&evidence, 0, sizeof(evidence));
     evidence.scan_complete = 1;
     evidence.device_found = 1;
+    evidence.service_query_complete = 1;
     evidence.service_running = 1;
+    evidence.backup_scan_complete = 1;
     evidence.backup_found = 1;
     evidence.backup_marker_valid = 1;
     evidence.backup_folders_seen = 3u;
@@ -321,7 +327,8 @@ static int test_quality_gate(void)
     result = sambu_assess(&evidence);
     CHECK(result.finding == SAMBU_FINDING_BACKUP_STRUCTURE);
     CHECK(result.quality_flags == SAMBU_QUALITY_BACKUP_SET_INCOMPLETE);
-    CHECK(result.confidence_percent == 25u);
+    CHECK(result.confidence_percent == 100u);
+    CHECK(result.score_coverage_percent == 100u);
     CHECK((result.evidence_mask & SAMBU_EVIDENCE_BACKUP_MARKERS) == 0u);
     CHECK(result.readiness_score == 85);
     CHECK(strcmp(sambu_quality_key(result.quality_flags),
@@ -330,7 +337,8 @@ static int test_quality_gate(void)
     evidence.backup_folders_valid = 4u;
     result = sambu_assess(&evidence);
     CHECK(result.quality_flags == SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT);
-    CHECK(result.confidence_percent == 25u);
+    CHECK(result.confidence_percent == 100u);
+    CHECK(result.score_coverage_percent == 100u);
 
     evidence.backup_folders_seen = 1u;
     evidence.backup_folders_valid = 1u;
@@ -338,7 +346,9 @@ static int test_quality_gate(void)
     result = sambu_assess(&evidence);
     CHECK(result.quality_flags == SAMBU_QUALITY_STABILITY_WITHOUT_WATCH);
     CHECK((result.evidence_mask & SAMBU_EVIDENCE_STABILITY_WINDOW) == 0u);
-    CHECK(result.readiness_score == 90);
+    CHECK(result.readiness_score == 100);
+    CHECK(result.score_coverage_percent == 90u);
+    CHECK(result.confidence_percent == 90u);
 
     evidence.usb_watch_registered = 1;
     result = sambu_assess(&evidence);

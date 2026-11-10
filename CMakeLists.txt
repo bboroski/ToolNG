@@ -8,42 +8,6 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 include(CTest)
 
-# The SAMBU policy/workflow core is platform-independent and can be tested
-# on any C17 host, while the desktop application remains native Win32.
-add_library(ToolzNG.SambuCore STATIC
-    src/sambu_engine.c
-    src/sambu_workflow.c
-)
-target_include_directories(ToolzNG.SambuCore PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-if(MSVC)
-    target_compile_options(ToolzNG.SambuCore PRIVATE /W4 /utf-8 /permissive-)
-else()
-    target_compile_options(ToolzNG.SambuCore PRIVATE -Wall -Wextra -Wpedantic)
-endif()
-
-if(BUILD_TESTING)
-    add_executable(ToolzNG.SambuTests tests/sambu_engine_tests.c)
-    target_link_libraries(ToolzNG.SambuTests PRIVATE ToolzNG.SambuCore)
-    add_test(NAME sambu_engine_tests COMMAND ToolzNG.SambuTests)
-
-    add_executable(ToolzNG.SambuWorkflowTests tests/sambu_workflow_tests.c)
-    target_link_libraries(ToolzNG.SambuWorkflowTests PRIVATE ToolzNG.SambuCore)
-    add_test(NAME sambu_workflow_tests COMMAND ToolzNG.SambuWorkflowTests)
-endif()
-
-if(NOT WIN32)
-    message(STATUS "ToolzNG desktop target is Win32-only; portable SAMBU tests are available.")
-# The SAMBU engine is portable C17. Keep it buildable and testable without Win32.
-add_library(ToolzNG.SambuCore STATIC
-    src/sambu_engine.c
-)
-target_include_directories(ToolzNG.SambuCore
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
 function(toolzng_enable_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive-)
@@ -52,21 +16,31 @@ function(toolzng_enable_warnings target)
     endif()
 endfunction()
 
+# Portable SAMBU core: policy, evidence assessment and bounded workflow manifests.
+add_library(ToolzNG.SambuCore STATIC
+    src/sambu_engine.c
+    src/sambu_workflow.c
+)
+target_include_directories(ToolzNG.SambuCore
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
 toolzng_enable_warnings(ToolzNG.SambuCore)
 
 if(BUILD_TESTING)
-    add_executable(sambu_engine_tests
-        tests/sambu_engine_tests.c
-    )
-    target_link_libraries(sambu_engine_tests PRIVATE ToolzNG.SambuCore)
-    toolzng_enable_warnings(sambu_engine_tests)
-    add_test(NAME sambu_engine_tests COMMAND sambu_engine_tests)
+    add_executable(ToolzNG.SambuTests tests/sambu_engine_tests.c)
+    target_link_libraries(ToolzNG.SambuTests PRIVATE ToolzNG.SambuCore)
+    toolzng_enable_warnings(ToolzNG.SambuTests)
+    add_test(NAME sambu_engine_tests COMMAND ToolzNG.SambuTests)
+
+    add_executable(ToolzNG.SambuWorkflowTests tests/sambu_workflow_tests.c)
+    target_link_libraries(ToolzNG.SambuWorkflowTests PRIVATE ToolzNG.SambuCore)
+    toolzng_enable_warnings(ToolzNG.SambuWorkflowTests)
+    add_test(NAME sambu_workflow_tests COMMAND ToolzNG.SambuWorkflowTests)
 endif()
 
+# The desktop shell is platform-specific; the policy/workflow core remains testable.
 if(NOT WIN32)
-    message(STATUS
-        "ToolzNG's Win32 desktop application is Windows-only. "
-        "Building the portable SAMBU core and its tests on this platform.")
+    message(STATUS "ToolzNG desktop target is Win32-only; portable SAMBU core and tests are enabled.")
     return()
 endif()
 
@@ -77,7 +51,6 @@ add_executable(ToolzNG WIN32
     src/toolzng.rc
 )
 target_include_directories(ToolzNG PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-
 target_link_libraries(ToolzNG PRIVATE
     ToolzNG.SambuCore
     setupapi
@@ -87,7 +60,6 @@ target_link_libraries(ToolzNG PRIVATE
     uuid
     comdlg32
 )
-
 toolzng_enable_warnings(ToolzNG)
 
 if(MSVC)

@@ -173,6 +173,7 @@ The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation 
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — evidence, privacy, bounded behavior and visual standards.
 - [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — assessment model and restricted workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — tests, resilience and release criteria.
+- [GUI Design and Visual Evidence](docs/GUI_DESIGN.md) — current Win32/GDI navigation model and preview/screenshot rules.
 
 For material UI changes, provide real application captures or label previews explicitly as illustrative.
 
