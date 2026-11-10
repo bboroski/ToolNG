@@ -543,3 +543,14 @@ const char *sambu_workflow_error_name(SambuWorkflowError error)
         case SAMBU_WF_OK: default: return "ok";
     }
 }
+
+const char *sambu_workflow_state_name(SambuWorkflowState state)
+{
+    switch (state) {
+        case SAMBU_WF_IDLE: return "idle";
+        case SAMBU_WF_RUNNING: return "running";
+        case SAMBU_WF_COMPLETED: return "completed";
+        case SAMBU_WF_FAILED: return "failed";
+        default: return "unknown";
+    }
+}
