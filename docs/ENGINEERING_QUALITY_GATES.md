@@ -137,6 +137,20 @@ A 5% regression threshold may be used as a review trigger after a stable baselin
 - [ ] Benchmarks are reproducible and no unsupported speed/quality claim is introduced.
 - [ ] User-visible data collection, export or device actions are documented.
 
+## 9. Deterministic workflow tick and session integrity
+
+A workflow session is caller-visible state, so preflight approval is not a
+permanent trust token. Before every host callback, `sambu_workflow_tick`
+revalidates the bounded step count, cursor, policy budget, attempted/passed/
+failed counters, prior evidence sequence, current allowlisted action and
+local-record permission. A malformed or modified session transitions to
+`SAMBU_WF_FAILED` with `SAMBU_WF_SESSION_INVALID`; no host action is called.
+
+The scheduling contract remains one allowlisted action per tick. A failed
+action stops the workflow immediately, later actions remain unattempted, and
+terminal sessions do not replay callbacks. Regression tests must cover both
+ordinary incremental execution and post-preflight state tampering.
+
 ## 9. UI modularization sequence
 
 The desktop host currently concentrates dashboard drawing, page state, Win32 event routing and report composition in \`src/main.c\`. Treat the single-responsibility refactor as staged work rather than claiming it is already complete.
