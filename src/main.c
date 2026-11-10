@@ -25,8 +25,8 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include <string.h>
 #include <wchar.h>
 
-#include "sambu_engine.h"
-#include "sambu_workflow.h"
+#include "wdec_engine.h"
+#include "wdec_workflow.h"
 
 #define APP_TITLE           L"WDEC"
 #define MAX_APPLE_DEVICES   32
