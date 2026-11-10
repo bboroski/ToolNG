@@ -1,7 +1,7 @@
-#ifndef TOOLZNG_WDEP_WORKFLOW_H
-#define TOOLZNG_WDEP_WORKFLOW_H
+#ifndef WDEP_WORKFLOW_H
+#define WDEP_WORKFLOW_H
 
-#include "wdep_engine.h"
+#include "sambu_engine.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
