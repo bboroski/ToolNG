@@ -248,7 +248,9 @@ static bool parse_manifest(Parser *p, SambuWorkflow *out)
             }
             for (i = 0u; p->token.text[i]; ++i) {
                 unsigned long digit = (unsigned long)(p->token.text[i] - '0');
-                if (value > (SAMBU_WORKFLOW_STEP_CAP - digit) / 10u) {
+                if (value > (SAMBU_WORKFLOW_STEP_CAP / 10u) ||
+                    (value == (SAMBU_WORKFLOW_STEP_CAP / 10u) &&
+                     digit > (SAMBU_WORKFLOW_STEP_CAP % 10u))) {
                     set_error(p, SAMBU_WF_BUDGET, p->token.span,
                               "max_steps is outside 1..8.");
                     return false;
