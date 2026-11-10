@@ -203,3 +203,9 @@ MIT — см. [LICENSE](LICENSE).
 **ToolzNG — меньше догадок, больше понятных сигналов.** 🦆
 
 </div>
+
+## Интеграция в NUN Mesh
+
+<p align="center"><img src="assets/nun-mesh.svg" width="100%" alt="ToolNG в общей экосистеме NUN Mesh"></p>
+
+ToolNG — нативный Windows-интерфейс оператора в NUN Mesh. Он сохраняет локальную обработку доказательств и явные действия пользователя; SAMBU предоставляет переносимое ядро policy/workflow. [Руководство интеграции](docs/ECOSYSTEM_INTEGRATION.md) · [Дизайн GUI](docs/GUI_DESIGN.md) · [Портал Klipot](https://github.com/bboroski/Klipot)
