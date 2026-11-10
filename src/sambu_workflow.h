@@ -1,139 +1,139 @@
-#ifndef TOOLZNG_SAMBU_WORKFLOW_H
-#define TOOLZNG_SAMBU_WORKFLOW_H
+#ifndef TOOLZNG_WDEP_WORKFLOW_H
+#define TOOLZNG_WDEP_WORKFLOW_H
 
-#include "sambu_engine.h"
+#include "wdep_engine.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_WORKFLOW_VERSION "1.1.0"
-#define SAMBU_WORKFLOW_SOURCE_CAP 3072u
-#define SAMBU_WORKFLOW_STEP_CAP 8u
-#define SAMBU_WORKFLOW_NAME_CAP 32u
-#define SAMBU_WORKFLOW_TEXT_CAP 128u
+#define WDEP_WORKFLOW_VERSION "1.1.0"
+#define WDEP_WORKFLOW_SOURCE_CAP 3072u
+#define WDEP_WORKFLOW_STEP_CAP 8u
+#define WDEP_WORKFLOW_NAME_CAP 32u
+#define WDEP_WORKFLOW_TEXT_CAP 128u
 
-typedef enum SambuWorkflowAction {
-    SAMBU_WF_NONE = 0,
-    SAMBU_WF_SCAN_USB,
-    SAMBU_WF_READ_SERVICE,
-    SAMBU_WF_RECORD_PROFILE,
-    SAMBU_WF_AUDIT_BACKUP,
-    SAMBU_WF_ASSESS_READINESS
-} SambuWorkflowAction;
+typedef enum WdepWorkflowAction {
+    WDEP_WF_NONE = 0,
+    WDEP_WF_SCAN_USB,
+    WDEP_WF_READ_SERVICE,
+    WDEP_WF_RECORD_PROFILE,
+    WDEP_WF_AUDIT_BACKUP,
+    WDEP_WF_ASSESS_READINESS
+} WdepWorkflowAction;
 
-typedef enum SambuWorkflowAutonomy {
-    SAMBU_WF_OBSERVE_ONLY = 0,
-    SAMBU_WF_LOCAL_RECORD = 1
-} SambuWorkflowAutonomy;
+typedef enum WdepWorkflowAutonomy {
+    WDEP_WF_OBSERVE_ONLY = 0,
+    WDEP_WF_LOCAL_RECORD = 1
+} WdepWorkflowAutonomy;
 
-typedef enum SambuWorkflowState {
-    SAMBU_WF_IDLE = 0,
-    SAMBU_WF_RUNNING,
-    SAMBU_WF_COMPLETED,
-    SAMBU_WF_FAILED
-} SambuWorkflowState;
+typedef enum WdepWorkflowState {
+    WDEP_WF_IDLE = 0,
+    WDEP_WF_RUNNING,
+    WDEP_WF_COMPLETED,
+    WDEP_WF_FAILED
+} WdepWorkflowState;
 
-typedef enum SambuWorkflowError {
-    SAMBU_WF_OK = 0,
-    SAMBU_WF_ARGUMENT,
-    SAMBU_WF_SOURCE_LIMIT,
-    SAMBU_WF_LEXICAL,
-    SAMBU_WF_SYNTAX,
-    SAMBU_WF_UNKNOWN_ACTION,
-    SAMBU_WF_DUPLICATE_STEP,
-    SAMBU_WF_BUDGET,
-    SAMBU_WF_POLICY,
-    SAMBU_WF_HOST_FAILURE,
-    SAMBU_WF_SESSION_INVALID
-} SambuWorkflowError;
+typedef enum WdepWorkflowError {
+    WDEP_WF_OK = 0,
+    WDEP_WF_ARGUMENT,
+    WDEP_WF_SOURCE_LIMIT,
+    WDEP_WF_LEXICAL,
+    WDEP_WF_SYNTAX,
+    WDEP_WF_UNKNOWN_ACTION,
+    WDEP_WF_DUPLICATE_STEP,
+    WDEP_WF_BUDGET,
+    WDEP_WF_POLICY,
+    WDEP_WF_HOST_FAILURE,
+    WDEP_WF_SESSION_INVALID
+} WdepWorkflowError;
 
-typedef struct SambuSourceSpan {
+typedef struct WdepSourceSpan {
     size_t offset;
     size_t length;
     uint32_t line;
     uint32_t column;
-} SambuSourceSpan;
+} WdepSourceSpan;
 
-typedef struct SambuWorkflowStep {
-    char name[SAMBU_WORKFLOW_NAME_CAP];
-    SambuWorkflowAction action;
-    SambuSourceSpan source;
-} SambuWorkflowStep;
+typedef struct WdepWorkflowStep {
+    char name[WDEP_WORKFLOW_NAME_CAP];
+    WdepWorkflowAction action;
+    WdepSourceSpan source;
+} WdepWorkflowStep;
 
-typedef struct SambuWorkflow {
-    char name[SAMBU_WORKFLOW_NAME_CAP];
-    char purpose[SAMBU_WORKFLOW_TEXT_CAP];
+typedef struct WdepWorkflow {
+    char name[WDEP_WORKFLOW_NAME_CAP];
+    char purpose[WDEP_WORKFLOW_TEXT_CAP];
     uint16_t max_steps;
     uint16_t step_count;
-    SambuWorkflowAutonomy autonomy;
-    SambuWorkflowStep steps[SAMBU_WORKFLOW_STEP_CAP];
-} SambuWorkflow;
+    WdepWorkflowAutonomy autonomy;
+    WdepWorkflowStep steps[WDEP_WORKFLOW_STEP_CAP];
+} WdepWorkflow;
 
-typedef struct SambuWorkflowDiagnostic {
-    SambuWorkflowError code;
-    SambuSourceSpan source;
-    char message[SAMBU_WORKFLOW_TEXT_CAP];
-} SambuWorkflowDiagnostic;
+typedef struct WdepWorkflowDiagnostic {
+    WdepWorkflowError code;
+    WdepSourceSpan source;
+    char message[WDEP_WORKFLOW_TEXT_CAP];
+} WdepWorkflowDiagnostic;
 
-typedef struct SambuWorkflowPolicy {
+typedef struct WdepWorkflowPolicy {
     uint16_t max_steps;
     bool allow_observation;
     bool allow_local_record;
-} SambuWorkflowPolicy;
+} WdepWorkflowPolicy;
 
-typedef struct SambuWorkflowEvidence {
+typedef struct WdepWorkflowEvidence {
     uint16_t sequence;
-    SambuWorkflowAction action;
+    WdepWorkflowAction action;
     bool succeeded;
-    SambuSourceSpan source;
-    char step_name[SAMBU_WORKFLOW_NAME_CAP];
-    char finding[SAMBU_WORKFLOW_TEXT_CAP];
-} SambuWorkflowEvidence;
+    WdepSourceSpan source;
+    char step_name[WDEP_WORKFLOW_NAME_CAP];
+    char finding[WDEP_WORKFLOW_TEXT_CAP];
+} WdepWorkflowEvidence;
 
-typedef struct SambuWorkflowRun {
+typedef struct WdepWorkflowRun {
     bool preflight_approved;
     bool completed;
     uint16_t attempted;
     uint16_t passed;
     uint16_t failed;
-    SambuWorkflowEvidence evidence[SAMBU_WORKFLOW_STEP_CAP];
-    SambuWorkflowDiagnostic diagnostic;
-} SambuWorkflowRun;
+    WdepWorkflowEvidence evidence[WDEP_WORKFLOW_STEP_CAP];
+    WdepWorkflowDiagnostic diagnostic;
+} WdepWorkflowRun;
 
-typedef bool (*SambuWorkflowHandler)(SambuWorkflowAction action,
+typedef bool (*WdepWorkflowHandler)(WdepWorkflowAction action,
                                      void *context,
                                      char *finding,
                                      size_t finding_capacity);
 
-typedef struct SambuWorkflowHost {
-    SambuWorkflowHandler handler;
+typedef struct WdepWorkflowHost {
+    WdepWorkflowHandler handler;
     void *context;
-} SambuWorkflowHost;
+} WdepWorkflowHost;
 
-typedef struct SambuWorkflowSession {
-    SambuWorkflow program;
-    SambuWorkflowPolicy policy;
-    SambuWorkflowHost host;
-    SambuWorkflowRun run;
+typedef struct WdepWorkflowSession {
+    WdepWorkflow program;
+    WdepWorkflowPolicy policy;
+    WdepWorkflowHost host;
+    WdepWorkflowRun run;
     uint16_t cursor;
-    SambuWorkflowState state;
-} SambuWorkflowSession;
+    WdepWorkflowState state;
+} WdepWorkflowSession;
 
-bool sambu_workflow_compile(const char *source, size_t length,
-                            SambuWorkflow *program,
-                            SambuWorkflowDiagnostic *diagnostic);
-bool sambu_workflow_preflight(const SambuWorkflow *program,
-                             const SambuWorkflowPolicy *policy,
-                             SambuWorkflowDiagnostic *diagnostic);
-bool sambu_workflow_begin(SambuWorkflowSession *session,
-                          const SambuWorkflow *program,
-                          const SambuWorkflowPolicy *policy,
-                          const SambuWorkflowHost *host,
-                          SambuWorkflowDiagnostic *diagnostic);
+bool wdep_workflow_compile(const char *source, size_t length,
+                            WdepWorkflow *program,
+                            WdepWorkflowDiagnostic *diagnostic);
+bool wdep_workflow_preflight(const WdepWorkflow *program,
+                             const WdepWorkflowPolicy *policy,
+                             WdepWorkflowDiagnostic *diagnostic);
+bool wdep_workflow_begin(WdepWorkflowSession *session,
+                          const WdepWorkflow *program,
+                          const WdepWorkflowPolicy *policy,
+                          const WdepWorkflowHost *host,
+                          WdepWorkflowDiagnostic *diagnostic);
 /* Executes no more than one allowlisted action per call. */
-SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session);
-const char *sambu_workflow_action_name(SambuWorkflowAction action);
-const char *sambu_workflow_error_name(SambuWorkflowError error);
-const char *sambu_workflow_state_name(SambuWorkflowState state);
+WdepWorkflowState wdep_workflow_tick(WdepWorkflowSession *session);
+const char *wdep_workflow_action_name(WdepWorkflowAction action);
+const char *wdep_workflow_error_name(WdepWorkflowError error);
+const char *wdep_workflow_state_name(WdepWorkflowState state);
 
 #endif
