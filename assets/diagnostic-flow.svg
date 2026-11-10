@@ -1,46 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="390" viewBox="0 0 1280 390" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="585" viewBox="0 0 1280 390" role="img" aria-labelledby="title desc">
 <title id="title">ToolzNG evidence-led diagnostic workflow</title>
 <desc id="desc">A local-first workflow: observe Windows-visible Apple signals, validate evidence quality, calculate readiness only from measurable signals, prioritize a safe next step, and prepare a private report only at the user's request.</desc>
 <defs>
- <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#11141c"/><stop offset="1" stop-color="#202633"/></linearGradient>
- <linearGradient id="yellow" x2="1"><stop stop-color="#ffe45c"/><stop offset="1" stop-color="#ffc900"/></linearGradient>
+ <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0D0D0D"/><stop offset="1" stop-color="#141414"/></linearGradient>
+ <linearGradient id="yellow" x2="1"><stop stop-color="#FFD600"/><stop offset="1" stop-color="#BFA100"/></linearGradient>
  <style>
-  .h{font:700 26px system-ui,sans-serif;fill:#fff}.s{font:500 14px system-ui,sans-serif;fill:#b8c0cc}
-  .n{font:700 17px system-ui,sans-serif;fill:#161920}.p{font:500 13px system-ui,sans-serif;fill:#404653}
-  .tag{font:800 10px system-ui,sans-serif;letter-spacing:1px;fill:#846600}
-  .arr{stroke:#ffd600;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .h{font:700 26px system-ui,sans-serif;fill:#fff}.s{font:500 14px system-ui,sans-serif;fill:#999999}
+  .n{font:700 17px system-ui,sans-serif;fill:#E6E6E6}.p{font:500 13px system-ui,sans-serif;fill:#999999}
+  .tag{font:800 10px system-ui,sans-serif;letter-spacing:1px;fill:#BFA100}
+  .arr{stroke:#FFD600;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
  </style>
 </defs>
 <rect width="1280" height="390" rx="24" fill="url(#bg)"/>
 <text x="42" y="55" class="h">EVIDENCE FIRST · ACTIONS BY USER CHOICE</text>
 <text x="42" y="82" class="s">A transparent diagnostic path, not an automatic repair routine.</text>
 <g transform="translate(35 126)">
- <rect width="215" height="160" rx="16" fill="#f4f5f7"/>
- <rect x="18" y="18" width="56" height="22" rx="11" fill="#ffe28a"/><text x="46" y="33" text-anchor="middle" class="tag">01 OBSERVE</text>
+ <rect width="215" height="160" rx="16" fill="#1A1A1A"/>
+ <rect x="18" y="18" width="56" height="22" rx="11" fill="#332B00"/><text x="46" y="33" text-anchor="middle" class="tag">01 OBSERVE</text>
  <text x="18" y="72" class="n">Windows signals</text>
  <text x="18" y="98" class="p">Apple PnP · service</text><text x="18" y="119" class="p">USB events · backup markers</text>
  <text x="18" y="145" class="p">Local read-only inspection</text>
  <path d="M224 78h42m-10-9 10 9-10 9" class="arr"/>
 </g>
 <g transform="translate(275 126)">
- <rect width="215" height="160" rx="16" fill="#f4f5f7"/>
- <rect x="18" y="18" width="75" height="22" rx="11" fill="#ffe28a"/><text x="55" y="33" text-anchor="middle" class="tag">02 VALIDATE</text>
+ <rect width="215" height="160" rx="16" fill="#1A1A1A"/>
+ <rect x="18" y="18" width="75" height="22" rx="11" fill="#332B00"/><text x="55" y="33" text-anchor="middle" class="tag">02 VALIDATE</text>
  <text x="18" y="72" class="n">Quality Gate</text>
  <text x="18" y="98" class="p">Completed or incomplete?</text><text x="18" y="119" class="p">Consistent or contradictory?</text>
  <text x="18" y="145" class="p">Unknown stays unknown</text>
  <path d="M224 78h42m-10-9 10 9-10 9" class="arr"/>
 </g>
 <g transform="translate(515 126)">
- <rect width="215" height="160" rx="16" fill="#f4f5f7"/>
- <rect x="18" y="18" width="70" height="22" rx="11" fill="#ffe28a"/><text x="53" y="33" text-anchor="middle" class="tag">03 ASSESS</text>
+ <rect width="215" height="160" rx="16" fill="#1A1A1A"/>
+ <rect x="18" y="18" width="70" height="22" rx="11" fill="#332B00"/><text x="53" y="33" text-anchor="middle" class="tag">03 ASSESS</text>
  <text x="18" y="72" class="n">Readiness model</text>
  <text x="18" y="98" class="p">Score measurable signals</text><text x="18" y="119" class="p">Show evidence coverage</text>
  <text x="18" y="145" class="p">Provisional when partial</text>
  <path d="M224 78h42m-10-9 10 9-10 9" class="arr"/>
 </g>
 <g transform="translate(755 126)">
- <rect width="215" height="160" rx="16" fill="#f4f5f7"/>
- <rect x="18" y="18" width="82" height="22" rx="11" fill="#ffe28a"/><text x="59" y="33" text-anchor="middle" class="tag">04 GUIDE</text>
+ <rect width="215" height="160" rx="16" fill="#1A1A1A"/>
+ <rect x="18" y="18" width="82" height="22" rx="11" fill="#332B00"/><text x="59" y="33" text-anchor="middle" class="tag">04 GUIDE</text>
  <text x="18" y="72" class="n">DuckFix route</text>
  <text x="18" y="98" class="p">Prioritized finding</text><text x="18" y="119" class="p">Explain next safe step</text>
  <text x="18" y="145" class="p">No hidden system changes</text>
@@ -48,7 +48,7 @@
 </g>
 <g transform="translate(995 126)">
  <rect width="250" height="160" rx="16" fill="url(#yellow)"/>
- <rect x="18" y="18" width="96" height="22" rx="11" fill="#fff4bb"/><text x="66" y="33" text-anchor="middle" class="tag">05 USER ACTION</text>
+ <rect x="18" y="18" width="96" height="22" rx="11" fill="#332B00"/><text x="66" y="33" text-anchor="middle" class="tag">05 USER ACTION</text>
  <text x="18" y="72" class="n">Private report</text>
  <text x="18" y="98" class="p">Preview → create → export</text><text x="18" y="119" class="p">Local by default</text>
  <text x="18" y="145" class="p">Only when the user requests it</text>
