@@ -286,9 +286,9 @@ static bool parse_manifest(Parser *p, SambuWorkflow *out)
         if (!expect(p, TOK_SEMI, "Expected ';' after manifest field.")) return false;
     }
     if (!expect(p, TOK_RBRACE, "Expected end of manifest.")) return false;
-    if (seen != 7u) {
+    if (seen != 7u || out->purpose[0] == '\0') {
         set_error(p, SAMBU_WF_SYNTAX, p->token.span,
-                  "Manifest requires purpose, max_steps and autonomy.");
+                  "Manifest requires a non-empty purpose, max_steps and autonomy.");
         return false;
     }
     return true;
@@ -312,7 +312,13 @@ static bool parse_step(Parser *p, SambuWorkflow *out)
                   "Action is not present in the ToolzNG host allowlist.");
         return false;
     }
-    if (!expect(p, TOK_SEMI, "Expected ';' after step.")) return false;
+    if (p->token.kind != TOK_SEMI) {
+        set_error(p, SAMBU_WF_SYNTAX, p->token.span, "Expected ';' after step.");
+        return false;
+    }
+    step.source.length = (p->token.span.offset + p->token.span.length) - step.source.offset;
+    next_token(p);
+    if (p->failed) return false;
     for (i = 0u; i < out->step_count; ++i) {
         if (strcmp(out->steps[i].name, step.name) == 0) {
             set_error(p, SAMBU_WF_DUPLICATE_STEP, step.source, "Step names must be unique.");
@@ -384,7 +390,9 @@ bool sambu_workflow_preflight(const SambuWorkflow *program,
         }
         return false;
     }
-    if (!program->step_count || program->step_count > program->max_steps ||
+    if (!program->step_count || program->max_steps == 0u ||
+        program->max_steps > SAMBU_WORKFLOW_STEP_CAP ||
+        program->step_count > program->max_steps ||
         program->step_count > policy->max_steps || program->step_count > SAMBU_WORKFLOW_STEP_CAP) {
         if (diagnostic) {
             diagnostic->code = SAMBU_WF_BUDGET;
@@ -392,7 +400,9 @@ bool sambu_workflow_preflight(const SambuWorkflow *program,
         }
         return false;
     }
-    if (!policy->allow_observation || !sambu_authorize(SAMBU_OP_SCAN, SAMBU_ORIGIN_INTERNAL)) {
+    if ((program->autonomy != SAMBU_WF_OBSERVE_ONLY &&
+         program->autonomy != SAMBU_WF_LOCAL_RECORD) ||
+        !policy->allow_observation || !sambu_authorize(SAMBU_OP_SCAN, SAMBU_ORIGIN_INTERNAL)) {
         if (diagnostic) {
             diagnostic->code = SAMBU_WF_POLICY;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Observation is not authorized.");
@@ -401,6 +411,14 @@ bool sambu_workflow_preflight(const SambuWorkflow *program,
     }
     for (i = 0u; i < program->step_count; ++i) {
         const SambuWorkflowStep *step = &program->steps[i];
+        if (!step->name[0]) {
+            if (diagnostic) {
+                diagnostic->code = SAMBU_WF_SYNTAX;
+                diagnostic->source = step->source;
+                copy_string(diagnostic->message, sizeof(diagnostic->message), "Step name is empty.");
+            }
+            return false;
+        }
         if (step->action == SAMBU_WF_RECORD_PROFILE) {
             if (program->autonomy != SAMBU_WF_LOCAL_RECORD || !policy->allow_local_record ||
                 !sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL)) {
