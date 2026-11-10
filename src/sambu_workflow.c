@@ -523,6 +523,15 @@ SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
                 session, "Prior workflow evidence does not match the executed step sequence.");
         }
     }
+    if (session->program.autonomy != SAMBU_WF_OBSERVE_ONLY &&
+        session->program.autonomy != SAMBU_WF_LOCAL_RECORD) {
+        return workflow_session_invalid(
+            session, "Workflow autonomy mode is not recognized.");
+    }
+    if (!session->policy.allow_observation) {
+        return workflow_session_invalid(
+            session, "Observation permission was revoked after preflight.");
+    }
     step = &session->program.steps[session->cursor];
     if (step->action < SAMBU_WF_SCAN_USB ||
         step->action > SAMBU_WF_ASSESS_READINESS ||
