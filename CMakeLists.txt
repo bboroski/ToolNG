@@ -27,6 +27,7 @@ target_link_libraries(ToolzNG PRIVATE
     advapi32
     ole32
     uuid
+    comdlg32
 )
 
 if(MSVC)
