@@ -25,8 +25,8 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include <string.h>
 #include <wchar.h>
 
-#include "sambu_engine.h"
-#include "sambu_workflow.h"
+#include "toolng_engine.h"
+#include "toolng_workflow.h"
 
 #define APP_TITLE           L"WDEP | Device Evidence"
 #define MAX_APPLE_DEVICES   32
@@ -153,14 +153,14 @@ typedef struct AppState {
     RECT zoom_plus_button;
     RECT playbook_button;
     int readiness_score;
-    WdepAssessment wdep_assessment;
-    WdepLedger wdep_ledger;
-    WdepRelaxationState usb_pulse_filter;
-    WdepRelaxationResult usb_pulse_signal;
+    ToolNGAssessment toolng_assessment;
+    ToolNGLedger toolng_ledger;
+    ToolNGRelaxationState usb_pulse_filter;
+    ToolNGRelaxationResult usb_pulse_signal;
     BOOL usb_pulse_signal_available;
-    WdepWorkflow wdep_workflow;
-    WdepWorkflowSession wdep_workflow_session;
-    WdepFinding last_ledger_finding;
+    ToolNGWorkflow toolng_workflow;
+    ToolNGWorkflowSession toolng_workflow_session;
+    ToolNGFinding last_ledger_finding;
     WCHAR coach_title[180];
     WCHAR coach_body[640];
     HFONT font_brand;
@@ -795,7 +795,7 @@ static void record_usb_pulse(BOOL arrival)
     else ++g_app.usb_removals_total;
 
     /* +1 is an arrival, -1 is a removal. This trend is advisory only. */
-    if (wdep_relaxation_update(&g_app.usb_pulse_filter,
+    if (toolng_relaxation_update(&g_app.usb_pulse_filter,
             arrival ? 1.0 : -1.0, (uint64_t)event->tick,
             USB_PULSE_RELAXATION_TAU_MS, &g_app.usb_pulse_signal)) {
         g_app.usb_pulse_signal_available = TRUE;
@@ -838,7 +838,7 @@ static void register_usb_watch(HWND hwnd)
 
 static void compute_readiness_and_coach(void)
 {
-    WdepEvidence evidence;
+    ToolNGEvidence evidence;
     UINT removals = 0;
     ULONGLONG elapsed = GetTickCount64() - g_app.app_started_at;
 
@@ -863,83 +863,83 @@ static void compute_readiness_and_coach(void)
     evidence.usb_watch_registered = g_app.usb_watch_registered != FALSE;
     evidence.stability_window_elapsed = elapsed >= USB_STABILITY_WARMUP_MS;
 
-    g_app.wdep_assessment = wdep_assess(&evidence);
-    g_app.readiness_score = g_app.wdep_assessment.readiness_score;
-    if (g_app.wdep_assessment.finding != WDEP_FINDING_NONE &&
-        g_app.wdep_assessment.finding != g_app.last_ledger_finding) {
-        wdep_ledger_record(&g_app.wdep_ledger,
-            (uint32_t)g_app.wdep_assessment.finding, GetTickCount64());
+    g_app.toolng_assessment = toolng_assess(&evidence);
+    g_app.readiness_score = g_app.toolng_assessment.readiness_score;
+    if (g_app.toolng_assessment.finding != TOOLNG_FINDING_NONE &&
+        g_app.toolng_assessment.finding != g_app.last_ledger_finding) {
+        toolng_ledger_record(&g_app.toolng_ledger,
+            (uint32_t)g_app.toolng_assessment.finding, GetTickCount64());
     }
-    g_app.last_ledger_finding = g_app.wdep_assessment.finding;
+    g_app.last_ledger_finding = g_app.toolng_assessment.finding;
 
-    switch (g_app.wdep_assessment.finding) {
-        case WDEP_FINDING_SCAN_UNAVAILABLE:
+    switch (g_app.toolng_assessment.finding) {
+        case TOOLNG_FINDING_SCAN_UNAVAILABLE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: результат сканирования недоступен");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Windows не завершила перечисление устройств. Повтори проверку; отсутствие устройства пока нельзя считать подтверждённым. WDEP не меняет параметры iPhone и не выполняет ремонт автоматически.");
             break;
-        case WDEP_FINDING_NO_DEVICE:
+        case TOOLNG_FINDING_NO_DEVICE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: начни с физического подключения");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Используй кабель с передачей данных, разблокируй iPhone и подтверди «Доверять этому компьютеру». Затем нажми «Сканировать USB». WDEP не может подтвердить доверие iOS напрямую.");
             break;
-        case WDEP_FINDING_SERVICE_UNAVAILABLE:
+        case TOOLNG_FINDING_SERVICE_UNAVAILABLE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: проверь компонент Apple для Windows");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Windows видит USB-интерфейс, но служба Apple не подтверждена как запущенная. Установи или обнови Apple Devices; если служба установлена, проверь её состояние в приложении «Службы».");
             break;
-        case WDEP_FINDING_USB_UNSTABLE:
+        case TOOLNG_FINDING_USB_UNSTABLE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: проверь стабильность USB-линии");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"USB Pulse зарегистрировал отключения Apple-интерфейса за последние 10 минут. Попробуй другой порт без USB-хаба и исправный кабель передачи данных; наблюдай за счётчиком повторных отключений.");
             break;
-        case WDEP_FINDING_BACKUP_STRUCTURE:
+        case TOOLNG_FINDING_BACKUP_STRUCTURE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: проверь структуру локальной копии");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Backup Sentinel не нашёл ожидаемые маркеры Info.plist и Manifest.db/Manifest.plist. Не удаляй папки: создай новую копию через Apple Devices или iTunes и сравни результат.");
             break;
-        case WDEP_FINDING_BACKUP_STALE:
+        case TOOLNG_FINDING_BACKUP_STALE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: резервная копия давно не обновлялась");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Самая свежая Info.plist старше 30 дней. Если на устройстве появились новые данные, создай актуальную копию через Apple Devices/iTunes. Возраст маркера — ориентир, а не доказательство целостности backup.");
             break;
-        case WDEP_FINDING_BACKUP_MISSING:
+        case TOOLNG_FINDING_BACKUP_MISSING:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: создай резервную копию");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. WDEP не создаёт и не изменяет backup самостоятельно.");
             break;
-        case WDEP_FINDING_SERVICE_UNKNOWN:
+        case TOOLNG_FINDING_SERVICE_UNKNOWN:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: статус службы Apple не подтверждён");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Windows не смогла получить доступ к Service Control Manager или прочитать состояние службы. Это не означает, что служба остановлена или отсутствует. Проверь доступность системной службы и повтори диагностику; WDEP не меняет её состояние автоматически.");
             break;
-        case WDEP_FINDING_BACKUP_UNKNOWN:
+        case TOOLNG_FINDING_BACKUP_UNKNOWN:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: проверка резервной копии неполная");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"WDEP не смог полностью перечислить стандартный каталог backup. Это не доказывает, что копии нет или что её маркеры повреждены. Проверь доступ к папке и повтори сканирование; содержимое резервной копии не открывается.");
             break;
-        case WDEP_FINDING_STABILITY_UNCONFIRMED:
+        case TOOLNG_FINDING_STABILITY_UNCONFIRMED:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: стабильность USB ещё не подтверждена");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Для вывода о стабильности требуется зарегистрированный Windows-наблюдатель и завершённое окно наблюдения. Отсутствие этих данных не означает, что кабель неисправен или что соединение стабильно.");
             break;
-        case WDEP_FINDING_HEALTHY:
+        case TOOLNG_FINDING_HEALTHY:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: базовые проверки пройдены");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Windows видит Apple USB, служба доступна, а структура резервной копии выглядит ожидаемой. Это не тест скорости iOS и не проверка содержимого backup; продолжай пользоваться штатными средствами Apple.");
             break;
-        case WDEP_FINDING_NONE:
+        case TOOLNG_FINDING_NONE:
         default:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: недостаточно данных");
@@ -948,11 +948,11 @@ static void compute_readiness_and_coach(void)
             break;
     }
 
-    if (g_app.wdep_assessment.quality_flags != 0u) {
+    if (g_app.toolng_assessment.quality_flags != 0u) {
         WCHAR quality_key[64];
         WCHAR note[240];
         copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
-            wdep_quality_key(g_app.wdep_assessment.quality_flags));
+            toolng_quality_key(g_app.toolng_assessment.quality_flags));
         if (swprintf_s(note, ARRAYSIZE(note),
                 L"\r\nEvidence Quality Gate: %ls. Повтори проверку; неподтверждённые сигналы не учитываются в оценке.",
                 quality_key) > 0) {
@@ -960,11 +960,11 @@ static void compute_readiness_and_coach(void)
         }
     }
 
-    if (g_app.wdep_assessment.finding != WDEP_FINDING_NONE &&
-        g_app.wdep_assessment.finding != WDEP_FINDING_HEALTHY) {
-        const uint32_t repeats = wdep_ledger_recent_occurrences(
-            &g_app.wdep_ledger,
-            (uint32_t)g_app.wdep_assessment.finding,
+    if (g_app.toolng_assessment.finding != TOOLNG_FINDING_NONE &&
+        g_app.toolng_assessment.finding != TOOLNG_FINDING_HEALTHY) {
+        const uint32_t repeats = toolng_ledger_recent_occurrences(
+            &g_app.toolng_ledger,
+            (uint32_t)g_app.toolng_assessment.finding,
             GetTickCount64());
         if (repeats >= 2u) {
             WCHAR note[144];
@@ -978,34 +978,34 @@ static void compute_readiness_and_coach(void)
     }
 }
 
-static bool wdep_workflow_action(WdepWorkflowAction action,
+static bool toolng_workflow_action(ToolNGWorkflowAction action,
                                     void *context, char *finding,
                                     size_t finding_capacity)
 {
     (void)context;
     if (finding && finding_capacity > 0u) finding[0] = '\0';
     switch (action) {
-        case WDEP_WF_SCAN_USB:
+        case TOOLNG_WF_SCAN_USB:
             scan_apple_devices();
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
                     "Windows PnP scan completed: %u Apple USB interface(s).",
                     (unsigned)g_app.device_count);
             return g_app.scan_complete != FALSE;
-        case WDEP_WF_READ_SERVICE:
+        case TOOLNG_WF_READ_SERVICE:
             read_apple_service_status();
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
                     "Apple service observed: %s.",
                     g_app.apple_service_running ? "running" : "not confirmed running");
             return true;
-        case WDEP_WF_RECORD_PROFILE:
+        case TOOLNG_WF_RECORD_PROFILE:
             update_linkdna_profile();
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
                     "LinkDNA update evaluated; a baseline is initialized only when an Apple USB interface is visible.");
             return true;
-        case WDEP_WF_AUDIT_BACKUP:
+        case TOOLNG_WF_AUDIT_BACKUP:
             g_app.backup_found = find_backup_folder(g_app.backup_path,
                                                      ARRAYSIZE(g_app.backup_path));
             audit_backup_folder();
@@ -1015,13 +1015,13 @@ static bool wdep_workflow_action(WdepWorkflowAction action,
                     (unsigned long)g_app.backup_valid_count,
                     (unsigned long)g_app.backup_folder_count);
             return true;
-        case WDEP_WF_ASSESS_READINESS:
+        case TOOLNG_WF_ASSESS_READINESS:
             compute_readiness_and_coach();
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
                     "Windows-side readiness computed: %d/100.", g_app.readiness_score);
             return true;
-        case WDEP_WF_NONE:
+        case TOOLNG_WF_NONE:
         default:
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
@@ -1032,16 +1032,16 @@ static bool wdep_workflow_action(WdepWorkflowAction action,
 
 static void refresh_diagnostics(void)
 {
-    WdepWorkflowDiagnostic diagnostic;
-    WdepWorkflowPolicy policy = { 5u, true, true };
-    WdepWorkflowHost host = { wdep_workflow_action, NULL };
+    ToolNGWorkflowDiagnostic diagnostic;
+    ToolNGWorkflowPolicy policy = { 5u, true, true };
+    ToolNGWorkflowHost host = { toolng_workflow_action, NULL };
     WCHAR message[320];
 
     if (g_app.hwnd) KillTimer(g_app.hwnd, TIMER_WORKFLOW);
-    ZeroMemory(&g_app.wdep_workflow_session, sizeof(g_app.wdep_workflow_session));
+    ZeroMemory(&g_app.toolng_workflow_session, sizeof(g_app.toolng_workflow_session));
     g_app.scan_complete = FALSE;
-    if (!wdep_workflow_compile(kAppleConnectionWorkflow,
-            sizeof(kAppleConnectionWorkflow) - 1u, &g_app.wdep_workflow, &diagnostic)) {
+    if (!toolng_workflow_compile(kAppleConnectionWorkflow,
+            sizeof(kAppleConnectionWorkflow) - 1u, &g_app.toolng_workflow, &diagnostic)) {
         copy_ascii_to_wide(message, ARRAYSIZE(message), diagnostic.message);
         swprintf_s(g_app.status, ARRAYSIZE(g_app.status),
             L"Diagnostic workflow compile error at %lu:%lu: %ls",
@@ -1050,7 +1050,7 @@ static void refresh_diagnostics(void)
         InvalidateRect(g_app.hwnd, NULL, FALSE);
         return;
     }
-    if (!wdep_workflow_begin(&g_app.wdep_workflow_session, &g_app.wdep_workflow,
+    if (!toolng_workflow_begin(&g_app.toolng_workflow_session, &g_app.toolng_workflow,
                               &policy, &host, &diagnostic)) {
         copy_ascii_to_wide(message, ARRAYSIZE(message), diagnostic.message);
         swprintf_s(g_app.status, ARRAYSIZE(g_app.status),
@@ -1178,12 +1178,12 @@ static void save_duckfix_route(void)
     SYSTEMTIME now;
     WCHAR path[MAX_PATH * 2], filename[160], contents[5000];
     WCHAR engine_version[32], report_schema[64], finding_key[96];
-    if (!wdep_authorize(WDEP_OP_WRITE_PRIVATE_REPORT, WDEP_ORIGIN_USER)) {
+    if (!toolng_authorize(TOOLNG_OP_WRITE_PRIVATE_REPORT, TOOLNG_ORIGIN_USER)) {
         set_status(L"Сохранение маршрута требует явного действия пользователя.");
         return;
     }
-    if (g_app.wdep_workflow_session.state == WDEP_WF_RUNNING ||
-        g_app.wdep_workflow_session.state == WDEP_WF_IDLE) {
+    if (g_app.toolng_workflow_session.state == TOOLNG_WF_RUNNING ||
+        g_app.toolng_workflow_session.state == TOOLNG_WF_IDLE) {
         set_status(L"Сначала заверши диагностический сценарий.");
         return;
     }
@@ -1191,10 +1191,10 @@ static void save_duckfix_route(void)
         set_status(L"Локальное хранилище отчётов недоступно.");
         return;
     }
-    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), wdep_engine_version());
-    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), wdep_report_schema());
+    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), toolng_engine_version());
+    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), toolng_report_schema());
     copy_ascii_to_wide(finding_key, ARRAYSIZE(finding_key),
-                       wdep_finding_key(g_app.wdep_assessment.finding));
+                       toolng_finding_key(g_app.toolng_assessment.finding));
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
         L"DuckFix-%04u%02u%02u-%02u%02u%02u-%03u.txt",
@@ -1220,14 +1220,14 @@ static void save_duckfix_route(void)
         L"Это план действий, а не автоматический ремонт. WDEP не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
         engine_version, report_schema,
-        (unsigned)g_app.wdep_assessment.finding, finding_key,
-        wdep_workflow_state_name(g_app.wdep_workflow_session.state),
-        (unsigned)g_app.wdep_workflow_session.run.passed,
-        (unsigned)g_app.wdep_workflow.step_count,
-        (unsigned)g_app.wdep_workflow_session.run.failed,
-        g_app.wdep_assessment.score_coverage_percent,
+        (unsigned)g_app.toolng_assessment.finding, finding_key,
+        toolng_workflow_state_name(g_app.toolng_workflow_session.state),
+        (unsigned)g_app.toolng_workflow_session.run.passed,
+        (unsigned)g_app.toolng_workflow.step_count,
+        (unsigned)g_app.toolng_workflow_session.run.failed,
+        g_app.toolng_assessment.score_coverage_percent,
         g_app.readiness_score,
-        g_app.wdep_assessment.score_provisional ? L"предварительная" : L"полная",
+        g_app.toolng_assessment.score_provisional ? L"предварительная" : L"полная",
         g_app.status, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1337,7 +1337,7 @@ static BOOL copy_report_to_clipboard(void)
     HGLOBAL memory;
     WCHAR *target;
     size_t chars;
-    if (!wdep_authorize(WDEP_OP_CLIPBOARD, WDEP_ORIGIN_USER)) return FALSE;
+    if (!toolng_authorize(TOOLNG_OP_CLIPBOARD, TOOLNG_ORIGIN_USER)) return FALSE;
     chars = wcslen(g_app.report_content) + 1;
     bytes = chars * sizeof(WCHAR);
     if (!OpenClipboard(g_app.hwnd)) return FALSE;
@@ -1361,7 +1361,7 @@ static void export_report_copy(void)
 {
     OPENFILENAMEW dialog;
     WCHAR target[MAX_PATH * 2] = L"WDEP-report.txt";
-    if (!wdep_authorize(WDEP_OP_EXPORT, WDEP_ORIGIN_USER)) {
+    if (!toolng_authorize(TOOLNG_OP_EXPORT, TOOLNG_ORIGIN_USER)) {
         set_status(L"Экспорт доступен только по явному запросу пользователя.");
         return;
     }
@@ -1400,12 +1400,12 @@ static void save_report(void)
     size_t used = 0;
     UINT recent_arrivals = 0, recent_removals = 0;
 
-    if (!wdep_authorize(WDEP_OP_WRITE_PRIVATE_REPORT, WDEP_ORIGIN_USER)) {
+    if (!toolng_authorize(TOOLNG_OP_WRITE_PRIVATE_REPORT, TOOLNG_ORIGIN_USER)) {
         set_status(L"Создание отчёта требует явного действия пользователя.");
         return;
     }
-    if (g_app.wdep_workflow_session.state == WDEP_WF_RUNNING ||
-        g_app.wdep_workflow_session.state == WDEP_WF_IDLE) {
+    if (g_app.toolng_workflow_session.state == TOOLNG_WF_RUNNING ||
+        g_app.toolng_workflow_session.state == TOOLNG_WF_IDLE) {
         set_status(L"Диагностический сценарий ещё не завершён; отчёт пока недоступен.");
         return;
     }
@@ -1415,14 +1415,14 @@ static void save_report(void)
     }
     get_recent_usb_counts(&recent_arrivals, &recent_removals);
     copy_ascii_to_wide(finding_key, ARRAYSIZE(finding_key),
-                       wdep_finding_key(g_app.wdep_assessment.finding));
-    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), wdep_engine_version());
-    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), wdep_report_schema());
+                       toolng_finding_key(g_app.toolng_assessment.finding));
+    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), toolng_engine_version());
+    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), toolng_report_schema());
     copy_ascii_to_wide(pattern_key, ARRAYSIZE(pattern_key),
-        wdep_pattern_key(wdep_ledger_pattern(&g_app.wdep_ledger,
-            (uint32_t)g_app.wdep_assessment.finding, GetTickCount64())));
+        toolng_pattern_key(toolng_ledger_pattern(&g_app.toolng_ledger,
+            (uint32_t)g_app.toolng_assessment.finding, GetTickCount64())));
     copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
-        wdep_quality_key(g_app.wdep_assessment.quality_flags));
+        toolng_quality_key(g_app.toolng_assessment.quality_flags));
     if (g_app.backup_age_days != ~(ULONGLONG)0) {
         swprintf_s(backup_age_text, ARRAYSIZE(backup_age_text),
             L"%llu дней", (unsigned long long)g_app.backup_age_days);
@@ -1454,23 +1454,23 @@ static void save_report(void)
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
         now.wSecond, engine_version, report_schema,
-        (unsigned)g_app.wdep_assessment.finding, finding_key,
-        g_app.wdep_assessment.score_coverage_percent,
+        (unsigned)g_app.toolng_assessment.finding, finding_key,
+        g_app.toolng_assessment.score_coverage_percent,
         g_app.readiness_score,
-        g_app.wdep_assessment.score_provisional ? L"provisional" : L"complete",
-        g_app.wdep_assessment.device_points,
-        g_app.wdep_assessment.service_points,
-        g_app.wdep_assessment.backup_points,
-        g_app.wdep_assessment.marker_points,
-        g_app.wdep_assessment.stability_points,
-        (unsigned long)g_app.wdep_assessment.evidence_mask,
+        g_app.toolng_assessment.score_provisional ? L"provisional" : L"complete",
+        g_app.toolng_assessment.device_points,
+        g_app.toolng_assessment.service_points,
+        g_app.toolng_assessment.backup_points,
+        g_app.toolng_assessment.marker_points,
+        g_app.toolng_assessment.stability_points,
+        (unsigned long)g_app.toolng_assessment.evidence_mask,
         quality_key,
-        (unsigned long)g_app.wdep_assessment.quality_flags,
-        (unsigned)wdep_ledger_unique_count(&g_app.wdep_ledger),
-        (unsigned)wdep_ledger_occurrences(&g_app.wdep_ledger,
-            (uint32_t)g_app.wdep_assessment.finding),
-        (unsigned)wdep_ledger_recent_occurrences(&g_app.wdep_ledger,
-            (uint32_t)g_app.wdep_assessment.finding, GetTickCount64()),
+        (unsigned long)g_app.toolng_assessment.quality_flags,
+        (unsigned)toolng_ledger_unique_count(&g_app.toolng_ledger),
+        (unsigned)toolng_ledger_occurrences(&g_app.toolng_ledger,
+            (uint32_t)g_app.toolng_assessment.finding),
+        (unsigned)toolng_ledger_recent_occurrences(&g_app.toolng_ledger,
+            (uint32_t)g_app.toolng_assessment.finding, GetTickCount64()),
         pattern_key,
         g_app.device_count);
     if (count < 0) {
@@ -1511,7 +1511,7 @@ static void save_report(void)
         (unsigned long)g_app.backup_valid_count,
         backup_age_text,
         g_app.readiness_score,
-        g_app.wdep_assessment.score_coverage_percent,
+        g_app.toolng_assessment.score_coverage_percent,
         g_app.apple_service_query_complete ? L"да" : L"нет",
         g_app.backup_scan_complete ? L"да" : L"нет",
         recent_arrivals, recent_removals,
@@ -1544,22 +1544,22 @@ static void save_report(void)
         L"\r\nDiagnostic workflow: apple_connection (%ls)\r\n"
         L"Workflow preflight: %ls; steps: attempted=%u, passed=%u, failed=%u\r\n",
         L"local_record",
-        g_app.wdep_workflow_session.run.preflight_approved ? L"approved" : L"denied",
-        (unsigned)g_app.wdep_workflow_session.run.attempted,
-        (unsigned)g_app.wdep_workflow_session.run.passed,
-        (unsigned)g_app.wdep_workflow_session.run.failed);
+        g_app.toolng_workflow_session.run.preflight_approved ? L"approved" : L"denied",
+        (unsigned)g_app.toolng_workflow_session.run.attempted,
+        (unsigned)g_app.toolng_workflow_session.run.passed,
+        (unsigned)g_app.toolng_workflow_session.run.failed);
     if (count < 0) {
         set_status(L"Не удалось добавить workflow ledger в отчёт.");
         return;
     }
     used += (size_t)count;
-    for (i = 0; i < g_app.wdep_workflow_session.run.attempted &&
-                i < WDEP_WORKFLOW_STEP_CAP && used < ARRAYSIZE(report) - 256u; ++i) {
+    for (i = 0; i < g_app.toolng_workflow_session.run.attempted &&
+                i < TOOLNG_WORKFLOW_STEP_CAP && used < ARRAYSIZE(report) - 256u; ++i) {
         WCHAR action_name[80];
-        WCHAR finding[WDEP_WORKFLOW_TEXT_CAP];
-        const WdepWorkflowEvidence *entry = &g_app.wdep_workflow_session.run.evidence[i];
+        WCHAR finding[TOOLNG_WORKFLOW_TEXT_CAP];
+        const ToolNGWorkflowEvidence *entry = &g_app.toolng_workflow_session.run.evidence[i];
         copy_ascii_to_wide(action_name, ARRAYSIZE(action_name),
-                           wdep_workflow_action_name(entry->action));
+                           toolng_workflow_action_name(entry->action));
         copy_ascii_to_wide(finding, ARRAYSIZE(finding), entry->finding);
         count = swprintf_s(report + used, ARRAYSIZE(report) - used,
             L"  [%u] %ls @ %lu:%lu — %ls\r\n",
@@ -1667,14 +1667,14 @@ static void draw_page_heading(HDC dc, const WCHAR *title, const WCHAR *subtitle)
 
 static void format_quality_summary(WCHAR *buffer, size_t buffer_count)
 {
-    const WCHAR *state = g_app.wdep_assessment.quality_flags == 0u
+    const WCHAR *state = g_app.toolng_assessment.quality_flags == 0u
         ? L"OK — сигналы согласованы"
         : L"ВНИМАНИЕ — см. DuckFix";
     swprintf_s(buffer, buffer_count,
         L"Evidence Quality Gate · %ls · coverage %u%% · %ls",
         state,
-        g_app.wdep_assessment.score_coverage_percent,
-        g_app.wdep_assessment.score_provisional ? L"partial" : L"complete");
+        g_app.toolng_assessment.score_coverage_percent,
+        g_app.toolng_assessment.score_provisional ? L"partial" : L"complete");
 }
 
 static void draw_overview(HDC dc)
@@ -1699,9 +1699,9 @@ static void draw_overview(HDC dc)
         WCHAR score_line[160];
         swprintf_s(score_line, ARRAYSIZE(score_line),
             L"DUCK READINESS  ·  %d/100  ·  coverage %u%%  ·  %ls",
-            g_app.wdep_assessment.readiness_score,
-            g_app.wdep_assessment.score_coverage_percent,
-            g_app.wdep_assessment.score_provisional ? L"partial" : L"complete");
+            g_app.toolng_assessment.readiness_score,
+            g_app.toolng_assessment.score_coverage_percent,
+            g_app.toolng_assessment.score_provisional ? L"partial" : L"complete");
         draw_text(dc, score_line, (RECT){ x + 24, 232, right - 176, 253 },
                   g_app.font_small, COL_AMBER, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
@@ -1792,7 +1792,7 @@ static void draw_overview(HDC dc)
     format_quality_summary(quality_line, ARRAYSIZE(quality_line));
     draw_text(dc, quality_line, (RECT){ x + 2, 669, right, 691 },
         g_app.font_small,
-        g_app.wdep_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
+        g_app.toolng_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 }
 
@@ -1822,7 +1822,7 @@ static void draw_devices(HDC dc)
         draw_round_rect(dc, (RECT){ x, 262, right, 314 }, COL_CARD, COL_BORDER, 10);
         draw_text(dc, quality_line, (RECT){ x + 16, 268, right - 16, 288 },
             g_app.font_small,
-            g_app.wdep_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
+            g_app.toolng_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
         draw_text(dc, backup_line, (RECT){ x + 16, 290, right - 16, 308 },
             g_app.font_small, COL_MUTED,
@@ -2119,7 +2119,7 @@ static void handle_action(int action)
 {
     switch (action) {
         case ACTION_SCAN:
-            if (!wdep_authorize(WDEP_OP_SCAN, WDEP_ORIGIN_USER)) {
+            if (!toolng_authorize(TOOLNG_OP_SCAN, TOOLNG_ORIGIN_USER)) {
                 set_status(L"Сканирование отклонено политикой безопасности.");
                 break;
             }
@@ -2238,7 +2238,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
     switch (message) {
         case WM_CREATE:
             g_app.hwnd = hwnd;
-            wdep_ledger_init(&g_app.wdep_ledger);
+            toolng_ledger_init(&g_app.toolng_ledger);
             g_app.page = PAGE_OVERVIEW;
             g_app.scan_complete = FALSE;
             g_app.app_started_at = GetTickCount64();
@@ -2375,33 +2375,33 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
 
         case WM_TIMER:
             if (wparam == TIMER_WORKFLOW) {
-                WdepWorkflowState state = wdep_workflow_tick(&g_app.wdep_workflow_session);
-                if (state != WDEP_WF_RUNNING) KillTimer(hwnd, TIMER_WORKFLOW);
-                if (state == WDEP_WF_COMPLETED) {
+                ToolNGWorkflowState state = toolng_workflow_tick(&g_app.toolng_workflow_session);
+                if (state != TOOLNG_WF_RUNNING) KillTimer(hwnd, TIMER_WORKFLOW);
+                if (state == TOOLNG_WF_COMPLETED) {
                     WCHAR status[180];
                     swprintf_s(status, ARRAYSIZE(status),
                         L"Сценарий завершён — %u/%u шагов подтверждено.",
-                        (unsigned)g_app.wdep_workflow_session.run.passed,
-                        (unsigned)g_app.wdep_workflow.step_count);
+                        (unsigned)g_app.toolng_workflow_session.run.passed,
+                        (unsigned)g_app.toolng_workflow.step_count);
                     set_status(status);
-                } else if (state == WDEP_WF_FAILED) {
-                    WCHAR detail[WDEP_WORKFLOW_TEXT_CAP];
+                } else if (state == TOOLNG_WF_FAILED) {
+                    WCHAR detail[TOOLNG_WORKFLOW_TEXT_CAP];
                     compute_readiness_and_coach();
                     WCHAR status[320];
                     copy_ascii_to_wide(detail, ARRAYSIZE(detail),
-                        g_app.wdep_workflow_session.run.diagnostic.message);
+                        g_app.toolng_workflow_session.run.diagnostic.message);
                     swprintf_s(status, ARRAYSIZE(status),
                         L"Сценарий остановлен на %lu:%lu: %ls",
-                        (unsigned long)g_app.wdep_workflow_session.run.diagnostic.source.line,
-                        (unsigned long)g_app.wdep_workflow_session.run.diagnostic.source.column,
+                        (unsigned long)g_app.toolng_workflow_session.run.diagnostic.source.line,
+                        (unsigned long)g_app.toolng_workflow_session.run.diagnostic.source.column,
                         detail);
                     set_status(status);
                 } else {
                     WCHAR status[180];
                     swprintf_s(status, ARRAYSIZE(status),
                         L"Шаг %u из %u...",
-                        (unsigned)g_app.wdep_workflow_session.run.attempted + 1u,
-                        (unsigned)g_app.wdep_workflow.step_count);
+                        (unsigned)g_app.toolng_workflow_session.run.attempted + 1u,
+                        (unsigned)g_app.toolng_workflow.step_count);
                     set_status(status);
                 }
                 InvalidateRect(hwnd, NULL, FALSE);
@@ -2461,7 +2461,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     (void)command_line;
 
     ZeroMemory(&g_app, sizeof(g_app));
-    if (!wdep_architecture_validate()) {
+    if (!toolng_architecture_validate()) {
         MessageBoxW(NULL, L"Проверка архитектуры диагностики не пройдена. Запуск остановлен.",
                     APP_TITLE, MB_OK | MB_ICONERROR);
         return 2;
