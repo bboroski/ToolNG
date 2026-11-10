@@ -21,7 +21,6 @@ add_library(ToolNG.PolicyCore STATIC
     src/toolng_engine.c
     src/toolng_workflow.c
 )
-add_library(ToolzNG.SambuCore ALIAS ToolNG.PolicyCore)
 target_include_directories(ToolNG.PolicyCore
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
