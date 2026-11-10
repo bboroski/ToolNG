@@ -35,24 +35,31 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define TIMER_USB_REFRESH   42
 #define TIMER_READINESS      43
 
-#define COL_BG              RGB(13, 17, 24)
-#define COL_HEADER          RGB(17, 23, 32)
-#define COL_SIDEBAR         RGB(18, 24, 34)
-#define COL_PANEL           RGB(23, 31, 43)
-#define COL_CARD            RGB(27, 37, 51)
-#define COL_CARD_HOVER      RGB(34, 47, 64)
-#define COL_BORDER          RGB(49, 65, 86)
-#define COL_TEXT            RGB(235, 241, 249)
-#define COL_MUTED           RGB(151, 166, 186)
-#define COL_ACCENT          RGB(92, 157, 255)
-#define COL_ACCENT_DARK     RGB(35, 83, 151)
-#define COL_GREEN           RGB(83, 203, 151)
-#define COL_AMBER           RGB(245, 183, 84)
+/* Theme tokens: graphite base, controlled yellow accents, accessible status colors. */
+#define COL_BG              RGB(13, 13, 13)
+#define COL_HEADER          RGB(20, 20, 20)
+#define COL_SIDEBAR         RGB(20, 20, 20)
+#define COL_PANEL           RGB(26, 26, 26)
+#define COL_CARD            RGB(26, 26, 26)
+#define COL_CARD_HOVER      RGB(38, 38, 38)
+#define COL_BORDER          RGB(38, 38, 38)
+#define COL_TEXT            RGB(230, 230, 230)
+#define COL_MUTED           RGB(153, 153, 153)
+#define COL_ACCENT          RGB(255, 214, 0)
+#define COL_ACCENT_DARK     RGB(191, 161, 0)
+#define COL_GREEN           RGB(76, 175, 80)
+#define COL_AMBER           RGB(255, 214, 0)
+#define COL_ERROR           RGB(255, 68, 68)
 
 #define PAGE_OVERVIEW 0
 #define PAGE_DEVICES  1
 #define PAGE_CARE     2
 #define PAGE_ABOUT    3
+#define PAGE_REPORTS  4
+#define PAGE_HELP     5
+#define PAGE_COUNT    6
+#define MAX_REPORTS   32
+#define REPORT_ROWS   8
 
 #define ACTION_NONE       0
 #define ACTION_SCAN       1
@@ -60,8 +67,8 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define ACTION_DEVICES    3
 #define ACTION_BACKUPS    4
 #define ACTION_CARE       5
-#define ACTION_SUPPORT    6
-#define ACTION_STORE      7
+#define ACTION_HELP       6
+#define ACTION_PLAYBOOK   7
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -78,11 +85,19 @@ typedef struct UsbPulseEvent {
     BOOL arrival;
 } UsbPulseEvent;
 
+typedef struct ReportEntry {
+    WCHAR name[MAX_PATH];
+    WCHAR path[MAX_PATH * 2];
+} ReportEntry;
+
 typedef struct AppState {
     HWND hwnd;
     int page;
     int client_width;
     int client_height;
+    UINT dpi;
+    UINT effective_dpi;
+    UINT zoom_percent;
     BOOL scan_complete;
     UINT device_count;
     AppleDevice devices[MAX_APPLE_DEVICES];
@@ -109,6 +124,20 @@ typedef struct AppState {
     WCHAR local_store[MAX_PATH * 2];
     WCHAR pulse_journal[MAX_PATH * 2];
     WCHAR link_profile_file[MAX_PATH * 2];
+    WCHAR settings_file[MAX_PATH * 2];
+    WCHAR reports_dir[MAX_PATH * 2];
+    WCHAR last_report_path[MAX_PATH * 2];
+    WCHAR report_content[REPORT_CHARS];
+    int report_scroll;
+    int report_content_height;
+    int report_count;
+    int selected_report;
+    ReportEntry reports[MAX_REPORTS];
+    RECT report_rows[REPORT_ROWS];
+    RECT report_copy_button;
+    RECT report_refresh_button;
+    RECT zoom_minus_button;
+    RECT zoom_plus_button;
     RECT playbook_button;
     int readiness_score;
     WCHAR coach_title[180];
@@ -119,7 +148,7 @@ typedef struct AppState {
     HFONT font_body;
     HFONT font_small;
     HFONT font_button;
-    RECT nav[4];
+    RECT nav[PAGE_COUNT];
     RECT scan_button;
     RECT report_button;
     RECT devices_button;
@@ -168,7 +197,8 @@ static void draw_button(HDC dc, RECT rect, const WCHAR *label, BOOL primary)
     COLORREF fill = primary ? COL_ACCENT_DARK : COL_CARD;
     COLORREF edge = primary ? COL_ACCENT : COL_BORDER;
     draw_round_rect(dc, rect, fill, edge, 10);
-    draw_text(dc, label, rect, g_app.font_button, COL_TEXT,
+    draw_text(dc, label, rect, g_app.font_button,
+              primary ? COL_BG : COL_ACCENT,
               DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
@@ -369,6 +399,55 @@ static void initialize_local_store(void)
                 g_app.local_store, L"usb-pulse.jsonl");
     append_path(g_app.link_profile_file, ARRAYSIZE(g_app.link_profile_file),
                 g_app.local_store, L"link-profile.ini");
+    append_path(g_app.settings_file, ARRAYSIZE(g_app.settings_file),
+                g_app.local_store, L"settings.ini");
+    append_path(g_app.reports_dir, ARRAYSIZE(g_app.reports_dir),
+                g_app.local_store, L"Reports");
+    (void)CreateDirectoryW(g_app.reports_dir, NULL);
+}
+
+static void load_display_settings(void)
+{
+    UINT stored = 100;
+    if (g_app.settings_file[0])
+        stored = (UINT)GetPrivateProfileIntW(L"Display", L"zoom", 100,
+                                              g_app.settings_file);
+    if (stored < 80) stored = 80;
+    if (stored > 160) stored = 160;
+    g_app.zoom_percent = stored;
+}
+
+static void save_display_settings(void)
+{
+    WCHAR value[16];
+    if (!g_app.settings_file[0]) return;
+    swprintf_s(value, ARRAYSIZE(value), L"%u", g_app.zoom_percent);
+    (void)WritePrivateProfileStringW(L"Display", L"zoom", value,
+                                      g_app.settings_file);
+}
+
+static UINT effective_dpi(void)
+{
+    UINT dpi = g_app.dpi ? g_app.dpi : 96;
+    UINT zoom = g_app.zoom_percent ? g_app.zoom_percent : 100;
+    UINT result = (dpi * zoom + 50) / 100;
+    if (result < 60) result = 60;
+    if (result > 384) result = 384;
+    return result;
+}
+
+static void adjust_zoom(int delta)
+{
+    int next = (int)(g_app.zoom_percent ? g_app.zoom_percent : 100) + delta;
+    if (next < 80) next = 80;
+    if (next > 160) next = 160;
+    if ((UINT)next == g_app.zoom_percent) return;
+    g_app.zoom_percent = (UINT)next;
+    g_app.effective_dpi = effective_dpi();
+    save_display_settings();
+    delete_fonts();
+    create_fonts();
+    if (g_app.hwnd) InvalidateRect(g_app.hwnd, NULL, FALSE);
 }
 
 static void append_pulse_vault(const UsbPulseEvent *event)
@@ -820,20 +899,19 @@ cleanup:
 
 static void save_duckfix_route(void)
 {
-    PWSTR docs = NULL;
-    WCHAR path[MAX_PATH * 2], contents[5000];
     SYSTEMTIME now;
-    if (FAILED(SHGetKnownFolderPath(&FOLDERID_Documents, KF_FLAG_CREATE, NULL, &docs))) {
-        MessageBoxW(g_app.hwnd, L"Не удалось найти Documents.", APP_TITLE, MB_OK | MB_ICONERROR);
+    WCHAR path[MAX_PATH * 2], filename[160], contents[5000];
+    if (!g_app.reports_dir[0]) {
+        set_status(L"Локальное хранилище отчётов недоступно.");
         return;
     }
     GetLocalTime(&now);
-    swprintf_s(path, ARRAYSIZE(path),
-        L"%ls\\ToolzNG-DuckFix-%04u%02u%02u-%02u%02u%02u.txt",
-        docs, now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
-    CoTaskMemFree(docs);
+    swprintf_s(filename, ARRAYSIZE(filename),
+        L"DuckFix-%04u%02u%02u-%02u%02u%02u.txt",
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+    append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
-        L"ToolzNG — DuckFix route\r\n================================\r\n"
+        L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
@@ -850,166 +928,211 @@ static void save_duckfix_route(void)
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
         g_app.coach_title, g_app.coach_body);
-    if (write_utf8_file(path, contents)) {
-        WCHAR message[MAX_PATH * 2 + 80];
-        swprintf_s(message, ARRAYSIZE(message), L"План DuckFix сохранён:\n%ls", path);
-        MessageBoxW(g_app.hwnd, message, APP_TITLE, MB_OK | MB_ICONINFORMATION);
-    } else {
-        MessageBoxW(g_app.hwnd, L"Не удалось сохранить план DuckFix.", APP_TITLE, MB_OK | MB_ICONERROR);
+    if (write_utf8_file(path, contents))
+        set_status(L"Маршрут DuckFix сохранён во внутреннем архиве приложения.");
+    else
+        set_status(L"Не удалось сохранить маршрут DuckFix в локальное хранилище.");
+}
+
+static BOOL read_utf8_file(const WCHAR *path, WCHAR *output, size_t output_count)
+{
+    HANDLE file;
+    LARGE_INTEGER size;
+    BYTE *bytes;
+    DWORD got = 0;
+    int chars;
+    if (!path || !output || output_count < 2) return FALSE;
+    output[0] = L'\0';
+    file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                       NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE) return FALSE;
+    if (!GetFileSizeEx(file, &size) || size.QuadPart < 0 ||
+        size.QuadPart > (LONGLONG)(output_count * 4)) {
+        CloseHandle(file);
+        return FALSE;
     }
+    bytes = (BYTE *)malloc((size_t)size.QuadPart + 1);
+    if (!bytes) { CloseHandle(file); return FALSE; }
+    if (size.QuadPart && (!ReadFile(file, bytes, (DWORD)size.QuadPart, &got, NULL) ||
+                          got != (DWORD)size.QuadPart)) {
+        free(bytes); CloseHandle(file); return FALSE;
+    }
+    CloseHandle(file);
+    bytes[got] = 0;
+    chars = got ? MultiByteToWideChar(CP_UTF8, 0, (const char *)bytes,
+                                      (int)got, output, (int)output_count - 1) : 0;
+    free(bytes);
+    if (chars <= 0 && got) { output[0] = L'\0'; return FALSE; }
+    output[chars] = L'\0';
+    return TRUE;
+}
+
+static BOOL load_report_file(int index)
+{
+    if (index < 0 || index >= g_app.report_count) return FALSE;
+    if (!read_utf8_file(g_app.reports[index].path, g_app.report_content,
+                        ARRAYSIZE(g_app.report_content))) {
+        copy_text(g_app.report_content, ARRAYSIZE(g_app.report_content),
+                  L"Не удалось прочитать выбранный отчёт. Файл мог быть удалён или повреждён.");
+        return FALSE;
+    }
+    copy_text(g_app.last_report_path, ARRAYSIZE(g_app.last_report_path),
+              g_app.reports[index].path);
+    g_app.selected_report = index;
+    g_app.report_scroll = 0;
+    g_app.report_content_height = 0;
+    return TRUE;
+}
+
+static void refresh_report_history(void)
+{
+    WCHAR pattern[MAX_PATH * 2];
+    WIN32_FIND_DATAW data;
+    HANDLE find;
+    int i, j;
+    g_app.report_count = 0;
+    if (!g_app.reports_dir[0]) return;
+    append_path(pattern, ARRAYSIZE(pattern), g_app.reports_dir,
+                L"ToolzNG-report-*.txt");
+    find = FindFirstFileW(pattern, &data);
+    if (find != INVALID_HANDLE_VALUE) {
+        do {
+            ReportEntry *entry;
+            if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+            if (g_app.report_count >= MAX_REPORTS) break;
+            entry = &g_app.reports[g_app.report_count++];
+            copy_text(entry->name, ARRAYSIZE(entry->name), data.cFileName);
+            append_path(entry->path, ARRAYSIZE(entry->path),
+                        g_app.reports_dir, data.cFileName);
+        } while (FindNextFileW(find, &data));
+        FindClose(find);
+    }
+    for (i = 0; i < g_app.report_count; ++i) {
+        for (j = i + 1; j < g_app.report_count; ++j) {
+            if (wcscmp(g_app.reports[i].name, g_app.reports[j].name) < 0) {
+                ReportEntry swap = g_app.reports[i];
+                g_app.reports[i] = g_app.reports[j];
+                g_app.reports[j] = swap;
+            }
+        }
+    }
+    if (g_app.report_count > 0) {
+        (void)load_report_file(0);
+    } else {
+        g_app.last_report_path[0] = L'\0';
+        copy_text(g_app.report_content, ARRAYSIZE(g_app.report_content),
+                  L"Отчётов пока нет.\r\n\r\nНажми «Создать отчёт» на главном экране. Приватный отчёт будет сохранён локально и сразу появится здесь.");
+        g_app.report_scroll = 0;
+    }
+}
+
+static BOOL copy_report_to_clipboard(void)
+{
+    SIZE_T bytes;
+    HGLOBAL memory;
+    WCHAR *target;
+    size_t chars = wcslen(g_app.report_content) + 1;
+    bytes = chars * sizeof(WCHAR);
+    if (!OpenClipboard(g_app.hwnd)) return FALSE;
+    if (!EmptyClipboard()) { CloseClipboard(); return FALSE; }
+    memory = GlobalAlloc(GMEM_MOVEABLE, bytes);
+    if (!memory) { CloseClipboard(); return FALSE; }
+    target = (WCHAR *)GlobalLock(memory);
+    if (!target) { GlobalFree(memory); CloseClipboard(); return FALSE; }
+    memcpy(target, g_app.report_content, bytes);
+    GlobalUnlock(memory);
+    if (!SetClipboardData(CF_UNICODETEXT, memory)) {
+        GlobalFree(memory);
+        CloseClipboard();
+        return FALSE;
+    }
+    CloseClipboard();
+    return TRUE;
 }
 
 static void save_report(void)
 {
-    PWSTR documents = NULL;
     WCHAR report_path[MAX_PATH * 2];
+    WCHAR filename[160];
     WCHAR report[REPORT_CHARS];
-    WCHAR backup_display[MAX_PATH * 2];
     SYSTEMTIME now;
-    size_t used = 0;
-    UINT i;
-    UINT recent_arrivals = 0, recent_removals = 0;
     int count;
-    int detail_choice;
-    BOOL include_technical_details;
-    WCHAR preview[1200];
+    UINT i;
+    size_t used = 0;
+    UINT recent_arrivals = 0, recent_removals = 0;
 
     if (!g_app.scan_complete) refresh_diagnostics();
-    get_recent_usb_counts(&recent_arrivals, &recent_removals);
-
-    detail_choice = MessageBoxW(g_app.hwnd,
-        L"Выбери уровень приватности отчёта:\n\n"
-        L"ДА — полный технический отчёт: Hardware ID и точный путь к папке backup.\n"
-        L"НЕТ — приватный отчёт: чувствительные идентификаторы и точный путь будут скрыты.\n"
-        L"ОТМЕНА — ничего не сохранять.\n\n"
-        L"По умолчанию безопаснее выбрать «НЕТ».",
-        L"ToolzNG Privacy Shield", MB_YESNOCANCEL | MB_ICONQUESTION | MB_DEFBUTTON2);
-    if (detail_choice == IDCANCEL) return;
-    include_technical_details = (detail_choice == IDYES);
-
-    if (FAILED(SHGetKnownFolderPath(&FOLDERID_Documents, KF_FLAG_CREATE,
-                                    NULL, &documents))) {
-        (void)MessageBoxW(g_app.hwnd,
-            L"Не удалось определить папку Documents.", APP_TITLE,
-            MB_OK | MB_ICONERROR);
+    if (!g_app.reports_dir[0]) {
+        set_status(L"Не удалось открыть локальную папку отчётов.");
         return;
     }
-
+    get_recent_usb_counts(&recent_arrivals, &recent_removals);
     GetLocalTime(&now);
-    swprintf_s(report_path, ARRAYSIZE(report_path),
-        L"%ls\\ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
-        documents, now.wYear, now.wMonth, now.wDay,
-        now.wHour, now.wMinute, now.wSecond);
-    CoTaskMemFree(documents);
-
-    if (g_app.backup_found) {
-        copy_text(backup_display, ARRAYSIZE(backup_display), g_app.backup_path);
-    } else {
-        copy_text(backup_display, ARRAYSIZE(backup_display),
-                  L"Стандартная папка не найдена");
-    }
+    swprintf_s(filename, ARRAYSIZE(filename),
+        L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+    append_path(report_path, ARRAYSIZE(report_path), g_app.reports_dir, filename);
 
     count = swprintf_s(report, ARRAYSIZE(report),
-        L"ToolzNG — диагностический отчёт\r\n"
-        L"================================\r\n"
+        L"ToolzNG — приватный диагностический отчёт\r\n"
+        L"==========================================\r\n"
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
-        L"ОС: Windows\r\n\r\n"
+        L"Автор: ToolzNG (локальная генерация)\r\n"
+        L"Платформа: Windows\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
         now.wSecond, g_app.device_count);
     if (count < 0) {
-        (void)MessageBoxW(g_app.hwnd, L"Не удалось сформировать отчёт.",
-                          APP_TITLE, MB_OK | MB_ICONERROR);
+        set_status(L"Не удалось сформировать отчёт: ошибка форматирования.");
         return;
     }
     used = (size_t)count;
-
-    for (i = 0; i < g_app.device_count; ++i) {
+    for (i = 0; i < g_app.device_count && used < ARRAYSIZE(report) - 512; ++i) {
         count = swprintf_s(report + used, ARRAYSIZE(report) - used,
-            include_technical_details
-              ? L"\r\n[%u] %ls\r\n    Производитель: %ls\r\n    Hardware ID: %ls\r\n"
-              : L"\r\n[%u] %ls\r\n    Производитель: %ls\r\n    Hardware ID: [СКРЫТО ПРИВАТНЫМ РЕЖИМОМ]\r\n",
+            L"\r\n[%u] %ls\r\n    Производитель: %ls\r\n",
             i + 1, g_app.devices[i].name,
-            g_app.devices[i].manufacturer[0] ? g_app.devices[i].manufacturer : L"не указан",
-            include_technical_details ? g_app.devices[i].hardware_id : L"[скрыто]");
+            g_app.devices[i].manufacturer[0] ? g_app.devices[i].manufacturer : L"не указан");
         if (count < 0) break;
         used += (size_t)count;
     }
-
     count = swprintf_s(report + used, ARRAYSIZE(report) - used,
         L"\r\nСлужба Apple: %ls\r\n"
         L"Папка резервных копий: %ls\r\n"
         L"Backup Sentinel: %ls\r\n"
+        L"Backup folders: %lu; marker-valid: %lu\r\n"
+        L"Возраст новейшего Info.plist: %llu дней (оценка по времени изменения)\r\n"
         L"Duck Readiness: %d/100 (оценка Windows-side сигналов)\r\n"
-        L"USB Pulse за 10 минут: %u подключений / %u отключений\r\n\r\n"
-        L"Ограничения отчёта\r\n"
-        L"------------------\r\n"
-        L"Отчёт читает только сведения Windows PnP и статус службы.\r\n"
-        L"Он не читает личные данные iPhone/iPad, не изменяет прошивку,\r\n"
-        L"не удаляет файлы и не выполняет операции сброса или jailbreak.\r\n",
+        L"USB Pulse за 10 минут: %u подключений / %u отключений\r\n"
+        L"LinkDNA baseline: %ls\r\n"
+        L"LinkDNA изменился: %ls\r\n\r\n"
+        L"Приватность и границы\r\n"
+        L"---------------------\r\n"
+        L"Hardware ID и точный путь backup в приватный отчёт не включаются.\r\n"
+        L"Отчёт читает только сведения Windows PnP, статус службы и метаданные папок.\r\n"
+        L"Он не читает личные данные iPhone/iPad, не проверяет содержимое backup,\r\n"
+        L"не изменяет прошивку, не удаляет файлы и не выполняет jailbreak.\r\n",
         g_app.service_status,
-        include_technical_details ? backup_display : L"[СКРЫТО ПРИВАТНЫМ РЕЖИМОМ]",
-        g_app.backup_audit, g_app.readiness_score,
-        recent_arrivals, recent_removals);
-    if (count < 0) {
-        (void)MessageBoxW(g_app.hwnd, L"Не удалось сформировать отчёт.",
-                          APP_TITLE, MB_OK | MB_ICONERROR);
-        return;
-    }
-
-    swprintf_s(preview, ARRAYSIZE(preview),
-        L"ПРЕДПРОСМОТР СОСТАВА ОТЧЁТА\n\n"
-        L"Apple USB-интерфейсов: %u\n"
-        L"Duck Readiness: %d/100\n"
-        L"Backup Sentinel: %lu/%lu структурно отмеченных папок\n"
-        L"Режим: %ls\n"
-        L"Hardware ID: %ls\n"
-        L"Точный путь backup: %ls\n\n"
-        L"Сохранить TXT-отчёт в Documents?",
-        g_app.device_count, g_app.readiness_score,
-        (unsigned long)g_app.backup_valid_count,
+        g_app.backup_found ? L"[локальный backup обнаружен; путь скрыт]" : L"не найдена",
+        g_app.backup_audit,
         (unsigned long)g_app.backup_folder_count,
-        include_technical_details ? L"полный технический" : L"приватный",
-        include_technical_details ? L"будет включён" : L"будет скрыт",
-        include_technical_details ? L"будет включён" : L"будет скрыт");
-    if (MessageBoxW(g_app.hwnd, preview, L"ToolzNG — предварительный просмотр",
-                    MB_YESNO | MB_ICONINFORMATION | MB_DEFBUTTON2) != IDYES) {
-        set_status(L"Сохранение отчёта отменено пользователем.");
+        (unsigned long)g_app.backup_valid_count,
+        (unsigned long long)(g_app.backup_age_days == ~(ULONGLONG)0 ? 0 : g_app.backup_age_days),
+        g_app.readiness_score, recent_arrivals, recent_removals,
+        g_app.link_baseline_known ? L"инициализирован" : L"не создан",
+        g_app.link_profile_changed ? L"да" : L"нет");
+    if (count < 0) {
+        set_status(L"Не удалось завершить формирование отчёта.");
         return;
     }
-
     if (!write_utf8_file(report_path, report)) {
-        (void)MessageBoxW(g_app.hwnd,
-            L"Не удалось сохранить отчёт. Проверь права доступа к Documents.",
-            APP_TITLE, MB_OK | MB_ICONERROR);
+        set_status(L"Ошибка записи отчёта во внутреннее хранилище.");
         return;
     }
-
-    if (!write_sha256_seal(report_path)) {
-        (void)MessageBoxW(g_app.hwnd,
-            L"Отчёт сохранён, но SHA-256 sidecar создать не удалось.",
-            APP_TITLE, MB_OK | MB_ICONWARNING);
-    } else {
-        WCHAR message[MAX_PATH * 2 + 120];
-        swprintf_s(message, ARRAYSIZE(message),
-            L"Отчёт и SHA-256 подпись сохранены:\n%ls\n%ls.sha256",
-            report_path, report_path);
-        (void)MessageBoxW(g_app.hwnd, message,
-                          L"ToolzNG Evidence Seal", MB_OK | MB_ICONINFORMATION);
-    }
-}
-
-static void open_apple_support(void)
-{
-    (void)ShellExecuteW(g_app.hwnd, L"open",
-        L"https://support.apple.com/ru-ru/102598", NULL, NULL, SW_SHOWNORMAL);
-}
-
-static void open_apple_devices_store(void)
-{
-    (void)ShellExecuteW(g_app.hwnd, L"open",
-        L"ms-windows-store://search/?query=Apple%20Devices",
-        NULL, NULL, SW_SHOWNORMAL);
+    (void)write_sha256_seal(report_path);
+    refresh_report_history();
+    g_app.page = PAGE_REPORTS;
+    set_status(L"Отчёт создан и сохранён внутри ToolzNG. Предпросмотр открыт.");
+    InvalidateRect(g_app.hwnd, NULL, FALSE);
 }
 
 static void draw_header(HDC dc, int width)
@@ -1017,6 +1140,8 @@ static void draw_header(HDC dc, int width)
     RECT header = { 0, 0, width, 88 };
     RECT logo = { 28, 22, 66, 60 };
     RECT status = { width - 220, 28, width - 28, 60 };
+    g_app.zoom_minus_button = (RECT){ width - 360, 28, width - 322, 60 };
+    g_app.zoom_plus_button = (RECT){ width - 316, 28, width - 278, 60 };
     HBRUSH brush = CreateSolidBrush(COL_HEADER);
     FillRect(dc, &header, brush);
     DeleteObject(brush);
@@ -1029,6 +1154,8 @@ static void draw_header(HDC dc, int width)
     draw_text(dc, L"APPLE DEVICE DIAGNOSTICS", (RECT){ 82, 54, 360, 74 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
+    draw_button(dc, g_app.zoom_minus_button, L"A−", FALSE);
+    draw_button(dc, g_app.zoom_plus_button, L"A+", FALSE);
     draw_round_rect(dc, status, COL_PANEL, COL_BORDER, 18);
     draw_text(dc, L"●  USB SCAN", status, g_app.font_small,
               g_app.scan_complete ? COL_GREEN : COL_MUTED,
@@ -1047,17 +1174,14 @@ static void draw_sidebar(HDC dc)
     RECT side = { 0, 88, 224, g_app.client_height };
     HBRUSH brush = CreateSolidBrush(COL_SIDEBAR);
     int i;
-    const WCHAR *labels[] = {
-        L"Обзор",
-        L"USB-устройства",
-        L"Оптимизация",
-        L"О программе"
+    const WCHAR *labels[PAGE_COUNT] = {
+        L"Обзор", L"USB-устройства", L"Оптимизация",
+        L"О программе", L"Отчёты", L"Справка"
     };
-    const WCHAR *hints[] = {
-        L"Панель состояния",
-        L"Поиск Apple VID_05AC",
-        L"Безопасные проверки",
-        L"Версия и ограничения"
+    const WCHAR *hints[PAGE_COUNT] = {
+        L"Панель состояния", L"Поиск Apple VID_05AC",
+        L"Безопасные проверки", L"Версия и ограничения",
+        L"История и предпросмотр", L"Руководство офлайн"
     };
 
     FillRect(dc, &side, brush);
@@ -1066,8 +1190,8 @@ static void draw_sidebar(HDC dc)
     draw_text(dc, L"РАЗДЕЛЫ", (RECT){ 26, 112, 190, 136 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-    for (i = 0; i < 4; ++i) {
-        int top = 148 + i * 60;
+    for (i = 0; i < PAGE_COUNT; ++i) {
+        int top = 148 + i * 56;
         g_app.nav[i] = (RECT){ 16, top, 208, top + 48 };
         if (g_app.page == i) {
             draw_round_rect(dc, g_app.nav[i], COL_ACCENT_DARK, COL_ACCENT, 9);
@@ -1309,11 +1433,104 @@ static void draw_care(HDC dc)
               g_app.font_small, COL_MUTED, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
 
     g_app.support_button = (RECT){ x + 22, 651, x + 234, 691 };
-    g_app.store_button = (RECT){ x + 250, 651, x + 470, 691 };
-    g_app.playbook_button = (RECT){ x + 486, 651, right - 12, 691 };
-    draw_button(dc, g_app.support_button, L"Советы Apple", TRUE);
-    draw_button(dc, g_app.store_button, L"Найти Apple Devices", FALSE);
-    draw_button(dc, g_app.playbook_button, L"Экспорт DuckFix", FALSE);
+    g_app.playbook_button = (RECT){ x + 250, 651, x + 490, 691 };
+    draw_button(dc, g_app.support_button, L"Локальная справка", FALSE);
+    draw_button(dc, g_app.playbook_button, L"Сохранить маршрут", TRUE);
+}
+
+static void draw_reports(HDC dc)
+{
+    int x = 250, right = g_app.client_width - 28;
+    int list_right = x + 196;
+    RECT list_panel = { x, 188, list_right, g_app.client_height - 24 };
+    RECT preview_panel = { list_right + 14, 188, right, g_app.client_height - 24 };
+    RECT content_rect;
+    int i, preview_top = 246;
+    int preview_bottom = g_app.client_height - 46;
+
+    draw_page_heading(dc, L"Внутренние отчёты",
+        L"История хранится локально. Создание и просмотр не запускают сторонние приложения.");
+    draw_round_rect(dc, list_panel, COL_PANEL, COL_BORDER, 12);
+    draw_round_rect(dc, preview_panel, COL_PANEL, COL_BORDER, 12);
+    draw_text(dc, L"ИСТОРИЯ", (RECT){ x + 14, 202, list_right - 12, 228 },
+              g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    {
+        WCHAR summary[64];
+        swprintf_s(summary, ARRAYSIZE(summary), L"%d отчётов", g_app.report_count);
+        draw_text(dc, summary, (RECT){ x + 14, 228, list_right - 12, 250 },
+                  g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    }
+    for (i = 0; i < REPORT_ROWS; ++i) {
+        int top = 260 + i * 48;
+        if (i < g_app.report_count) {
+            g_app.report_rows[i] = (RECT){ x + 9, top, list_right - 9, top + 42 };
+            if (i == g_app.selected_report)
+                draw_round_rect(dc, g_app.report_rows[i], COL_CARD_HOVER, COL_ACCENT, 7);
+            else
+                draw_round_rect(dc, g_app.report_rows[i], COL_CARD, COL_BORDER, 7);
+            draw_text(dc, g_app.reports[i].name,
+                (RECT){ x + 17, top + 3, list_right - 16, top + 39 },
+                g_app.font_small, i == g_app.selected_report ? COL_ACCENT : COL_TEXT,
+                DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+        } else {
+            g_app.report_rows[i] = (RECT){ 0, 0, 0, 0 };
+        }
+    }
+
+    draw_text(dc, L"ПРЕДПРОСМОТР", (RECT){ list_right + 30, 202, right - 180, 228 },
+              g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    g_app.report_refresh_button = (RECT){ right - 154, 198, right - 20, 232 };
+    draw_button(dc, g_app.report_refresh_button, L"Обновить", FALSE);
+    draw_text(dc, g_app.last_report_path[0] ? g_app.last_report_path : L"Отчёт не выбран",
+              (RECT){ list_right + 30, 228, right - 18, 246 },
+              g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+    content_rect = (RECT){ list_right + 30, preview_top - g_app.report_scroll,
+                           right - 18, preview_top + 6000 };
+    {
+        HGDIOBJ old_font = SelectObject(dc, g_app.font_small);
+        RECT measured = { 0, 0, (preview_panel.right - preview_panel.left) - 48, 6000 };
+        DrawTextW(dc, g_app.report_content, -1, &measured,
+                  DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX | DT_CALCRECT);
+        g_app.report_content_height = measured.bottom - measured.top;
+        SelectObject(dc, old_font);
+    }
+    {
+        int saved = SaveDC(dc);
+        IntersectClipRect(dc, preview_panel.left + 12, preview_top,
+                          preview_panel.right - 12, preview_bottom);
+        draw_text(dc, g_app.report_content, content_rect, g_app.font_small,
+                  COL_TEXT, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX);
+        RestoreDC(dc, saved);
+    }
+    g_app.report_copy_button = (RECT){ right - 170, g_app.client_height - 66,
+                                       right - 20, g_app.client_height - 30 };
+    draw_button(dc, g_app.report_copy_button, L"Копировать", TRUE);
+    draw_text(dc, L"Колёсико мыши / PgUp / PgDn — прокрутка предпросмотра",
+        (RECT){ list_right + 30, g_app.client_height - 66, right - 184,
+                g_app.client_height - 30 }, g_app.font_small, COL_MUTED,
+        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+}
+
+static void draw_help(HDC dc)
+{
+    int x = 250, right = g_app.client_width - 28;
+    RECT panel = { x, 188, right, g_app.client_height - 24 };
+    draw_page_heading(dc, L"Справка ToolzNG",
+        L"Локальное руководство — доступно без браузера и подключения к сети.");
+    draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
+    draw_bullet(dc, 210, L"Масштаб интерфейса",
+        L"Кнопки A− / A+ в верхней панели меняют масштаб интерфейса. Ctrl + плюс / минус — быстрый способ; Ctrl + 0 возвращает 100%. Значение сохраняется в профиле Windows.");
+    draw_bullet(dc, 282, L"Отчёты и история",
+        L"Создай отчёт на главном экране. Приватная версия автоматически сохранится в %LOCALAPPDATA%\\\\ToolzNG\\\\Reports и откроется во вкладке «Отчёты». История сохраняет последние 32 файла.");
+    draw_bullet(dc, 354, L"Предпросмотр и копирование",
+        L"Выбери отчёт слева. Прокручивай содержимое колесом мыши или Page Up / Page Down. Кнопка «Копировать» помещает текст в буфер обмена; экспорт в файл остаётся необязательным.");
+    draw_bullet(dc, 426, L"Навигация без браузера",
+        L"Разделы «Справка», «Отчёты» и «О программе» встроены в окно. ToolzNG не запускает внешний браузер для ежедневной работы. Открытие папки backup по-прежнему использует Проводник Windows.");
+    draw_bullet(dc, 498, L"Приватность и хранилище",
+        L"Настройки масштаба, история USB и отчёты остаются в локальном профиле Windows. Приватный отчёт скрывает Hardware ID и точный путь резервной копии. Удаление отчётов вручную не затрагивает настройки или данные устройства.");
+    draw_bullet(dc, 570, L"Границы диагностики",
+        L"Приложение проверяет видимые Windows USB/PnP-сигналы и метаданные backup. Оно не разгоняет iOS, не читает личные файлы, не удаляет данные, не выполняет jailbreak и не меняет прошивку.");
 }
 
 static void draw_about(HDC dc)
@@ -1358,16 +1575,23 @@ static void paint_window(HWND hwnd)
     HBRUSH background;
 
     GetClientRect(hwnd, &client);
-    g_app.client_width = client.right - client.left;
-    g_app.client_height = client.bottom - client.top;
-
-    buffer = CreateCompatibleDC(target);
-    bitmap = CreateCompatibleBitmap(target, g_app.client_width, g_app.client_height);
-    old_bitmap = SelectObject(buffer, bitmap);
-
-    background = CreateSolidBrush(COL_BG);
-    FillRect(buffer, &client, background);
-    DeleteObject(background);
+    {
+        int physical_width = client.right - client.left;
+        int physical_height = client.bottom - client.top;
+        g_app.effective_dpi = effective_dpi();
+        g_app.client_width = MulDiv(physical_width, 96, (int)g_app.effective_dpi);
+        g_app.client_height = MulDiv(physical_height, 96, (int)g_app.effective_dpi);
+        buffer = CreateCompatibleDC(target);
+        bitmap = CreateCompatibleBitmap(target, physical_width, physical_height);
+        old_bitmap = SelectObject(buffer, bitmap);
+        background = CreateSolidBrush(COL_BG);
+        FillRect(buffer, &client, background);
+        DeleteObject(background);
+        SetMapMode(buffer, MM_ANISOTROPIC);
+        SetWindowExtEx(buffer, 96, 96, NULL);
+        SetViewportExtEx(buffer, (int)g_app.effective_dpi,
+                         (int)g_app.effective_dpi, NULL);
+    }
 
     draw_header(buffer, g_app.client_width);
     draw_sidebar(buffer);
@@ -1376,11 +1600,14 @@ static void paint_window(HWND hwnd)
         case PAGE_DEVICES: draw_devices(buffer); break;
         case PAGE_CARE:    draw_care(buffer); break;
         case PAGE_ABOUT:   draw_about(buffer); break;
+        case PAGE_REPORTS: draw_reports(buffer); break;
+        case PAGE_HELP:    draw_help(buffer); break;
         case PAGE_OVERVIEW:
         default:           draw_overview(buffer); break;
     }
 
-    BitBlt(target, 0, 0, g_app.client_width, g_app.client_height,
+    SetMapMode(buffer, MM_TEXT);
+    BitBlt(target, 0, 0, client.right - client.left, client.bottom - client.top,
            buffer, 0, 0, SRCCOPY);
 
     SelectObject(buffer, old_bitmap);
@@ -1415,11 +1642,12 @@ static void handle_action(int action)
             g_app.page = PAGE_CARE;
             InvalidateRect(g_app.hwnd, NULL, FALSE);
             break;
-        case ACTION_SUPPORT:
-            open_apple_support();
+        case ACTION_HELP:
+            g_app.page = PAGE_HELP;
+            InvalidateRect(g_app.hwnd, NULL, FALSE);
             break;
-        case ACTION_STORE:
-            open_apple_devices_store();
+        case ACTION_PLAYBOOK:
+            save_duckfix_route();
             break;
         default:
             break;
@@ -1429,9 +1657,12 @@ static void handle_action(int action)
 static void handle_click(POINT point)
 {
     int i;
-    for (i = 0; i < 4; ++i) {
+    if (point_in_rect(point, g_app.zoom_minus_button)) { adjust_zoom(-10); return; }
+    if (point_in_rect(point, g_app.zoom_plus_button)) { adjust_zoom(10); return; }
+    for (i = 0; i < PAGE_COUNT; ++i) {
         if (point_in_rect(point, g_app.nav[i])) {
             g_app.page = i;
+            if (g_app.page == PAGE_REPORTS) refresh_report_history();
             InvalidateRect(g_app.hwnd, NULL, FALSE);
             return;
         }
@@ -1446,9 +1677,25 @@ static void handle_click(POINT point)
     } else if (g_app.page == PAGE_DEVICES) {
         if (point_in_rect(point, g_app.scan_button)) handle_action(ACTION_SCAN);
     } else if (g_app.page == PAGE_CARE) {
-        if (point_in_rect(point, g_app.support_button)) handle_action(ACTION_SUPPORT);
-        else if (point_in_rect(point, g_app.store_button)) handle_action(ACTION_STORE);
-        else if (point_in_rect(point, g_app.playbook_button)) save_duckfix_route();
+        if (point_in_rect(point, g_app.support_button)) handle_action(ACTION_HELP);
+        else if (point_in_rect(point, g_app.playbook_button)) handle_action(ACTION_PLAYBOOK);
+    } else if (g_app.page == PAGE_REPORTS) {
+        int row;
+        for (row = 0; row < REPORT_ROWS && row < g_app.report_count; ++row) {
+            if (point_in_rect(point, g_app.report_rows[row])) {
+                (void)load_report_file(row);
+                InvalidateRect(g_app.hwnd, NULL, FALSE);
+                return;
+            }
+        }
+        if (point_in_rect(point, g_app.report_refresh_button)) {
+            refresh_report_history();
+            InvalidateRect(g_app.hwnd, NULL, FALSE);
+        } else if (point_in_rect(point, g_app.report_copy_button)) {
+            set_status(copy_report_to_clipboard()
+                ? L"Содержимое отчёта скопировано в буфер обмена."
+                : L"Не удалось скопировать отчёт в буфер обмена.");
+        }
     }
 }
 
@@ -1493,9 +1740,15 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             g_app.page = PAGE_OVERVIEW;
             g_app.scan_complete = FALSE;
             g_app.app_started_at = GetTickCount64();
+            g_app.dpi = GetDpiForWindow(hwnd);
+            if (!g_app.dpi) g_app.dpi = 96;
+            g_app.effective_dpi = effective_dpi();
             create_fonts();
             initialize_local_store();
+            load_display_settings();
+            g_app.effective_dpi = effective_dpi();
             register_usb_watch(hwnd);
+            refresh_report_history();
             SetTimer(hwnd, TIMER_READINESS, (UINT)USB_STABILITY_WARMUP_MS, NULL);
             copy_text(g_app.status, ARRAYSIZE(g_app.status),
                       L"Готово к проверке. Подключи iPhone/iPad через USB.");
@@ -1510,10 +1763,61 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             return 0;
 
         case WM_SIZE:
-            g_app.client_width = LOWORD(lparam);
-            g_app.client_height = HIWORD(lparam);
+            g_app.effective_dpi = effective_dpi();
+            g_app.client_width = MulDiv(LOWORD(lparam), 96, (int)g_app.effective_dpi);
+            g_app.client_height = MulDiv(HIWORD(lparam), 96, (int)g_app.effective_dpi);
             InvalidateRect(hwnd, NULL, FALSE);
             return 0;
+
+        case WM_DPICHANGED: {
+            const RECT *suggested = (const RECT *)lparam;
+            g_app.dpi = HIWORD(wparam);
+            if (!g_app.dpi) g_app.dpi = 96;
+            g_app.effective_dpi = effective_dpi();
+            delete_fonts();
+            create_fonts();
+            SetWindowPos(hwnd, NULL, suggested->left, suggested->top,
+                suggested->right - suggested->left,
+                suggested->bottom - suggested->top,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+            InvalidateRect(hwnd, NULL, FALSE);
+            return 0;
+        }
+
+        case WM_MOUSEWHEEL:
+            if (g_app.page == PAGE_REPORTS) {
+                int direction = GET_WHEEL_DELTA_WPARAM(wparam);
+                g_app.report_scroll -= direction > 0 ? 96 : -96;
+                if (g_app.report_scroll < 0) g_app.report_scroll = 0;
+                if (g_app.report_scroll > g_app.report_content_height)
+                    g_app.report_scroll = g_app.report_content_height;
+                InvalidateRect(hwnd, NULL, FALSE);
+                return 0;
+            }
+            break;
+
+        case WM_KEYDOWN:
+            if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+                if (wparam == VK_OEM_PLUS || wparam == VK_ADD) { adjust_zoom(10); return 0; }
+                if (wparam == VK_OEM_MINUS || wparam == VK_SUBTRACT) { adjust_zoom(-10); return 0; }
+                if (wparam == L'0') {
+                    g_app.zoom_percent = 100;
+                    g_app.effective_dpi = effective_dpi();
+                    save_display_settings();
+                    delete_fonts(); create_fonts();
+                    InvalidateRect(hwnd, NULL, FALSE);
+                    return 0;
+                }
+            }
+            if (g_app.page == PAGE_REPORTS && (wparam == VK_PRIOR || wparam == VK_NEXT)) {
+                g_app.report_scroll += wparam == VK_PRIOR ? -320 : 320;
+                if (g_app.report_scroll < 0) g_app.report_scroll = 0;
+                if (g_app.report_scroll > g_app.report_content_height)
+                    g_app.report_scroll = g_app.report_content_height;
+                InvalidateRect(hwnd, NULL, FALSE);
+                return 0;
+            }
+            break;
 
         case WM_DEVICECHANGE:
             if ((wparam == DBT_DEVICEARRIVAL || wparam == DBT_DEVICEREMOVECOMPLETE) && lparam) {
@@ -1544,16 +1848,18 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
 
         case WM_LBUTTONUP: {
             POINT point;
-            point.x = GET_X_LPARAM(lparam);
-            point.y = GET_Y_LPARAM(lparam);
+            g_app.effective_dpi = effective_dpi();
+            point.x = MulDiv(GET_X_LPARAM(lparam), 96, (int)g_app.effective_dpi);
+            point.y = MulDiv(GET_Y_LPARAM(lparam), 96, (int)g_app.effective_dpi);
             handle_click(point);
             return 0;
         }
 
         case WM_GETMINMAXINFO: {
             MINMAXINFO *info = (MINMAXINFO *)lparam;
-            info->ptMinTrackSize.x = 920;
-            info->ptMinTrackSize.y = 760;
+            g_app.effective_dpi = effective_dpi();
+            info->ptMinTrackSize.x = MulDiv(840, (int)g_app.effective_dpi, 96);
+            info->ptMinTrackSize.y = MulDiv(660, (int)g_app.effective_dpi, 96);
             return 0;
         }
 
@@ -1581,6 +1887,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     (void)command_line;
 
     ZeroMemory(&g_app, sizeof(g_app));
+    g_app.dpi = GetDpiForSystem();
+    if (!g_app.dpi) g_app.dpi = 96;
+    initialize_local_store();
+    load_display_settings();
+    g_app.effective_dpi = effective_dpi();
+    (void)SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     ZeroMemory(&wc, sizeof(wc));
     wc.cbSize = sizeof(wc);
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -1599,7 +1911,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
 
     hwnd = CreateWindowExW(0, wc.lpszClassName, APP_TITLE,
         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-        1120, 790, NULL, NULL, instance, NULL);
+        MulDiv(1120, (int)g_app.effective_dpi, 96),
+        MulDiv(790, (int)g_app.effective_dpi, 96),
+        NULL, NULL, instance, NULL);
     if (!hwnd) {
         MessageBoxW(NULL, L"Не удалось создать главное окно.",
                     APP_TITLE, MB_OK | MB_ICONERROR);
