@@ -28,7 +28,7 @@ This is the practical interpretation of "Curtain Dynamics": the overview stays c
 
 ## Visual evidence in the repository
 
-The README currently shows three static SVG interface previews:
+The README currently shows three high-resolution static SVG interface previews (1920×1354 canvas, vector viewBox retained for sharp scaling):
 
 | Asset | Screen | Evidence type |
 |---|---|---|
@@ -49,7 +49,7 @@ When genuine captures of the running Windows application are added:
 - caption the application version, Windows version and DPI scale;
 - explicitly distinguish a real app capture from a vector preview.
 
-Do not upscale a vector mock-up and relabel it as a screenshot. The current 1120×790 previews should remain labelled as previews until new captures are produced from the built desktop application.
+Do not upscale a vector mock-up and relabel it as a screenshot. The updated 1920×1354 SVG assets remain labelled as previews until genuine captures are produced from the built desktop application. Their vectors are scalable, but they are still not runtime screenshots.
 
 ## Architecture boundary and roadmap
 
