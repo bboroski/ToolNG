@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define SAMBU_ENGINE_VERSION "1.1.0"
 #define SAMBU_ENGINE_VERSION "1.2.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
@@ -16,7 +17,8 @@ typedef enum SambuOperation {
     SAMBU_OP_EXPORT = 4,
     SAMBU_OP_CLIPBOARD = 5,
     SAMBU_OP_MUTATE_DEVICE = 6,
-    SAMBU_OP_UPLOAD_DATA = 7
+    SAMBU_OP_UPLOAD_DATA = 7,
+    SAMBU_OP_RECORD_LOCAL_PROFILE = 8
 } SambuOperation;
 
 typedef enum SambuOrigin {

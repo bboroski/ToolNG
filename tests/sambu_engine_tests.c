@@ -1,5 +1,9 @@
 #include "sambu_engine.h"
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -12,6 +16,14 @@
 
 static void set_complete_healthy_evidence(SambuEvidence *evidence)
 {
+    assert(sambu_authorize(SAMBU_OP_SCAN, SAMBU_ORIGIN_INTERNAL));
+    assert(sambu_authorize(SAMBU_OP_READ_LOCAL, SAMBU_ORIGIN_INTERNAL));
+    assert(!sambu_authorize(SAMBU_OP_EXPORT, SAMBU_ORIGIN_INTERNAL));
+    assert(sambu_authorize(SAMBU_OP_EXPORT, SAMBU_ORIGIN_USER));
+    assert(!sambu_authorize(SAMBU_OP_MUTATE_DEVICE, SAMBU_ORIGIN_USER));
+    assert(!sambu_authorize(SAMBU_OP_UPLOAD_DATA, SAMBU_ORIGIN_USER));
+    assert(sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL));
+    assert(!sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_USER));
     memset(evidence, 0, sizeof(*evidence));
     evidence->scan_complete = 1;
     evidence->device_found = 1;

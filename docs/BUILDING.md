@@ -49,6 +49,27 @@ The application manifest requests the current user's privileges (`asInvoker`); o
 
 ## Local application data
 
+Run the Windows executable at 100%, 125%, 150%, and 200% on 1366×768, 1920×1080, 2560×1440, and 3840×2160 displays. Also test moving the window between monitors with different scaling values. Confirm zoom controls and Ctrl +/-/0, nav hit targets, report selection, and text clipping. GitHub CI compiles the binary but does not replace hardware/UI runtime tests.
+
+## Portable SAMBU core tests
+
+The SAMBU engine and workflow interpreter are built as a portable C17 static library. On any host with CMake 3.20+ and a C17 compiler, run:
+
+```sh
+cmake -S . -B build
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
+
+On non-Windows hosts CMake builds and tests the portable core, then omits the desktop target. On Windows, the same core is linked into the native ToolzNG executable:
+
+```powershell
+cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release --parallel
+ctest --test-dir build -C Release --output-on-failure
+```
+
+The workflow test suite covers source spans, action allowlisting, duplicate names, manifest requirements, source/step budgets, preflight denial, incremental one-step dispatch and stop-on-first-failure behavior.
 - PulseVault: `%LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl`, with a rotated `.old` file after 256 KiB.
 - LinkDNA baseline: `%LOCALAPPDATA%\ToolzNG\link-profile.ini`.
 - Display preferences: `%LOCALAPPDATA%\ToolzNG\settings.ini`.

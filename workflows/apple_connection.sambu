@@ -1,0 +1,14 @@
+# Shipped local diagnostic workflow. No arbitrary commands are supported.
+workflow apple_connection {
+  manifest {
+    purpose "Windows-side Apple connection audit";
+    max_steps 5;
+    autonomy local_record;
+  }
+
+  step usb = observe.apple_usb;
+  step service = observe.apple_service;
+  step profile = record.link_profile;
+  step backup = observe.backup_markers;
+  step readiness = compute.readiness;
+}
