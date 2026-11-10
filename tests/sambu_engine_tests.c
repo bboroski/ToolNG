@@ -73,13 +73,46 @@ static int test_ledger(void)
     return 0;
 }
 
+
+static int test_recurrence_pattern(void)
+{
+    SambuLedger ledger;
+    sambu_ledger_init(&ledger);
+
+    sambu_ledger_record(&ledger, 7u, 100u);
+    CHECK(sambu_ledger_recent_occurrences(&ledger, 7u, 100u) == 1u);
+    CHECK(sambu_ledger_pattern(&ledger, 7u, 100u) == SAMBU_PATTERN_SINGLE);
+
+    sambu_ledger_record(&ledger, 7u, 200u);
+    CHECK(sambu_ledger_recent_occurrences(&ledger, 7u, 200u) == 2u);
+    CHECK(sambu_ledger_pattern(&ledger, 7u, 200u) == SAMBU_PATTERN_RECURRENT);
+
+    sambu_ledger_record(&ledger, 7u, 300u);
+    sambu_ledger_record(&ledger, 7u, 400u);
+    CHECK(sambu_ledger_recent_occurrences(&ledger, 7u, 400u) == 4u);
+    CHECK(sambu_ledger_pattern(&ledger, 7u, 400u) == SAMBU_PATTERN_PERSISTENT);
+    CHECK(sambu_ledger_recent_occurrences(&ledger, 7u,
+        400u + SAMBU_LEDGER_WINDOW_MS + 1u) == 0u);
+    CHECK(sambu_ledger_pattern(&ledger, 7u,
+        400u + SAMBU_LEDGER_WINDOW_MS + 1u) == SAMBU_PATTERN_NONE);
+
+    /* A new episode after the window or a clock reset starts a fresh window. */
+    sambu_ledger_record(&ledger, 7u, 700500u);
+    CHECK(sambu_ledger_recent_occurrences(&ledger, 7u, 700500u) == 1u);
+    CHECK(sambu_ledger_pattern(&ledger, 7u, 700500u) == SAMBU_PATTERN_SINGLE);
+    sambu_ledger_record(&ledger, 7u, 50u);
+    CHECK(sambu_ledger_recent_occurrences(&ledger, 7u, 50u) == 1u);
+    return 0;
+}
+
 int main(void)
 {
     CHECK(test_policy() == 0);
     CHECK(test_assessment() == 0);
     CHECK(test_ledger() == 0);
+    CHECK(test_recurrence_pattern() == 0);
     CHECK(sambu_architecture_validate());
-    CHECK(strcmp(sambu_engine_version(), "1.0.0") == 0);
+    CHECK(strcmp(sambu_engine_version(), "1.1.0") == 0);
     CHECK(strcmp(sambu_report_schema(), "toolzng.diagnostic.v1") == 0);
     puts("SAMBU engine tests passed.");
     return 0;
