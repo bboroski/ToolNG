@@ -18,7 +18,7 @@
   <img src="assets/toolzng-duck.svg" alt="Утка-инженер ToolzNG" width="220" />
 </p>
 
-## 🟡 Возможности версии 0.6.0 — Duck Desktop Experience
+## 🟡 Возможности версии 0.6.1 — Duck Desktop Experience
 
 | Раздел | Что умеет утка |
 |---|---|
@@ -42,20 +42,20 @@
 | 📚 Offline Help | Справка, раздел «О программе» и отчёты доступны в нативной навигации; F1 открывает локальное руководство. Рутинные действия не запускают браузер. |
 | 🎨 Yellow Graphite | Токены интерфейса: #0D0D0D, #FFD600, #BFA100, #E6E6E6 и #999999; жёлтый оставлен для приоритетных действий и состояния. |
 
-ToolzNG объединяет пять исходных функций Duck Intelligence и пять новых локальных модулей 0.5.0 в одном лёгком C/Win32-приложении. Их отличие — связанная последовательность: профиль связи → история событий → свежесть маркеров backup → объяснимый маршрут исправления → отчёт с контрольной суммой.
+ToolzNG объединяет пять исходных функций Duck Intelligence и пять новых локальных модулей 0.5.0 и ядро SAMBU 1.1 в одном лёгком C/Win32-приложении. Их отличие — связанная последовательность: профиль связи → история событий → свежесть маркеров backup → объяснимый маршрут исправления → отчёт с контрольной суммой.
 
 Мы не обещаем, что аналогов нигде не существует: у крупных iPhone-менеджеров уже есть диагностика, backup и журналы. Уникальность здесь — авторская композиция этих небольших локальных механизмов с приватностью по умолчанию, а не неподтверждённое заявление «первое в мире».
 
-## 🧬 SAMBU Core — инженерная система пяти букв
+## 🧬 SAMBU Core 1.1 — инженерная система пяти букв
 
-В версии **0.6.0** в ToolzNG перенесены инженерные принципы репозитория [SAMBU](https://github.com/bboroski/SAMBU), адаптированные к нативному C17/Win32-приложению. Python-интерпретатор SAMBU не встраивается.
+В версии **0.6.1** в ToolzNG перенесены инженерные принципы репозитория [SAMBU](https://github.com/bboroski/SAMBU), адаптированные к нативному C17/Win32-приложению. Python-интерпретатор SAMBU не встраивается.
 
 | Буква | Закон SAMBU | Реализация в ToolzNG |
 |---|---|---|
 | **S — Safety** | Ограничение полномочий | Fail-closed политика действий: чтение и сканирование разрешены; создание отчёта, буфер обмена и экспорт требуют явного действия пользователя; изменение iOS и сетовая выгрузка запрещены ядром. |
 | **A — Adaptive** | Исследование по доказательствам | Детерминированный движок выбирает приоритетную рекомендацию DuckFix из наблюдаемых сигналов Windows. Это набор проверяемых правил, не машинное обучение. |
 | **M — Managed** | Управляемая память и восстановление | Ограниченный журнал на 32 уникальных кода состояния: счётчики повторов и монотонные отметки времени без Hardware ID, путей backup и содержимого устройства. |
-| **B — Branchable** | Слоистая, ветвящаяся архитектура | Ядро вынесено в `src/sambu_engine.c/.h`; граф зависимостей проверяется до создания окна. UI и экспорт являются независимыми ветвями над общими результатами диагностики. |
+| **B — Branchable** | Слоистая, ветвящаяся архитектура | Ядро вынесено в `src/sambu_engine.c/.h` и `src/sambu_workflow.c/.h`; граф зависимостей проверяется до создания окна. UI и экспорт являются независимыми ветвями над общими результатами диагностики. |
 | **U — Unforced** | Совместимость и свобода пользователя | Стабильные коды результатов, версия движка и контракт отчёта `toolzng.diagnostic.v1`; экспорт остаётся локальным и инициируется пользователем. |
 
 ### Применение всех десяти артикуляционных семейств SAMBU
@@ -77,7 +77,7 @@ ToolzNG объединяет пять исходных функций Duck Intel
 
 ### Проверка ядра
 
-В проект добавлен CTest-набор для проверки политики доступа, оценки готовности, приоритетов диагностики, ограниченного журнала, архитектурного графа и версий контрактов.
+CTest проверяет политику доступа, оценку готовности, приоритеты диагностики, ограниченный журнал, граф зависимостей, а также лексер, парсер, source-span, preflight и пошаговый запуск SAMBU Workflow.
 
 ```powershell
 cmake -S . -B build -A x64
@@ -86,6 +86,44 @@ ctest --test-dir build -C Release --output-on-failure
 ```
 
 Полная карта переноса, ограничения и критерии проверки: [docs/SAMBU_INTEGRATION.md](docs/SAMBU_INTEGRATION.md).
+
+### SAMBU Workflow 1.1 — декларативные диагностические сценарии
+
+ToolzNG компилирует встроенный сценарий в ограниченный AST с координатами исходника. Пример из [`workflows/apple_connection.sambu`](workflows/apple_connection.sambu):
+
+```sambu
+workflow apple_connection {
+  manifest {
+    purpose "Windows-side Apple connection audit";
+    max_steps 5;
+    autonomy local_record;
+  }
+
+  step usb = observe.apple_usb;
+  step service = observe.apple_service;
+  step profile = record.link_profile;
+  step backup = observe.backup_markers;
+  step readiness = compute.readiness;
+}
+```
+
+Перед запуском проверяются манифест задачи, лимит шагов, allowlist операций и два уровня допуска: workflow preflight и SAMBU capability gate. За один WM_TIMER tick выполняется максимум один шаг. Результаты, source-span и ошибки попадают в bounded evidence ledger и добавляются в локальный TXT-отчёт.
+
+| Возможность из SAMBU | Статус именно в ToolzNG |
+|---|---|
+| Lexer, parser, source-aware AST | **Implemented · restricted workflow DSL** |
+| Task manifest, bounded autonomy, preflight, evidence ledger | **Implemented · fixed local diagnostic actions** |
+| Cooperative step scheduler | **Implemented · one action per Win32 timer tick; same UI thread** |
+| Local profile dual gate | **Implemented · policy + workflow preflight; no HSM** |
+| General functions, scopes, branches, loops, arrays, records | **Not ported · no general-purpose language runtime** |
+| OOP, interfaces, traits and game-state helpers | **Not applicable to this Apple diagnostics build** |
+| Actors, supervision, generic channels, OS threads, native fibers | **Not implemented** |
+| Python generator scheduler and resource scopes | **Not embedded in native C** |
+| SI/scientific helpers, voxel worlds, graph/mesh engine | **Not integrated into this product** |
+| Judo/Aikido/Jiu-Jitsu, Magento inspector, scaffold generator | **Not integrated; separate SAMBU host modules** |
+| Native compiler, self-hosting, static ownership/effect checker, IDE/LSP | **Planned in the language/toolchain, not claimed here** |
+
+This is intentionally not a general-purpose SAMBU interpreter. The DSL has no arbitrary shell, filesystem, network, device-mutation, user-defined function, loop or conditional syntax. It invokes only the five actions listed in `src/sambu_workflow.c`. The cooperative dispatcher is not a fiber or multithreaded scheduler.
 
 ## 🧪 Границы измерений
 
