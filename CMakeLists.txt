@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(ToolzNG VERSION 0.6.1 LANGUAGES C)
+project(WDEC VERSION 0.6.1 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 include(CTest)
 
-function(toolzng_enable_warnings target)
+function(wdec_enable_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive-)
     else()
@@ -16,52 +16,52 @@ function(toolzng_enable_warnings target)
     endif()
 endfunction()
 
-# Portable SAMBU core: policy, evidence assessment and bounded workflow manifests.
-add_library(ToolzNG.SambuCore STATIC
+# Portable WDEC core: policy, evidence assessment and bounded workflow manifests.
+add_library(WDEC.WdecCore STATIC
     src/sambu_engine.c
     src/sambu_workflow.c
 )
-target_include_directories(ToolzNG.SambuCore
+target_include_directories(WDEC.WdecCore
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
-toolzng_enable_warnings(ToolzNG.SambuCore)
+wdec_enable_warnings(WDEC.WdecCore)
 
 if(UNIX)
-    target_link_libraries(ToolzNG.SambuCore PUBLIC m)
+    target_link_libraries(WDEC.WdecCore PUBLIC m)
 endif()
 
 if(BUILD_TESTING)
-    add_executable(ToolzNG.SambuTests tests/sambu_engine_tests.c)
-    target_link_libraries(ToolzNG.SambuTests PRIVATE ToolzNG.SambuCore)
-    toolzng_enable_warnings(ToolzNG.SambuTests)
-    add_test(NAME sambu_engine_tests COMMAND ToolzNG.SambuTests)
+    add_executable(WDEC.WdecTests tests/wdec_engine_tests.c)
+    target_link_libraries(WDEC.WdecTests PRIVATE WDEC.WdecCore)
+    wdec_enable_warnings(WDEC.WdecTests)
+    add_test(NAME wdec_engine_tests COMMAND WDEC.WdecTests)
 
-    add_executable(ToolzNG.SambuWorkflowTests tests/sambu_workflow_tests.c)
-    target_link_libraries(ToolzNG.SambuWorkflowTests PRIVATE ToolzNG.SambuCore)
-    toolzng_enable_warnings(ToolzNG.SambuWorkflowTests)
-    add_test(NAME sambu_workflow_tests COMMAND ToolzNG.SambuWorkflowTests)
+    add_executable(WDEC.WdecWorkflowTests tests/wdec_workflow_tests.c)
+    target_link_libraries(WDEC.WdecWorkflowTests PRIVATE WDEC.WdecCore)
+    wdec_enable_warnings(WDEC.WdecWorkflowTests)
+    add_test(NAME wdec_workflow_tests COMMAND WDEC.WdecWorkflowTests)
 
-    add_executable(ToolzNG.SambuRelaxationTests tests/sambu_relaxation_tests.c)
-    target_link_libraries(ToolzNG.SambuRelaxationTests PRIVATE ToolzNG.SambuCore)
-    toolzng_enable_warnings(ToolzNG.SambuRelaxationTests)
-    add_test(NAME sambu_relaxation_tests COMMAND ToolzNG.SambuRelaxationTests)
+    add_executable(WDEC.WdecRelaxationTests tests/wdec_relaxation_tests.c)
+    target_link_libraries(WDEC.WdecRelaxationTests PRIVATE WDEC.WdecCore)
+    wdec_enable_warnings(WDEC.WdecRelaxationTests)
+    add_test(NAME wdec_relaxation_tests COMMAND WDEC.WdecRelaxationTests)
 endif()
 
 # The desktop shell is platform-specific; the policy/workflow core remains testable.
 if(NOT WIN32)
-    message(STATUS "ToolzNG desktop target is Win32-only; portable SAMBU core and tests are enabled.")
+    message(STATUS "WDEC desktop target is Win32-only; portable WDEC core and tests are enabled.")
     return()
 endif()
 
 enable_language(RC)
 
-add_executable(ToolzNG WIN32
+add_executable(WDEC WIN32
     src/main.c
-    src/toolzng.rc
+    src/wdec.rc
 )
-target_include_directories(ToolzNG PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(ToolzNG PRIVATE
-    ToolzNG.SambuCore
+target_include_directories(WDEC PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(WDEC PRIVATE
+    WDEC.WdecCore
     setupapi
     shell32
     advapi32
@@ -69,10 +69,10 @@ target_link_libraries(ToolzNG PRIVATE
     uuid
     comdlg32
 )
-toolzng_enable_warnings(ToolzNG)
+wdec_enable_warnings(WDEC)
 
 if(MSVC)
-    target_link_options(ToolzNG PRIVATE
+    target_link_options(WDEC PRIVATE
         /DYNAMICBASE
         /NXCOMPAT
         /HIGHENTROPYVA
@@ -80,7 +80,7 @@ if(MSVC)
     )
 endif()
 
-set_target_properties(ToolzNG PROPERTIES
-    OUTPUT_NAME "ToolzNG"
+set_target_properties(WDEC PROPERTIES
+    OUTPUT_NAME "WDEC"
     WIN32_EXECUTABLE TRUE
 )
