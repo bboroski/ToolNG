@@ -1073,9 +1073,9 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: 1.1.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
-        L"SAMBU finding code: %u · confidence: %u%%\r\n"
-        L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
+        L"SAMBU engine: 1.2.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU finding code: %u · evidence coverage: %u%%\r\n"
+        L"Оценка: %ls\r\nСостояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
         L"ПЕРСОНАЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ\r\n%ls\r\n%ls\r\n\r\n"
@@ -1088,7 +1088,8 @@ static void save_duckfix_route(void)
         L"Это план действий, а не автоматический ремонт. ToolzNG не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
         (unsigned)g_app.sambu_assessment.finding,
-        g_app.sambu_assessment.confidence_percent,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.sambu_assessment.score_provisional ? L"предварительная" : L"полная",
         g_app.status, g_app.readiness_score, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1486,11 +1487,12 @@ static void draw_overview(HDC dc)
     draw_text(dc, L"СОСТОЯНИЕ ПОДКЛЮЧЕНИЯ", (RECT){ x + 24, 208, right - 24, 232 },
               g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     {
-        WCHAR score_line[128];
+        WCHAR score_line[160];
         swprintf_s(score_line, ARRAYSIZE(score_line),
-            L"DUCK READINESS  ·  %d/100  ·  confidence %u%%",
+            L"DUCK READINESS  ·  %d/100  ·  coverage %u%%  ·  %ls",
             g_app.sambu_assessment.readiness_score,
-            g_app.sambu_assessment.confidence_percent);
+            g_app.sambu_assessment.score_coverage_percent,
+            g_app.sambu_assessment.score_provisional ? L"partial" : L"complete");
         draw_text(dc, score_line, (RECT){ x + 24, 232, right - 176, 253 },
                   g_app.font_small, COL_AMBER, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
