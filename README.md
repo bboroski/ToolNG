@@ -203,6 +203,8 @@ ToolNG — нативний Windows-інтерфейс оператора в SAM
 
 ## SAMBU Ecosystem module
 
+<p align="center"><img src="https://raw.githubusercontent.com/bboroski/SAMBU/main/assets/sambu-ecosystem-overview.svg" alt="SAMBU central platform and six specialized modules" width="100%" /></p>
+
 ToolNG remains a native C17/Win32 application. It ports selected SAMBU engineering policies into C; it does not embed the Python interpreter or execute .sambu files.
 
 - **Module manifest:** [`sambu.module.json`](sambu.module.json)
