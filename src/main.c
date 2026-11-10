@@ -1607,25 +1607,25 @@ static void draw_devices(HDC dc)
                   g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     } else {
         for (i = 0; i < (int)g_app.device_count && i < 4; ++i) {
-            int top = 326 + i * 78;
-            RECT item = { x, top, right, top + 70 };
+            int top = 326 + i * 74;
+            RECT item = { x, top, right, top + 68 };
             WCHAR id_line[600];
             draw_round_rect(dc, item, COL_CARD, COL_BORDER, 10);
             draw_text(dc, g_app.devices[i].name,
-                      (RECT){ x + 18, top + 8, right - 18, top + 34 },
+                      (RECT){ x + 18, top + 6, right - 18, top + 31 },
                       g_app.font_button, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             swprintf_s(id_line, ARRAYSIZE(id_line), L"%ls  |  %ls",
                 g_app.devices[i].manufacturer[0] ? g_app.devices[i].manufacturer : L"Apple",
                 g_app.devices[i].hardware_id);
             draw_text(dc, id_line,
-                      (RECT){ x + 18, top + 37, right - 18, top + 64 },
+                      (RECT){ x + 18, top + 34, right - 18, top + 61 },
                       g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
         }
         if (g_app.device_count > 4) {
             WCHAR more[96];
             swprintf_s(more, ARRAYSIZE(more), L"Дополнительных записей: %u",
                        g_app.device_count - 4);
-            draw_text(dc, more, (RECT){ x + 2, 642, right, 666 },
+            draw_text(dc, more, (RECT){ x + 2, 620, right, 642 },
                       g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         }
     }
