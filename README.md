@@ -217,3 +217,11 @@ ToolNG remains a native C17/Win32 application. It ports selected SAMBU engineeri
 
 
 [Відкрити NUN Mesh portal](https://bboroski.github.io/Klipot/)
+
+
+## One-knob workflow / Один запуск / Запуск однією командою
+
+- **Windows:** double-click `one.cmd` or run `./one.cmd`.
+- **Any OS:** run `python one.py` for the default build, verification and launch flow supported by this project.
+- **Verification only:** run `python one.py check`. For embedded modules, host checks do not replace board, fixture or target qualification.
+- **Build only:** run `python one.py build` where the project exposes a separate build step.
