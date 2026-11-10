@@ -10,6 +10,7 @@
 #include <shlobj.h>
 #include <setupapi.h>
 #include <winsvc.h>
+#include <wincrypt.h>
 #include <commctrl.h>
 #include <dbt.h>
 #include <usbiodef.h>
@@ -101,6 +102,14 @@ typedef struct AppState {
     DWORD backup_folder_count;
     DWORD backup_valid_count;
     WCHAR backup_audit[320];
+    ULONGLONG backup_age_days;
+    ULONGLONG link_signature;
+    BOOL link_baseline_known;
+    BOOL link_profile_changed;
+    WCHAR local_store[MAX_PATH * 2];
+    WCHAR pulse_journal[MAX_PATH * 2];
+    WCHAR link_profile_file[MAX_PATH * 2];
+    RECT playbook_button;
     int readiness_score;
     WCHAR coach_title[180];
     WCHAR coach_body[420];
@@ -347,6 +356,112 @@ static void append_path(WCHAR *destination, size_t capacity,
     wcscat_s(destination, capacity, suffix);
 }
 
+
+/* ToolzNG 0.4 local-only intelligence store. No device serials or backup payloads are written. */
+static void initialize_local_store(void)
+{
+    WCHAR base[MAX_PATH * 2] = {0};
+    DWORD n = GetEnvironmentVariableW(L"LOCALAPPDATA", base, ARRAYSIZE(base));
+    if (!n || n >= ARRAYSIZE(base)) return;
+    append_path(g_app.local_store, ARRAYSIZE(g_app.local_store), base, L"ToolzNG");
+    (void)CreateDirectoryW(g_app.local_store, NULL);
+    append_path(g_app.pulse_journal, ARRAYSIZE(g_app.pulse_journal),
+                g_app.local_store, L"usb-pulse.jsonl");
+    append_path(g_app.link_profile_file, ARRAYSIZE(g_app.link_profile_file),
+                g_app.local_store, L"link-profile.ini");
+}
+
+static void append_pulse_vault(const UsbPulseEvent *event)
+{
+    SYSTEMTIME st;
+    WCHAR line[256], old_path[MAX_PATH * 2];
+    char utf8[600];
+    int bytes;
+    HANDLE file;
+    WIN32_FILE_ATTRIBUTE_DATA attrs;
+    ULONGLONG size = 0;
+    if (!event || !g_app.pulse_journal[0]) return;
+    if (GetFileAttributesExW(g_app.pulse_journal, GetFileExInfoStandard, &attrs)) {
+        ULARGE_INTEGER n;
+        n.HighPart = attrs.nFileSizeHigh;
+        n.LowPart = attrs.nFileSizeLow;
+        size = n.QuadPart;
+    }
+    if (size > 262144ULL) {
+        cp(old_path, ARRAYSIZE(old_path), g_app.pulse_journal);
+        wcscat_s(old_path, ARRAYSIZE(old_path), L".old");
+        (void)MoveFileExW(g_app.pulse_journal, old_path,
+                          MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    }
+    GetLocalTime(&st);
+    swprintf_s(line, ARRAYSIZE(line),
+        L"{\\"time\\":\\"%04u-%02u-%02uT%02u:%02u:%02u\\","
+        L"\\"event\\":\\"%ls\\",\\"devices\\":%u}\\r\\n",
+        st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
+        event->arrival ? L"arrival" : L"removal", g_app.device_count);
+    bytes = WideCharToMultiByte(CP_UTF8, 0, line, -1, utf8,
+                                (int)sizeof(utf8), NULL, NULL);
+    if (bytes <= 1) return;
+    file = CreateFileW(g_app.pulse_journal, FILE_APPEND_DATA,
+        FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file != INVALID_HANDLE_VALUE) {
+        DWORD written = 0;
+        (void)WriteFile(file, utf8, (DWORD)(bytes - 1), &written, NULL);
+        CloseHandle(file);
+    }
+}
+
+/* FNV-1a is a local change detector, not a security or identity credential. */
+static ULONGLONG link_hash_text(ULONGLONG hash, const WCHAR *value)
+{
+    const WCHAR *p = value ? value : L"";
+    while (*p) {
+        hash ^= (BYTE)(*p & 0xFF);
+        hash *= 1099511628211ULL;
+        hash ^= (BYTE)((*p >> 8) & 0xFF);
+        hash *= 1099511628211ULL;
+        ++p;
+    }
+    hash ^= 0xFF;
+    hash *= 1099511628211ULL;
+    return hash;
+}
+
+static void update_linkdna_profile(void)
+{
+    ULONGLONG hash = 14695981039346656037ULL;
+    WCHAR stored[40] = {0}, current[40] = {0};
+    UINT i;
+    if (!g_app.link_profile_file[0]) return;
+    hash ^= g_app.device_count;
+    hash *= 1099511628211ULL;
+    for (i = 0; i < g_app.device_count; ++i) {
+        hash = link_hash_text(hash, g_app.devices[i].hardware_id);
+        hash = link_hash_text(hash, g_app.devices[i].manufacturer);
+    }
+    hash ^= g_app.apple_service_running ? 1ULL : 0ULL;
+    hash *= 1099511628211ULL;
+    g_app.link_signature = hash;
+    swprintf_s(current, ARRAYSIZE(current), L"%016llX", hash);
+    (void)GetPrivateProfileStringW(L"LinkDNA", L"signature", L"",
+        stored, ARRAYSIZE(stored), g_app.link_profile_file);
+    if (!stored[0]) {
+        (void)WritePrivateProfileStringW(L"LinkDNA", L"signature",
+            current, g_app.link_profile_file);
+        g_app.link_baseline_known = TRUE;
+        g_app.link_profile_changed = FALSE;
+    } else {
+        g_app.link_baseline_known = TRUE;
+        g_app.link_profile_changed = (_wcsicmp(stored, current) != 0);
+    }
+    if (g_app.link_profile_changed) {
+        set_status(L"LinkDNA: набор USB/службы отличается от локального базового профиля.");
+    } else {
+        set_status(L"LinkDNA: локальный профиль подключения совпадает с базовым.");
+    }
+}
+
+
 static BOOL find_backup_folder(WCHAR *result, size_t result_count)
 {
     PWSTR roaming = NULL;
@@ -404,6 +519,9 @@ static void audit_backup_folder(void)
     WIN32_FIND_DATAW data;
     HANDLE find;
     DWORD folders = 0, valid = 0;
+    FILETIME newest_write = {0};
+    BOOL have_newest_write = FALSE;
+    g_app.backup_age_days = ~(ULONGLONG)0;
 
     g_app.backup_folder_count = 0;
     g_app.backup_valid_count = 0;
@@ -430,8 +548,33 @@ static void audit_backup_folder(void)
         has_manifest = backup_file_exists(child, L"Manifest.db") ||
                        backup_file_exists(child, L"Manifest.plist");
         if (has_info && has_manifest) ++valid;
+        if (has_info) {
+            WCHAR info_path[MAX_PATH * 2];
+            WIN32_FILE_ATTRIBUTE_DATA marker;
+            append_path(info_path, ARRAYSIZE(info_path), child, L"Info.plist");
+            if (GetFileAttributesExW(info_path, GetFileExInfoStandard, &marker)) {
+                if (!have_newest_write || CompareFileTime(&marker.ftLastWriteTime, &newest_write) > 0) {
+                    newest_write = marker.ftLastWriteTime;
+                    have_newest_write = TRUE;
+                }
+            }
+        }
     } while (FindNextFileW(find, &data));
     FindClose(find);
+
+    if (have_newest_write) {
+        FILETIME now_file;
+        ULARGE_INTEGER now_value, backup_value;
+        GetSystemTimeAsFileTime(&now_file);
+        now_value.HighPart = now_file.dwHighDateTime;
+        now_value.LowPart = now_file.dwLowDateTime;
+        backup_value.HighPart = newest_write.dwHighDateTime;
+        backup_value.LowPart = newest_write.dwLowDateTime;
+        if (now_value.QuadPart >= backup_value.QuadPart) {
+            g_app.backup_age_days =
+                (now_value.QuadPart - backup_value.QuadPart) / 864000000000ULL;
+        }
+    }
 
     g_app.backup_folder_count = folders;
     g_app.backup_valid_count = valid;
@@ -439,9 +582,16 @@ static void audit_backup_folder(void)
         copy_text(g_app.backup_audit, ARRAYSIZE(g_app.backup_audit),
                   L"Backup Sentinel: папка найдена, но резервных копий внутри нет.");
     } else {
-        swprintf_s(g_app.backup_audit, ARRAYSIZE(g_app.backup_audit),
-                   L"Backup Sentinel: %lu из %lu папок имеют Info.plist и Manifest.",
-                   (unsigned long)valid, (unsigned long)folders);
+        if (g_app.backup_age_days != ~(ULONGLONG)0) {
+            swprintf_s(g_app.backup_audit, ARRAYSIZE(g_app.backup_audit),
+                L"Backup Sentinel: %lu/%lu маркеры на месте · свежесть: %llu дн.",
+                (unsigned long)valid, (unsigned long)folders,
+                (unsigned long long)g_app.backup_age_days);
+        } else {
+            swprintf_s(g_app.backup_audit, ARRAYSIZE(g_app.backup_audit),
+                L"Backup Sentinel: %lu из %lu папок имеют Info.plist и Manifest.",
+                (unsigned long)valid, (unsigned long)folders);
+        }
     }
 }
 
@@ -455,6 +605,7 @@ static void record_usb_pulse(BOOL arrival)
     if (arrival) ++g_app.usb_arrivals_total;
     else ++g_app.usb_removals_total;
 
+    append_pulse_vault(event);
     set_status(arrival
         ? L"USB Pulse: обнаружено подключение интерфейса Apple. Обновляю диагностику..."
         : L"USB Pulse: интерфейс Apple отключился. Проверяю стабильность соединения...");
@@ -521,7 +672,13 @@ static void compute_readiness_and_coach(void)
                   L"DuckFix: проверь стабильность USB-линии");
         copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                   L"USB Pulse зарегистрировал отключения Apple-интерфейса за последние 10 минут. Попробуй другой порт без USB-хаба и исправный кабель передачи данных; наблюдай за счётчиком повторных отключений.");
-    } else if (g_app.backup_folder_count > 0 && g_app.backup_valid_count == 0) {
+    } else if (g_app.backup_folder_count > 0 && g_app.backup_valid_count > 0 &&
+                   g_app.backup_age_days != ~(ULONGLONG)0 && g_app.backup_age_days > 30ULL) {
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: резервная копия давно не обновлялась");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Самая свежая Info.plist старше 30 дней. Если на устройстве появились новые данные, создай актуальную копию через Apple Devices/iTunes. Возраст маркера — ориентир, а не доказательство целостности backup.");
+        } else if (g_app.backup_folder_count > 0 && g_app.backup_valid_count == 0) {
         copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                   L"DuckFix: проверь структуру локальной копии");
         copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
@@ -543,6 +700,7 @@ static void refresh_diagnostics(void)
 {
     scan_apple_devices();
     read_apple_service_status();
+    update_linkdna_profile();
     g_app.backup_found = find_backup_folder(g_app.backup_path,
                                              ARRAYSIZE(g_app.backup_path));
     audit_backup_folder();
@@ -600,6 +758,105 @@ static BOOL write_utf8_file(const WCHAR *path, const WCHAR *contents)
     CloseHandle(file);
     free(utf8);
     return ok;
+}
+
+
+
+static BOOL write_sha256_seal(const WCHAR *path)
+{
+    HANDLE file = INVALID_HANDLE_VALUE;
+    LARGE_INTEGER size;
+    BYTE *data = NULL;
+    BYTE digest[32];
+    DWORD got = 0, digest_size = sizeof(digest);
+    HCRYPTPROV provider = 0;
+    HCRYPTHASH hash = 0;
+    WCHAR sidecar[MAX_PATH * 2], output[160];
+    static const WCHAR hex[] = L"0123456789abcdef";
+    BOOL ok = FALSE;
+
+    file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL,
+                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE) return FALSE;
+    if (!GetFileSizeEx(file, &size) || size.QuadPart < 0 || size.QuadPart > 8 * 1024 * 1024) {
+        CloseHandle(file);
+        return FALSE;
+    }
+    data = (BYTE *)malloc((size_t)(size.QuadPart ? size.QuadPart : 1));
+    if (!data) { CloseHandle(file); return FALSE; }
+    if (size.QuadPart && (!ReadFile(file, data, (DWORD)size.QuadPart, &got, NULL) ||
+                          got != (DWORD)size.QuadPart)) {
+        free(data); CloseHandle(file); return FALSE;
+    }
+    CloseHandle(file);
+    if (!CryptAcquireContextW(&provider, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+        goto cleanup;
+    if (!CryptCreateHash(provider, CALG_SHA_256, 0, 0, &hash))
+        goto cleanup;
+    if (size.QuadPart && !CryptHashData(hash, data, (DWORD)size.QuadPart, 0))
+        goto cleanup;
+    if (!CryptGetHashParam(hash, HP_HASHVAL, digest, &digest_size, 0) || digest_size != 32)
+        goto cleanup;
+
+    for (DWORD i = 0; i < 32; ++i) {
+        output[i * 2] = hex[digest[i] >> 4];
+        output[i * 2 + 1] = hex[digest[i] & 0x0F];
+    }
+    output[64] = L' '; output[65] = L' '; output[66] = L' ';
+    output[67] = L'T'; output[68] = L'o'; output[69] = L'o';
+    output[70] = L'l'; output[71] = L'z'; output[72] = L'N';
+    output[73] = L'G'; output[74] = L'\r'; output[75] = L'\n';
+    output[76] = L'\0';
+    cp(sidecar, ARRAYSIZE(sidecar), path);
+    wcscat_s(sidecar, ARRAYSIZE(sidecar), L".sha256");
+    ok = write_utf8_file(sidecar, output);
+
+cleanup:
+    if (hash) CryptDestroyHash(hash);
+    if (provider) CryptReleaseContext(provider, 0);
+    if (data) free(data);
+    return ok;
+}
+
+static void save_duckfix_route(void)
+{
+    PWSTR docs = NULL;
+    WCHAR path[MAX_PATH * 2], contents[5000];
+    SYSTEMTIME now;
+    if (FAILED(SHGetKnownFolderPath(&FOLDERID_Documents, KF_FLAG_CREATE, NULL, &docs))) {
+        MessageBoxW(g_app.hwnd, L"Не удалось найти Documents.", APP_TITLE, MB_OK | MB_ICONERROR);
+        return;
+    }
+    GetLocalTime(&now);
+    swprintf_s(path, ARRAYSIZE(path),
+        L"%ls\\ToolzNG-DuckFix-%04u%02u%02u-%02u%02u%02u.txt",
+        docs, now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+    CoTaskMemFree(docs);
+    swprintf_s(contents, ARRAYSIZE(contents),
+        L"ToolzNG — DuckFix route\r\n================================\r\n"
+        L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
+        L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
+        L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
+        L"ПЕРСОНАЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ\r\n%ls\r\n%ls\r\n\r\n"
+        L"БЕЗОПАСНЫЙ ПОРЯДОК\r\n"
+        L"1. Проверь кабель передачи данных, USB-порт, разблокировку и запрос доверия.\r\n"
+        L"2. Проверь Apple Devices и состояние Apple Mobile Device Service.\r\n"
+        L"3. Если backup нужен, создай свежую копию штатным приложением Apple.\r\n"
+        L"4. Повтори сканирование ToolzNG и сравни показатели.\r\n"
+        L"5. Не удаляй папки backup и не прошивай устройство ради ошибки подключения.\r\n\r\n"
+        L"Это план действий, а не автоматический ремонт. ToolzNG не меняет iOS,\r\n"
+        L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
+        g_app.status, g_app.readiness_score, g_app.device_count,
+        g_app.service_status, g_app.backup_audit,
+        g_app.usb_arrivals_total, g_app.usb_removals_total,
+        g_app.coach_title, g_app.coach_body);
+    if (write_utf8_file(path, contents)) {
+        WCHAR message[MAX_PATH * 2 + 80];
+        swprintf_s(message, ARRAYSIZE(message), L"План DuckFix сохранён:\n%ls", path);
+        MessageBoxW(g_app.hwnd, message, APP_TITLE, MB_OK | MB_ICONINFORMATION);
+    } else {
+        MessageBoxW(g_app.hwnd, L"Не удалось сохранить план DuckFix.", APP_TITLE, MB_OK | MB_ICONERROR);
+    }
 }
 
 static void save_report(void)
@@ -728,8 +985,20 @@ static void save_report(void)
         return;
     }
 
-    (void)MessageBoxW(g_app.hwnd, report_path,
-                      L"Отчёт ToolzNG сохранён", MB_OK | MB_ICONINFORMATION);
+    if (!write_sha256_seal(report_path)) {
+        (void)MessageBoxW(g_app.hwnd,
+            L"Отчёт сохранён, но SHA-256 sidecar создать не удалось.",
+            APP_TITLE, MB_OK | MB_ICONWARNING);
+    } else {
+        WCHAR message[MAX_PATH * 2 + 120];
+        swprintf_s(message, ARRAYSIZE(message),
+            L"Отчёт и SHA-256 подпись сохранены:
+%ls
+%ls.sha256",
+            report_path, report_path);
+        (void)MessageBoxW(g_app.hwnd, message,
+                          L"ToolzNG Evidence Seal", MB_OK | MB_ICONINFORMATION);
+    }
 }
 
 static void open_apple_support(void)
@@ -1042,9 +1311,11 @@ static void draw_care(HDC dc)
               g_app.font_small, COL_MUTED, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
 
     g_app.support_button = (RECT){ x + 22, 651, x + 234, 691 };
-    g_app.store_button = (RECT){ x + 250, 651, x + 486, 691 };
+    g_app.store_button = (RECT){ x + 250, 651, x + 470, 691 };
+    g_app.playbook_button = (RECT){ x + 486, 651, right - 12, 691 };
     draw_button(dc, g_app.support_button, L"Советы Apple", TRUE);
     draw_button(dc, g_app.store_button, L"Найти Apple Devices", FALSE);
+    draw_button(dc, g_app.playbook_button, L"Экспорт DuckFix", FALSE);
 }
 
 static void draw_about(HDC dc)
@@ -1180,6 +1451,7 @@ static void handle_click(POINT point)
     } else if (g_app.page == PAGE_CARE) {
         if (point_in_rect(point, g_app.support_button)) handle_action(ACTION_SUPPORT);
         else if (point_in_rect(point, g_app.store_button)) handle_action(ACTION_STORE);
+        else if (point_in_rect(point, g_app.playbook_button)) save_duckfix_route();
     }
 }
 
@@ -1225,6 +1497,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             g_app.scan_complete = FALSE;
             g_app.app_started_at = GetTickCount64();
             create_fonts();
+            initialize_local_store();
             register_usb_watch(hwnd);
             SetTimer(hwnd, TIMER_READINESS, (UINT)USB_STABILITY_WARMUP_MS, NULL);
             copy_text(g_app.status, ARRAYSIZE(g_app.status),
