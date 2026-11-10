@@ -191,6 +191,7 @@ GUI предназначен для Windows. Сборка переносимог
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — доказательства, приватность, ограниченные ресурсы и визуальные правила.
 - [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — модель оценки и ограниченный workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — тесты, надёжность и критерии релиза.
+- [Platform Integration](docs/PLATFORM_INTEGRATION.md) — границы между desktop UI, workflow-ядром и embedded-компонентами.
 
 Для существенных изменений UI добавляйте реальные снимки приложения или явно обозначайте изображения как демонстрационные макеты.
 
