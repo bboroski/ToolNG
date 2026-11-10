@@ -1422,8 +1422,6 @@ static void save_report(void)
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
         L"Автор: ToolzNG (локальная генерация)\r\n"
         L"Платформа: Windows\r\n"
-        L"SAMBU engine: 1.1.0\r\n"
-        L"Diagnostic schema: toolzng.diagnostic.v1\r\n"
         L"SAMBU engine: %ls\r\n"
         L"Diagnostic schema: %ls\r\n"
         L"SAMBU finding code: %u\r\n"
