@@ -194,8 +194,17 @@ MIT — див. [LICENSE](LICENSE).
 
 </div>
 
-## Інтеграція в NUN Mesh
+## Інтеграція в SAMBU Ecosystem
 
-<p align="center"><img src="assets/nun-mesh.svg" width="100%" alt="ToolNG у спільній екосистемі NUN Mesh"></p>
+<p align="center"><img src="assets/nun-mesh.svg" width="100%" alt="ToolNG у спільній екосистемі SAMBU Ecosystem"></p>
 
-ToolNG — нативний Windows-інтерфейс оператора в NUN Mesh. Він зберігає локальну обробку доказів та явні дії користувача; SAMBU надає переносиме ядро policy/workflow. [Посібник інтеграції](docs/ECOSYSTEM_INTEGRATION.md) · [Дизайн GUI](docs/GUI_DESIGN.md) · [Портал Klipot](https://github.com/bboroski/Klipot)
+ToolNG — нативний Windows-інтерфейс оператора в SAMBU Ecosystem. Він зберігає локальну обробку доказів та явні дії користувача; SAMBU надає переносиме ядро policy/workflow. [Посібник інтеграції](docs/ECOSYSTEM_INTEGRATION.md) · [Дизайн GUI](docs/GUI_DESIGN.md) · [Портал Klipot](https://github.com/bboroski/Klipot)
+
+
+## SAMBU Ecosystem module
+
+ToolNG remains a native C17/Win32 application. It ports selected SAMBU engineering policies into C; it does not embed the Python interpreter or execute .sambu files.
+
+- **Module manifest:** [`sambu.module.json`](sambu.module.json)
+- **Canonical architecture:** [SAMBU Ecosystem Architecture](https://github.com/bboroski/SAMBU/blob/main/docs/ECOSYSTEM_ARCHITECTURE.md)
+- **Shared integration protocol:** [Klipot protocol](https://github.com/bboroski/Klipot/blob/main/docs/INTEGRATION_PROTOCOL.md)
