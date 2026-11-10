@@ -62,6 +62,20 @@ int main(void)
     CHECK(!result.warm);
 
     snapshot = state;
+    state.initialized = 2;
+    snapshot = state;
+    CHECK(!sambu_relaxation_update(&state, 1.0, 2600u, 1000.0, &result));
+    CHECK(memcmp(&snapshot, &state, sizeof(state)) == 0);
+
+    state = snapshot;
+    state.initialized = 1;
+    state.samples = 0u;
+    snapshot = state;
+    CHECK(!sambu_relaxation_update(&state, 1.0, 2600u, 1000.0, &result));
+    CHECK(memcmp(&snapshot, &state, sizeof(state)) == 0);
+
+    state.samples = 4u;
+    snapshot = state;
     CHECK(!sambu_relaxation_update(&state, NAN, 2600u, 1000.0, &result));
     CHECK(!sambu_relaxation_update(&state, 1.0, 2600u, 0.0, &result));
     CHECK(!sambu_relaxation_update(&state, 1.0, 2600u, INFINITY, &result));
