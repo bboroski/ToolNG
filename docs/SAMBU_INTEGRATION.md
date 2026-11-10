@@ -1,14 +1,14 @@
-# SAMBU engineering core in ToolzNG
+# SAMBU engineering core in ToolNG
 
-**Integration baseline:** ToolzNG 0.6.1, C17 / Win32  
+**Integration baseline:** ToolNG 0.6.1, C17 / Win32  
 **Core revision:** 1.2.0  
-**Report contract:** `toolzng.diagnostic.v1`
+**Report contract:** `toolng.diagnostic.v1`
 
-This integration ports selected engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's host runtime, or claim that ToolzNG controls private iOS functions.
+This integration ports selected engineering rules from SAMBU into ToolNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's host runtime, or claim that ToolNG controls private iOS functions.
 
 ## The five governing letters
 
-| Letter | SAMBU law | ToolzNG implementation |
+| Letter | SAMBU law | ToolNG implementation |
 |---|---|---|
 | S | Safety and staged sovereignty | Fail-closed capability gate. Unknown operation and unknown origin are rejected. Device mutation and network upload are always denied. |
 | A | Adaptive exploration | Deterministic assessment from measured Windows evidence; no machine-learning claim. |
@@ -76,9 +76,9 @@ The maximum remains 100. A partial marker set does not receive the +15 marker cr
 
 Finding priority remains deterministic: scan unavailable → device not visible → Apple service unknown → Apple service confirmed unavailable → unstable USB → backup scan unknown → incomplete backup structure → stale verified backup marker → backup not verified → USB stability unconfirmed → Windows-side checks passed.
 
-## Articulatory families mapped to ToolzNG
+## Articulatory families mapped to ToolNG
 
-| Family | SAMBU semantic field | Concrete ToolzNG role |
+| Family | SAMBU semantic field | Concrete ToolNG role |
 |---|---|---|
 | K | Structure | Separate C17 engine module and validated dependency graph |
 | T | Flow | Ordered diagnostic path and next-step selection |
@@ -153,7 +153,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 ## Explicit non-goals
 
-This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup contents, upload data, or run arbitrary plugins. No SAMBU Python component is represented as a native ToolzNG feature.
+This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup contents, upload data, or run arbitrary plugins. No SAMBU Python component is represented as a native ToolNG feature.
 
 ## SAMBU workflow runtime 1.1
 
@@ -196,17 +196,17 @@ There is no action accepting a command string, launching a process, modifying iO
 
 The task manifest declares a short purpose, an explicit maximum step count and one autonomy class: `observe_only` or `local_record`. The host policy independently caps the run at five steps and states whether observation and local profile recording are allowed.
 
-Workflow preflight checks the parsed manifest, action allowlist and resource budget. A local profile write must also pass `sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL)`. This is a narrow application permission, not an HSM-backed signature, trusted external verifier or permission to mutate the Apple device. Report creation/export continues to require a user-origin action.
+Workflow preflight checks the parsed manifest, action allowlist and resource budget. A local profile write must also pass `toolng_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL)`. This is a narrow application permission, not an HSM-backed signature, trusted external verifier or permission to mutate the Apple device. Report creation/export continues to require a user-origin action.
 
 ### Cooperative execution and evidence
 
-`SambuWorkflowSession` owns a fixed-size copy of its program, policy, host binding, cursor and bounded result array. Each `sambu_workflow_tick()` invokes no more than one host action. ToolzNG schedules ticks with `WM_TIMER` on the existing UI thread; it does not create OS threads, native fibers or Python generators. A host failure stops the sequence immediately; later steps remain unexecuted.
+`ToolNGWorkflowSession` owns a fixed-size copy of its program, policy, host binding, cursor and bounded result array. Each `toolng_workflow_tick()` invokes no more than one host action. ToolNG schedules ticks with `WM_TIMER` on the existing UI thread; it does not create OS threads, native fibers or Python generators. A host failure stops the sequence immediately; later steps remain unexecuted.
 
 Each evidence record contains a step number, allowlisted action enum, success state, source span, step name and a short host finding. The report writer appends the preflight decision, attempted/passed/failed counts and per-step findings to the local TXT report. No source text or raw device identifiers are added to the workflow ledger.
 
 ### Capability transfer matrix
 
-| Capability family from the supplied SAMBU inventory | ToolzNG status |
+| Capability family from the supplied SAMBU inventory | ToolNG status |
 |---|---|
 | Lexer, parser and source-aware AST | Implemented for the restricted workflow grammar |
 | Functions, scopes, general control flow, arrays and records | Not implemented as a general language runtime |
@@ -216,12 +216,12 @@ Each evidence record contains a step number, allowlisted action enum, success st
 | Python generator scheduler | Not embedded; Win32 timer tick is cooperative UI-thread dispatch only |
 | Resource scope and dual-verifier gate | Local policy + workflow preflight exists; no external HSM verifier or general RAII scope |
 | Bounded autonomy, task manifest, evidence ledger, preflight | Implemented for fixed local diagnostic actions only |
-| SI/scientific helpers and sparse voxel/mesh algorithms | Not integrated into ToolzNG |
+| SI/scientific helpers and sparse voxel/mesh algorithms | Not integrated into ToolNG |
 | Starter engine bridge | Not needed by this host |
 | Judo/Aikido/Jiu-Jitsu, Magento XML inspection, scaffold generator | Not integrated; remain separate host/tooling domains |
-| Native compiler, self-hosting, static type/effect/ownership checking, green fibers, multicore, LSP/IDE, Rails-style web stack | Planned language/toolchain capabilities; not claimed by ToolzNG |
+| Native compiler, self-hosting, static type/effect/ownership checking, green fibers, multicore, LSP/IDE, Rails-style web stack | Planned language/toolchain capabilities; not claimed by ToolNG |
 
 ### Failure semantics
 
 Lexical, syntax, unknown-action, duplicate-name, source-size, step-budget and policy errors are rejected before dispatch. Host errors are reported against the originating step span and terminate the run. A failed workflow can still produce a user-requested diagnostic report containing the partial evidence already collected.
-This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup payloads, upload data, run arbitrary plugins or perform hardware cable diagnostics. No SAMBU Python component is represented as a native ToolzNG feature.
+This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup payloads, upload data, run arbitrary plugins or perform hardware cable diagnostics. No SAMBU Python component is represented as a native ToolNG feature.
