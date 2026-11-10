@@ -11,6 +11,8 @@ static void test_policy(void)
     assert(sambu_authorize(SAMBU_OP_EXPORT, SAMBU_ORIGIN_USER));
     assert(!sambu_authorize(SAMBU_OP_MUTATE_DEVICE, SAMBU_ORIGIN_USER));
     assert(!sambu_authorize(SAMBU_OP_UPLOAD_DATA, SAMBU_ORIGIN_USER));
+    assert(sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL));
+    assert(!sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_USER));
 }
 
 static void test_assessment(void)
