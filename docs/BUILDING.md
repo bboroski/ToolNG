@@ -30,3 +30,13 @@ The executable uses Windows system libraries only:
 - `uuid` — Known Folder GUID definitions
 
 No third-party runtime is required for the current feature set.
+
+
+## 0.4 intelligence data
+
+- PulseVault: %LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl with .old rotation at 256 KiB.
+- LinkDNA baseline: %LOCALAPPDATA%\ToolzNG\link-profile.ini.
+- Diagnostic export: Documents\ToolzNG-report-*.txt plus *.sha256.
+- DuckFix export: Documents\ToolzNG-DuckFix-*.txt.
+
+The journal and baseline remain local to the Windows account. They are not added to the Git repository.
