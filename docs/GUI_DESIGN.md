@@ -56,3 +56,10 @@ Do not upscale a vector mock-up and relabel it as a screenshot. The updated 1920
 The UI rendering and window-message handling currently live primarily in `src/main.c`. The portable assessment and workflow core is separated into `src/toolng_engine.c/.h` and `src/toolng_workflow.c/.h`.
 
 Extracting individual page renderers, navigation state and report-preview controls into smaller modules is a future refactor, not a completed split. Any extraction should preserve DPI behavior, hit testing, keyboard shortcuts, report privacy and the current CMake targets, with regression tests added before the original implementation is removed.
+
+
+## Amber–Obsidian v2 visual revision
+
+The native Win32/GDI surface in `src/main.c` now uses the ToolNG domain palette: obsidian `#0B0B0D`, graphite `#141416` / `#1C1C1E`, amber `#FFB020`, pressed amber `#C47B13`, and a cool blue signal `#79C8FF` for secondary diagnostic information. Primary button labels use dark foreground on the full amber action surface. Status colors remain explicit and must still carry text labels; unknown evidence is not rendered as a successful result.
+
+The design target is documented in [INTERFACE_DESIGN.md](INTERFACE_DESIGN.md), with the machine-readable palette in [design/duck-ui.tokens.json](../design/duck-ui.tokens.json). The three `assets/screenshots/*.svg` files remain illustrative sample-data previews, not live device scans or runtime captures.
