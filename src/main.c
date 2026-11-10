@@ -408,7 +408,7 @@ static void append_path(WCHAR *destination, size_t capacity,
 }
 
 
-/* ToolzNG 0.4 local-only intelligence store. No device serials or backup payloads are written. */
+/* ToolzNG 0.6 local-only intelligence store. No device serials or backup payloads are written. */
 static void initialize_local_store(void)
 {
     WCHAR base[MAX_PATH * 2] = {0};
@@ -795,7 +795,8 @@ static void compute_readiness_and_coach(void)
     evidence.service_running = g_app.apple_service_running != FALSE;
     evidence.backup_found = g_app.backup_found != FALSE;
     evidence.backup_marker_valid = g_app.backup_valid_count > 0;
-    evidence.backup_folders_seen = g_app.backup_folder_count > 0 ? 1 : 0;
+    evidence.backup_folders_seen = (uint32_t)g_app.backup_folder_count;
+    evidence.backup_folders_valid = (uint32_t)g_app.backup_valid_count;
     evidence.backup_age_known = g_app.backup_age_days != ~(ULONGLONG)0;
     evidence.backup_age_days = evidence.backup_age_known
         ? (g_app.backup_age_days > UINT32_MAX
@@ -870,6 +871,18 @@ static void compute_readiness_and_coach(void)
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Повтори диагностику, чтобы получить проверяемые сигналы.");
             break;
+    }
+
+    if (g_app.sambu_assessment.quality_flags != 0u) {
+        WCHAR quality_key[64];
+        WCHAR note[240];
+        copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
+            sambu_quality_key(g_app.sambu_assessment.quality_flags));
+        if (swprintf_s(note, ARRAYSIZE(note),
+                L"\r\nSAMBU Quality Gate: %ls. Повтори проверку; неподтверждённые сигналы не учитываются в оценке.",
+                quality_key) > 0) {
+            (void)wcscat_s(g_app.coach_body, ARRAYSIZE(g_app.coach_body), note);
+        }
     }
 
     if (g_app.sambu_assessment.finding != SAMBU_FINDING_NONE &&
@@ -1014,6 +1027,7 @@ static void save_duckfix_route(void)
 {
     SYSTEMTIME now;
     WCHAR path[MAX_PATH * 2], filename[160], contents[5000];
+    WCHAR engine_version[32], report_schema[64];
     if (!sambu_authorize(SAMBU_OP_WRITE_PRIVATE_REPORT, SAMBU_ORIGIN_USER)) {
         set_status(L"Сохранение маршрута требует явного действия пользователя.");
         return;
@@ -1022,6 +1036,8 @@ static void save_duckfix_route(void)
         set_status(L"Локальное хранилище отчётов недоступно.");
         return;
     }
+    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), sambu_engine_version());
+    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), sambu_report_schema());
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
         L"DuckFix-%04u%02u%02u-%02u%02u%02u-%03u.txt",
@@ -1030,8 +1046,8 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: 1.1.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
-        L"SAMBU finding code: %u · confidence: %u%%\r\n"
+        L"SAMBU engine: %ls · diagnostic schema: %ls\r\n"
+        L"SAMBU finding code: %u · confidence: %u%% · quality flags: 0x%08lX\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
@@ -1044,8 +1060,10 @@ static void save_duckfix_route(void)
         L"5. Не удаляй папки backup и не прошивай устройство ради ошибки подключения.\r\n\r\n"
         L"Это план действий, а не автоматический ремонт. ToolzNG не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
+        engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding,
         g_app.sambu_assessment.confidence_percent,
+        (unsigned long)g_app.sambu_assessment.quality_flags,
         g_app.status, g_app.readiness_score, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1209,6 +1227,7 @@ static void save_report(void)
     WCHAR engine_version[32];
     WCHAR report_schema[64];
     WCHAR pattern_key[32];
+    WCHAR quality_key[64];
     WCHAR backup_age_text[64] = L"нет данных";
     WCHAR report[REPORT_CHARS];
     SYSTEMTIME now;
@@ -1234,6 +1253,8 @@ static void save_report(void)
     copy_ascii_to_wide(pattern_key, ARRAYSIZE(pattern_key),
         sambu_pattern_key(sambu_ledger_pattern(&g_app.sambu_ledger,
             (uint32_t)g_app.sambu_assessment.finding, GetTickCount64())));
+    copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
+        sambu_quality_key(g_app.sambu_assessment.quality_flags));
     if (g_app.backup_age_days != ~(ULONGLONG)0) {
         swprintf_s(backup_age_text, ARRAYSIZE(backup_age_text),
             L"%llu дней", (unsigned long long)g_app.backup_age_days);
@@ -1256,7 +1277,9 @@ static void save_report(void)
         L"SAMBU finding code: %u\r\n"
         L"SAMBU finding key: %ls\r\n"
         L"SAMBU confidence: %u%%\r\n"
+        L"SAMBU readiness: %d/100\r\n"
         L"SAMBU evidence mask: 0x%08lX\r\n"
+        L"SAMBU evidence quality: %ls (0x%08lX)\r\n"
         L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n"
         L"SAMBU recurrence (10 min): %u; pattern: %ls\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
@@ -1264,7 +1287,10 @@ static void save_report(void)
         now.wSecond, engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding, finding_key,
         g_app.sambu_assessment.confidence_percent,
+        g_app.sambu_assessment.readiness_score,
         (unsigned long)g_app.sambu_assessment.evidence_mask,
+        quality_key,
+        (unsigned long)g_app.sambu_assessment.quality_flags,
         (unsigned)sambu_ledger_unique_count(&g_app.sambu_ledger),
         (unsigned)sambu_ledger_occurrences(&g_app.sambu_ledger,
             (uint32_t)g_app.sambu_assessment.finding),
@@ -1740,9 +1766,9 @@ static void draw_about(HDC dc)
 
     draw_page_heading(dc, L"О ToolzNG", L"Нативная Windows-утилита на C17 и Win32 API.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_text(dc, L"ToolzNG  0.5.0", (RECT){ x + 24, 216, right - 24, 254 },
+    draw_text(dc, L"ToolzNG  0.6.0", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"SAMBU Engine 1.1.0 · Recurrence Radar · 10 min · ledger 32",
+    draw_text(dc, L"SAMBU Engine 1.2.0 · Quality Gate · Recurrence Radar · 10 min",
               (RECT){ x + 24, 258, right - 24, 276 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },
