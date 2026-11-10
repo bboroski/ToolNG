@@ -23,7 +23,7 @@ Yellow is reserved for primary scan actions, current navigation, focus and progr
 
 ## Native implementation boundary
 
-The C17 / Win32 core must remain independent of presentation-only state. Put visual tokens in a UI resource/header layer; never inject color, animation or windowing dependencies into device-discovery, evidence scoring or report serialization. If a native UI control is not yet implemented, label the corresponding image as a preview.
+The existing C17 / Win32 GDI desktop shell already uses the black/yellow palette, Per-Monitor DPI handling and persisted application zoom. The refreshed `assets/screenshots/` SVG files are scalable 1920 × 1354 canvas previews containing synthetic data, not captures from a running executable. Do not replace or overstate that evidence. The C17 / Win32 core must remain independent of presentation-only state. Put visual tokens in a UI resource/header layer; never inject color, animation or windowing dependencies into device-discovery, evidence scoring or report serialization. If a native UI control is not yet implemented, label the corresponding image as a preview.
 
 ## Vector UI previews
 
