@@ -16,7 +16,7 @@ Yellow is reserved for primary scan actions, current navigation, focus and progr
 
 - Keep header, navigation, active workspace and status bar consistent across every screen.
 - Support keyboard navigation, visible 2 px focus, high-contrast Windows mode and 100–200% system DPI.
-- Provide independent UI zoom (85–150%) without bitmap scaling; use DPI-aware fonts and vector icons.
+- Provide independent UI zoom (80–160%) without bitmap scaling; use DPI-aware fonts and vector icons.
 - Keep reports and diagnostics in an in-app preview. External browser launches are reserved for explicit support/product links.
 - Use sortable/filterable grids with a visible horizontal scrollbar when needed. Long paths must be selectable and copyable.
 - Toasts are non-blocking and do not replace durable status or report history.
