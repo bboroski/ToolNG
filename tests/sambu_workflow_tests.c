@@ -182,6 +182,18 @@ static void test_tampered_session_fails_closed(void)
     assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
     assert(state.calls == 0u);
     assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+
+    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.program.autonomy = (SambuWorkflowAutonomy)999;
+    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(state.calls == 0u);
+    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+
+    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.policy.allow_observation = false;
+    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(state.calls == 0u);
+    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
 }
 
 int main(void)
