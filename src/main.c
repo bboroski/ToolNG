@@ -1652,7 +1652,7 @@ static void draw_sidebar(HDC dc)
                   COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
 
-    draw_text(dc, L"TOOLZNG  0.6.1  /  C17", (RECT){ 24, g_app.client_height - 48, 210,
+    draw_text(dc, L"WDEC  0.6.1  /  C17", (RECT){ 24, g_app.client_height - 48, 210,
               g_app.client_height - 28 }, g_app.font_small, COL_MUTED,
               DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
