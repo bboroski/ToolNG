@@ -1,13 +1,19 @@
 # Changelog
 
+## 0.3.0 — Duck Intelligence Edition
+
+- Added transparent Duck Readiness Score based only on observable Windows-side connection signals.
+- Added USB Pulse event monitoring for Apple USB interface arrival/removal notifications.
+- Added read-only Backup Sentinel checking expected backup marker files (`Info.plist` and `Manifest.db`/`Manifest.plist`).
+- Added Privacy Shield with a private-by-default report choice, technical-detail mode, and save preview.
+- Added DuckFix context-sensitive next-step guidance.
+- Updated the interface and documentation to state measurement limits and avoid unsupported iOS speed claims.
+
 ## 0.2.0 — Duck Edition
 
 - Added a custom GDI-rendered duck mascot to the native Win32 interface.
 - Switched the UI to a graphite-and-gold visual system.
-- Added a Windows `.ico` application icon.
-- Redesigned the README with a duck-themed SVG banner, mascot art, badges, and Russian documentation.
-- Added a short brand guide and clarified the safe optimization scope.
-- Kept USB enumeration, Apple service inspection, backup-folder discovery, and diagnostic report features.
+- Added a duck-themed SVG README banner and illustrations.
 
 ## 0.1.0 — Initial MVP
 
