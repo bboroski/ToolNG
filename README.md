@@ -93,3 +93,9 @@ MIT — див. [LICENSE](LICENSE).
 ## Reaper cycle evidence boundary
 
 [Read-only evidence adapter](docs/REAPER_EVIDENCE_ADAPTER.md) — simulation reports are inspected as local evidence only. ToolNG does not execute firmware or mutate devices.
+
+## NUN Mesh
+
+<p align="center"><img src="assets/nun-mesh.svg" alt="NUN Mesh architecture map" width="960" /></p>
+
+NUN Mesh документує зв'язки ToolNG з незалежними компонентами екосистеми через локальні докази та явні контракти. Діаграма статична: вона не означає автоматичного керування пристроями чи спільного runtime.
