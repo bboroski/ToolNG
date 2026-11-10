@@ -89,3 +89,7 @@ MIT — див. [LICENSE](LICENSE).
 
 - [Project-specific architecture mapping](docs/REAPER_DOMAIN_INTEGRATION.md)
 - [Canonical 50-pattern catalogue in SAMBU](https://github.com/bboroski/SAMBU/blob/main/data/reaper/engineering_patterns_50.tsv)
+
+## Reaper cycle evidence boundary
+
+[Read-only evidence adapter](docs/REAPER_EVIDENCE_ADAPTER.md) — simulation reports are inspected as local evidence only. ToolNG does not execute firmware or mutate devices.
