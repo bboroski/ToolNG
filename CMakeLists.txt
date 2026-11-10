@@ -26,6 +26,10 @@ target_include_directories(ToolzNG.SambuCore
 )
 toolzng_enable_warnings(ToolzNG.SambuCore)
 
+if(UNIX)
+    target_link_libraries(ToolzNG.SambuCore PUBLIC m)
+endif()
+
 if(BUILD_TESTING)
     add_executable(ToolzNG.SambuTests tests/sambu_engine_tests.c)
     target_link_libraries(ToolzNG.SambuTests PRIVATE ToolzNG.SambuCore)
@@ -36,6 +40,11 @@ if(BUILD_TESTING)
     target_link_libraries(ToolzNG.SambuWorkflowTests PRIVATE ToolzNG.SambuCore)
     toolzng_enable_warnings(ToolzNG.SambuWorkflowTests)
     add_test(NAME sambu_workflow_tests COMMAND ToolzNG.SambuWorkflowTests)
+
+    add_executable(ToolzNG.SambuRelaxationTests tests/sambu_relaxation_tests.c)
+    target_link_libraries(ToolzNG.SambuRelaxationTests PRIVATE ToolzNG.SambuCore)
+    toolzng_enable_warnings(ToolzNG.SambuRelaxationTests)
+    add_test(NAME sambu_relaxation_tests COMMAND ToolzNG.SambuRelaxationTests)
 endif()
 
 # The desktop shell is platform-specific; the policy/workflow core remains testable.
