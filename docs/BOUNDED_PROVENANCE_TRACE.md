@@ -5,8 +5,8 @@ how a diagnostic result moved through the tool's processing layers.
 
 ## Contract
 
-The API is declared in src/sambu_engine.h and implemented in
-src/sambu_engine.c:
+The API is declared in src/toolng_engine.h and implemented in
+src/toolng_engine.c:
 
 - stages: source, policy, evidence, assessment, relaxation and report;
 - outcomes: observed, accepted, rejected and degraded;
