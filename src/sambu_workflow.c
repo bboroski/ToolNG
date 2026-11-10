@@ -502,7 +502,8 @@ SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
         session->program.step_count == 0u ||
         session->program.step_count > SAMBU_WORKFLOW_STEP_CAP ||
         session->program.max_steps == 0u ||
-        session->program.max_steps > SAMBU_WORKFLOW_STEP_CAP ||
+        session->policy.max_steps == 0u ||
+        session->program.max_steps > session->policy.max_steps ||
         session->program.step_count > session->program.max_steps ||
         session->policy.max_steps < session->program.step_count ||
         session->cursor >= session->program.step_count ||
