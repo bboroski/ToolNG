@@ -2,88 +2,154 @@
 
 **Integration baseline:** ToolzNG 0.6.1, C17 / Win32  
 **Core revision:** 1.1.0 + workflow runtime 1.1.0  
+**Integration baseline:** ToolzNG 0.5.x, C17 / Win32  
+**Core revision:** 1.2.0  
 **Report contract:** `toolzng.diagnostic.v1`
 
-This integration ports engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's runtime, or claim that ToolzNG can control private iOS functions.
+This integration ports selected engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's host runtime, or claim that ToolzNG controls private iOS functions.
 
 ## The five governing letters
 
 | Letter | SAMBU law | ToolzNG implementation |
 |---|---|---|
-| S | Safety and staged sovereignty | A fail-closed action gate. Read-only inspection is available to the application; report writing, clipboard use and export require a user-origin action. Device mutation and network upload remain denied. |
-| A | Adaptive exploration | A deterministic assessment selects the highest-priority next step from measured Windows evidence. It is a rules engine, not a machine-learning claim. |
-| M | Managed recovery and memory | A 32-entry in-memory ledger deduplicates finding codes and tracks first/last observation plus occurrence count. It never stores raw Hardware IDs, backup paths, source text or device content. |
-| B | Branchable, board-layered design | The assessment/policy/ledger core is isolated in portable `sambu_engine.c/.h`. A dependency graph is validated before the Win32 window starts. Presentation and export are separate graph branches. |
-| U | Unforced interoperability and user sovereignty | Stable finding IDs and a versioned report schema support future consumers. Export stays local and user initiated; there is no required account, cloud service or external runtime. |
+| S | Safety and staged sovereignty | Fail-closed capability gate. Unknown operation and unknown origin are rejected. Device mutation and network upload are always denied. |
+| A | Adaptive exploration | Deterministic assessment from measured Windows evidence; no machine-learning claim. |
+| M | Managed recovery and memory | Bounded 32-entry finding ledger with monotonic timestamps and a 10-minute recurrence window. Raw Hardware IDs, backup paths and device payloads are not stored in the ledger. |
+| B | Branchable, board-layered design | Portable C17 assessment core, policy gate, platform adapter, memory, presentation and export layers. Dependency graph validated before the Win32 window starts. |
+| U | Unforced interoperability and user sovereignty | Stable finding IDs, additive report evidence fields and local user-initiated export. No account or cloud service required. |
 
-The laws form a repeatable loop: **S** constrains the action → **A** evaluates evidence → **M** remembers a bounded result → **B** isolates the implementation → **U** preserves the user's ability to inspect and export it.
+The laws form a repeatable loop: S constrains the action → A evaluates evidence → M remembers a bounded result → B isolates the implementation → U preserves the user's ability to inspect and export it.
 
-## Articulatory families mapped to ToolzNG
+## SAMBU Quality Gate — revision 1.2.0
 
-SAMBU's articulatory syntax defines ten consonant families. ToolzNG uses each family as an architectural lens:
+The 1.2.0 assessment validates evidence before awarding points.
 
-| Family | SAMBU semantic field | Concrete ToolzNG role |
+### Typed backup evidence
+
+SambuEvidence now carries exact discovered and valid folder counts:
+
+- backup_folders_seen: number of discovered backup folders inspected;
+- backup_folders_valid: number of inspected folders with both expected marker files;
+- backup_marker_valid: compatibility indicator that at least one discovered folder passed marker checks.
+
+A complete marker set requires a backup root, at least one discovered folder, consistent counters, at least one valid folder, and equality between valid and discovered counts. Partial validation never receives the full marker bonus.
+
+The invariant is:
+
+    backup_folders_valid <= backup_folders_seen
+    (backup_folders_valid > 0) == backup_marker_valid
+    valid backup set = backup root exists AND seen > 0 AND valid == seen
+
+### Integrity flags
+
+| Flag | Meaning | Effect |
 |---|---|---|
-| K | Structure | The separate C17 engine module and validated dependency graph |
-| T | Flow | The ordered diagnostic path and next-step selection |
-| R | Value | Typed evidence fields, integer bounds and stable finding codes |
-| M | Memory | The bounded, deduplicating finding ledger |
-| S | Safeguard | Fail-closed permissions and prohibition of automatic device mutation |
-| V | Measure | Readiness score, confidence and evidence bitmask |
-| D | Evidence | Stable assessment identifiers, report schema and SHA-256 report seal |
-| N | Coordination | Bounded USB event observation and local PulseVault journal |
-| P | Transform | Explicit conversion of assessment results into a local report or user-selected export |
-| L | Language | Stable machine identifiers separated from Russian presentation text, leaving room for RU/EN labels |
+| DEVICE_WITHOUT_SCAN | A device signal is present without a completed scan. | Device visibility is not credited; confidence becomes 25%. |
+| BACKUP_COUNTS_INCONSISTENT | Counts or compatibility marker disagree. | Backup marker evidence is not credited; confidence becomes 25%. |
+| BACKUP_SET_INCOMPLETE | One or more discovered backup folders lack expected markers. | Full marker bonus is withheld; finding becomes backup structure; confidence becomes 25%. |
+| STABILITY_WITHOUT_WATCH | A stability window elapsed while no USB watcher was registered. | Stability evidence and bonus are withheld; confidence becomes 25%. |
 
-The five vowel grades also map cleanly to a diagnostic lifecycle:
+More than one flag maps to multiple_integrity_warnings. A zero flag set maps to clean.
 
-- **A — initiate:** begin a user-requested scan.
-- **E — inspect:** collect Windows-visible PnP, service and backup-marker evidence.
-- **I — transform:** calculate readiness and evidence flags.
-- **O — compose:** select one prioritized finding from the collected signals.
-- **U — complete:** produce a local report or export only after an explicit user action.
+### Confidence mapping
 
-The four grammatical endings are treated as API design rules: `-va` names an operation, `-ven` a resource or entity, `-vir` a dependency/relationship, and `-vum` an observed state/result. They inform naming and boundaries; they are not inserted as decorative syntax into C.
+| Condition | Confidence |
+|---|---:|
+| Completed scan, active watcher, no integrity warnings | 100% |
+| Completed scan, watcher unavailable before the observation window expires, no integrity warnings | 85% |
+| Scan incomplete, no integrity warnings | 40% |
+| Any Quality Gate integrity warning | 25% |
 
-## Assessment contract
+Confidence is a data-completeness and consistency indicator for this local diagnostic procedure. It is not a statistical probability that the iPhone is healthy.
 
-The engine uses the established, explainable readiness weights:
+### Score contract
 
 | Signal | Contribution |
 |---|---:|
-| Apple USB interface visible after a completed scan | 40 |
-| Apple Mobile Device Service running | 25 |
-| Local backup directory found | 10 |
-| Expected backup marker files present | 15 |
-| USB watch registered, warm-up complete and no recent removals | 10 |
+| Completed scan and visible Apple USB interface | +40 |
+| Apple Mobile Device Service running | +25 |
+| Backup root found | +10 |
+| Every discovered backup folder has expected markers | +15 |
+| Device confirmed, watcher active, observation window elapsed and no recent removals | +10 |
 
-A scan failure is classified as **unknown**, not as proof that no device exists. The finding priority is deterministic: scan unavailable → device not visible → Apple service unavailable → unstable USB → invalid backup markers → stale backup marker → backup not verified → Windows-side checks passed.
+The maximum remains 100. A partial marker set does not receive the +15 marker credit. A scan-incomplete device signal does not receive the +40 device credit. A stability window without its watcher does not receive the +10 stability credit.
 
-Confidence is 40% when device scanning is unavailable, 85% when the scan completes but the USB watcher is unavailable, and 100% when both are available. This confidence is a completeness indicator for these local checks, not a probability that the iPhone is healthy.
+Finding priority remains deterministic: scan unavailable → device not visible → Apple service unavailable → unstable USB → incomplete backup structure → stale verified backup marker → backup not verified → Windows-side checks passed.
 
-## Memory, privacy and compatibility
+## Articulatory families mapped to ToolzNG
 
-The ledger retains only numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes; repeated observations increment a counter. It is in-memory only and resets when the application exits, matching SAMBU's explicit-export memory model.
+| Family | SAMBU semantic field | Concrete ToolzNG role |
+|---|---|---|
+| K | Structure | Separate C17 engine module and validated dependency graph |
+| T | Flow | Ordered diagnostic path and next-step selection |
+| R | Value | Typed evidence fields, integer bounds and stable finding codes |
+| M | Memory | Bounded, deduplicating finding ledger |
+| S | Safeguard | Fail-closed permissions and prohibition of automatic device mutation |
+| V | Measure | Readiness score, confidence, evidence mask and quality flags |
+| D | Evidence | Stable assessment identifiers, report schema and SHA-256 report seal |
+| N | Coordination | Bounded USB event observation and local PulseVault journal |
+| P | Transform | Explicit conversion of assessment results into a local report or user-selected export |
+| L | Language | Stable machine identifiers separated from user-facing text |
 
-The report schema is additive and versioned. Consumers should rely on stable finding codes and schema version, not on Russian display strings. The SHA-256 sidecar detects later file changes; it does not prove that the observations themselves are true.
+The five vowel grades map to the diagnostic lifecycle:
+
+- A — initiate: begin a user-requested scan.
+- E — inspect: collect Windows-visible PnP, service and backup-marker evidence.
+- I — transform: calculate readiness, evidence flags and quality warnings.
+- O — compose: select one prioritized finding from the collected signals.
+- U — complete: produce a local report or export only after an explicit user action.
+
+The four grammatical endings inform API design roles: operation, resource/entity, dependency/relationship, and observed state/result. They are not inserted as decorative syntax into C.
+
+## Memory and recurrence
+
+The engine retains the original signal weights but now distinguishes **verified negative** from **not measured**. The weights are not silently treated as zero when Windows could not complete a check.
+
+| Signal | Maximum contribution | When it is measurable |
+|---|---:|---|
+| Apple USB interface visible | 40 | Windows PnP enumeration completed |
+| Apple Mobile Device Service running | 25 | Service Control Manager query and service status call completed, or service absence was explicitly confirmed |
+| Local backup directory found | 10 | Backup directory enumeration completed |
+| Expected backup marker files present | 15 | Backup directory enumeration completed |
+| USB connection stable | 10 | Device visible, USB watcher registered, and the warm-up window elapsed without removals |
+
+The score is normalized over the measured weights: `earned points / measurable points × 100`. **Evidence coverage** is the sum of measurable weights, expressed as a percentage of the full 100-point model. If coverage is below 100%, the score is marked provisional. A perfect score with 40% coverage therefore means only that the measured portion passed; it is not a complete all-checks result.
+
+The existing `confidence_percent` field remains as a compatibility alias for coverage. It is explicitly **not** a probability or a statistical confidence estimate.
+
+The finding priority keeps uncertainty explicit: scan unavailable → device not visible → Apple service status unknown → service confirmed unavailable → unstable USB → backup scan incomplete → invalid backup markers → stale backup marker → backup not verified → USB stability unconfirmed → Windows-side checks passed.
+
+SHA-256 sidecar detects later changes to the saved report. It does not prove that the recorded observations were true.
 
 ## Verification
 
 The CTest target checks:
 - fail-closed capability rules;
-- incomplete-scan handling and score calculation;
+- incomplete-scan handling, evidence coverage and normalized score contributions;
+- distinction between unknown service/backup/stability states and verified negative findings;
 - finding priority for stale backups and unstable USB;
-- bounded/deduplicated ledger behavior;
-- dependency-graph validation;
-- stable engine and report identifiers.
+- backup counter consistency and all-folders-complete semantics;
+- quality flags for incomplete backup sets and absent USB watcher;
+- bounded / deduplicated ledger behavior;
+- recurrence windows and single / recurrent / persistent classification;
+- dependency graph validation;
+- stable engine, finding and report identifiers.
 
-Build the application and run the tests on Windows with:
+Portable build:
 
-```powershell
+~~~bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+~~~
+
+Windows x64 build:
+
+~~~powershell
 cmake -S . -B build -A x64
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
-```
+~~~
 
 ## Explicit non-goals
 
@@ -158,3 +224,4 @@ Each evidence record contains a step number, allowlisted action enum, success st
 ### Failure semantics
 
 Lexical, syntax, unknown-action, duplicate-name, source-size, step-budget and policy errors are rejected before dispatch. Host errors are reported against the originating step span and terminate the run. A failed workflow can still produce a user-requested diagnostic report containing the partial evidence already collected.
+This core does not discover private Apple protocols, bypass pairing or Activation Lock, modify iOS, repair Windows drivers automatically, inspect personal backup payloads, upload data, run arbitrary plugins or perform hardware cable diagnostics. No SAMBU Python component is represented as a native ToolzNG feature.

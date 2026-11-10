@@ -106,6 +106,8 @@ typedef struct AppState {
     UINT zoom_percent;
     BOOL high_contrast;
     BOOL scan_complete;
+    BOOL apple_service_query_complete;
+    BOOL backup_scan_complete;
     UINT device_count;
     AppleDevice devices[MAX_APPLE_DEVICES];
     WCHAR status[320];
@@ -154,8 +156,9 @@ typedef struct AppState {
     SambuLedger sambu_ledger;
     SambuWorkflow sambu_workflow;
     SambuWorkflowSession sambu_workflow_session;
+    SambuFinding last_ledger_finding;
     WCHAR coach_title[180];
-    WCHAR coach_body[420];
+    WCHAR coach_body[640];
     HFONT font_brand;
     HFONT font_title;
     HFONT font_heading;
@@ -356,12 +359,13 @@ static void read_apple_service_status(void)
     size_t i;
 
     g_app.apple_service_running = FALSE;
+    g_app.apple_service_query_complete = FALSE;
     copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
-              L"Служба Apple не обнаружена.");
+              L"Статус службы Apple пока не проверен.");
 
     if (!manager) {
         copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
-                  L"Статус службы недоступен (нет доступа к Service Control Manager).");
+                  L"Статус службы недоступен: Windows не открыла Service Control Manager.");
         return;
     }
 
@@ -374,6 +378,7 @@ static void read_apple_service_status(void)
         ZeroMemory(&status, sizeof(status));
         if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO,
                 (LPBYTE)&status, sizeof(status), &bytes_needed)) {
+            g_app.apple_service_query_complete = TRUE;
             switch (status.dwCurrentState) {
                 case SERVICE_RUNNING:
                     g_app.apple_service_running = TRUE;
@@ -395,9 +400,19 @@ static void read_apple_service_status(void)
             }
         } else {
             copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
-                      L"Служба Apple найдена, но её статус прочитать не удалось.");
+                      L"Служба Apple найдена, но Windows не смогла прочитать её состояние.");
         }
         CloseServiceHandle(service);
+    } else {
+        const DWORD open_error = GetLastError();
+        if (open_error == ERROR_SERVICE_DOES_NOT_EXIST) {
+            g_app.apple_service_query_complete = TRUE;
+            copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
+                      L"Служба Apple не установлена (проверка завершена).");
+        } else {
+            copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
+                      L"Наличие службы Apple не удалось подтвердить: проверка недоступна.");
+        }
     }
     CloseServiceHandle(manager);
 }
@@ -421,7 +436,7 @@ static void append_path(WCHAR *destination, size_t capacity,
 }
 
 
-/* ToolzNG 0.4 local-only intelligence store. No device serials or backup payloads are written. */
+/* ToolzNG 0.6 local-only intelligence store. No device serials or backup payloads are written. */
 static void initialize_local_store(void)
 {
     WCHAR base[MAX_PATH * 2] = {0};
@@ -675,6 +690,8 @@ static void audit_backup_folder(void)
     DWORD folders = 0, valid = 0;
     FILETIME newest_write = {0};
     BOOL have_newest_write = FALSE;
+    DWORD enumeration_error = ERROR_SUCCESS;
+    g_app.backup_scan_complete = FALSE;
     g_app.backup_age_days = ~(ULONGLONG)0;
 
     g_app.backup_folder_count = 0;
@@ -714,7 +731,14 @@ static void audit_backup_folder(void)
             }
         }
     } while (FindNextFileW(find, &data));
+    enumeration_error = GetLastError();
     FindClose(find);
+    if (enumeration_error != ERROR_NO_MORE_FILES) {
+        copy_text(g_app.backup_audit, ARRAYSIZE(g_app.backup_audit),
+                  L"Backup Sentinel: перечисление прервано; результат неполный.");
+        return;
+    }
+    g_app.backup_scan_complete = TRUE;
 
     if (have_newest_write) {
         FILETIME now_file;
@@ -805,21 +829,30 @@ static void compute_readiness_and_coach(void)
 
     evidence.scan_complete = g_app.scan_complete != FALSE;
     evidence.device_found = g_app.device_count > 0;
+    evidence.service_query_complete = g_app.apple_service_query_complete != FALSE;
     evidence.service_running = g_app.apple_service_running != FALSE;
+    evidence.backup_scan_complete = g_app.backup_scan_complete != FALSE;
     evidence.backup_found = g_app.backup_found != FALSE;
     evidence.backup_marker_valid = g_app.backup_valid_count > 0;
-    evidence.backup_folders_seen = (int)g_app.backup_folder_count;
+    evidence.backup_folders_seen = (uint32_t)g_app.backup_folder_count;
+    evidence.backup_folders_valid = (uint32_t)g_app.backup_valid_count;
     evidence.backup_age_known = g_app.backup_age_days != ~(ULONGLONG)0;
     evidence.backup_age_days = evidence.backup_age_known
-        ? (uint32_t)g_app.backup_age_days : 0u;
+        ? (g_app.backup_age_days > UINT32_MAX
+            ? UINT32_MAX : (uint32_t)g_app.backup_age_days)
+        : 0u;
     evidence.recent_usb_removals = removals;
     evidence.usb_watch_registered = g_app.usb_watch_registered != FALSE;
     evidence.stability_window_elapsed = elapsed >= USB_STABILITY_WARMUP_MS;
 
     g_app.sambu_assessment = sambu_assess(&evidence);
     g_app.readiness_score = g_app.sambu_assessment.readiness_score;
-    sambu_ledger_record(&g_app.sambu_ledger,
-        (uint32_t)g_app.sambu_assessment.finding, GetTickCount64());
+    if (g_app.sambu_assessment.finding != SAMBU_FINDING_NONE &&
+        g_app.sambu_assessment.finding != g_app.last_ledger_finding) {
+        sambu_ledger_record(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding, GetTickCount64());
+    }
+    g_app.last_ledger_finding = g_app.sambu_assessment.finding;
 
     switch (g_app.sambu_assessment.finding) {
         case SAMBU_FINDING_SCAN_UNAVAILABLE:
@@ -864,6 +897,24 @@ static void compute_readiness_and_coach(void)
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. ToolzNG не создаёт и не изменяет backup самостоятельно.");
             break;
+        case SAMBU_FINDING_SERVICE_UNKNOWN:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: статус службы Apple не подтверждён");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Windows не смогла получить доступ к Service Control Manager или прочитать состояние службы. Это не означает, что служба остановлена или отсутствует. Проверь доступность системной службы и повтори диагностику; ToolzNG не меняет её состояние автоматически.");
+            break;
+        case SAMBU_FINDING_BACKUP_UNKNOWN:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: проверка резервной копии неполная");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"ToolzNG не смог полностью перечислить стандартный каталог backup. Это не доказывает, что копии нет или что её маркеры повреждены. Проверь доступ к папке и повтори сканирование; содержимое резервной копии не открывается.");
+            break;
+        case SAMBU_FINDING_STABILITY_UNCONFIRMED:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: стабильность USB ещё не подтверждена");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Для вывода о стабильности требуется зарегистрированный Windows-наблюдатель и завершённое окно наблюдения. Отсутствие этих данных не означает, что кабель неисправен или что соединение стабильно.");
+            break;
         case SAMBU_FINDING_HEALTHY:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: базовые проверки пройдены");
@@ -877,6 +928,35 @@ static void compute_readiness_and_coach(void)
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Повтори диагностику, чтобы получить проверяемые сигналы.");
             break;
+    }
+
+    if (g_app.sambu_assessment.quality_flags != 0u) {
+        WCHAR quality_key[64];
+        WCHAR note[240];
+        copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
+            sambu_quality_key(g_app.sambu_assessment.quality_flags));
+        if (swprintf_s(note, ARRAYSIZE(note),
+                L"\r\nSAMBU Quality Gate: %ls. Повтори проверку; неподтверждённые сигналы не учитываются в оценке.",
+                quality_key) > 0) {
+            (void)wcscat_s(g_app.coach_body, ARRAYSIZE(g_app.coach_body), note);
+        }
+    }
+
+    if (g_app.sambu_assessment.finding != SAMBU_FINDING_NONE &&
+        g_app.sambu_assessment.finding != SAMBU_FINDING_HEALTHY) {
+        const uint32_t repeats = sambu_ledger_recent_occurrences(
+            &g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding,
+            GetTickCount64());
+        if (repeats >= 2u) {
+            WCHAR note[144];
+            if (swprintf_s(note, ARRAYSIZE(note),
+                    L"\r\nПовторяемость: %u случаев за 10 минут. Проверь первопричину.",
+                    (unsigned)repeats) > 0) {
+                (void)wcscat_s(g_app.coach_body,
+                               ARRAYSIZE(g_app.coach_body), note);
+            }
+        }
     }
 }
 
@@ -975,8 +1055,6 @@ static void open_backup_folder(void)
             L"Создай резервную копию через приложение Apple Devices или iTunes — после этого ToolzNG сможет открыть её расположение.\n\n"
             L"ToolzNG ничего не удаляет из резервных копий.",
             APP_TITLE, MB_OK | MB_ICONINFORMATION);
-        (void)ShellExecuteW(g_app.hwnd, L"open",
-            L"https://support.apple.com/en-us/108809", NULL, NULL, SW_SHOWNORMAL);
         return;
     }
 
@@ -1081,6 +1159,7 @@ static void save_duckfix_route(void)
 {
     SYSTEMTIME now;
     WCHAR path[MAX_PATH * 2], filename[160], contents[5000];
+    WCHAR engine_version[32], report_schema[64];
     if (!sambu_authorize(SAMBU_OP_WRITE_PRIVATE_REPORT, SAMBU_ORIGIN_USER)) {
         set_status(L"Сохранение маршрута требует явного действия пользователя.");
         return;
@@ -1094,10 +1173,13 @@ static void save_duckfix_route(void)
         set_status(L"Локальное хранилище отчётов недоступно.");
         return;
     }
+    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), sambu_engine_version());
+    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), sambu_report_schema());
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
-        L"DuckFix-%04u%02u%02u-%02u%02u%02u.txt",
-        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+        L"DuckFix-%04u%02u%02u-%02u%02u%02u-%03u.txt",
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
+        now.wSecond, now.wMilliseconds);
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
@@ -1105,6 +1187,9 @@ static void save_duckfix_route(void)
         L"SAMBU finding code: %u · confidence: %u%%\r\n"
         L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
+        L"SAMBU engine: 1.2.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU finding code: %u · evidence coverage: %u%%\r\n"
+        L"Оценка: %ls\r\nСостояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
         L"ПЕРСОНАЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ\r\n%ls\r\n%ls\r\n\r\n"
@@ -1116,12 +1201,15 @@ static void save_duckfix_route(void)
         L"5. Не удаляй папки backup и не прошивай устройство ради ошибки подключения.\r\n\r\n"
         L"Это план действий, а не автоматический ремонт. ToolzNG не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
+        engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding,
         g_app.sambu_assessment.confidence_percent,
         sambu_workflow_state_name(g_app.sambu_workflow_session.state),
         (unsigned)g_app.sambu_workflow_session.run.passed,
         (unsigned)g_app.sambu_workflow.step_count,
         (unsigned)g_app.sambu_workflow_session.run.failed,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.sambu_assessment.score_provisional ? L"предварительная" : L"полная",
         g_app.status, g_app.readiness_score, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1282,6 +1370,11 @@ static void save_report(void)
     WCHAR report_path[MAX_PATH * 2];
     WCHAR filename[160];
     WCHAR finding_key[64];
+    WCHAR engine_version[32];
+    WCHAR report_schema[64];
+    WCHAR pattern_key[32];
+    WCHAR quality_key[64];
+    WCHAR backup_age_text[64] = L"нет данных";
     WCHAR report[REPORT_CHARS];
     SYSTEMTIME now;
     int count;
@@ -1305,10 +1398,22 @@ static void save_report(void)
     get_recent_usb_counts(&recent_arrivals, &recent_removals);
     copy_ascii_to_wide(finding_key, ARRAYSIZE(finding_key),
                        sambu_finding_key(g_app.sambu_assessment.finding));
+    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), sambu_engine_version());
+    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), sambu_report_schema());
+    copy_ascii_to_wide(pattern_key, ARRAYSIZE(pattern_key),
+        sambu_pattern_key(sambu_ledger_pattern(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding, GetTickCount64())));
+    copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
+        sambu_quality_key(g_app.sambu_assessment.quality_flags));
+    if (g_app.backup_age_days != ~(ULONGLONG)0) {
+        swprintf_s(backup_age_text, ARRAYSIZE(backup_age_text),
+            L"%llu дней", (unsigned long long)g_app.backup_age_days);
+    }
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
-        L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
-        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+        L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u-%03u.txt",
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
+        now.wSecond, now.wMilliseconds);
     append_path(report_path, ARRAYSIZE(report_path), g_app.reports_dir, filename);
 
     count = swprintf_s(report, ARRAYSIZE(report),
@@ -1319,20 +1424,38 @@ static void save_report(void)
         L"Платформа: Windows\r\n"
         L"SAMBU engine: 1.1.0\r\n"
         L"Diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU engine: %ls\r\n"
+        L"Diagnostic schema: %ls\r\n"
         L"SAMBU finding code: %u\r\n"
         L"SAMBU finding key: %ls\r\n"
-        L"SAMBU confidence: %u%%\r\n"
+        L"Evidence coverage: %u%% (legacy confidence field; not a probability)\r\n"
+        L"Readiness score: %d/100; status: %ls\r\n"
+        L"Score contributors: Apple USB %d/40; Apple service %d/25; backup folder %d/10; markers %d/15; stable USB %d/10\r\n"
         L"SAMBU evidence mask: 0x%08lX\r\n"
-        L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n\r\n"
+        L"SAMBU evidence quality: %ls (0x%08lX)\r\n"
+        L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n"
+        L"SAMBU recurrence (10 min): %u; pattern: %ls\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
-        now.wSecond,
+        now.wSecond, engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding, finding_key,
-        g_app.sambu_assessment.confidence_percent,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.readiness_score,
+        g_app.sambu_assessment.score_provisional ? L"provisional" : L"complete",
+        g_app.sambu_assessment.device_points,
+        g_app.sambu_assessment.service_points,
+        g_app.sambu_assessment.backup_points,
+        g_app.sambu_assessment.marker_points,
+        g_app.sambu_assessment.stability_points,
         (unsigned long)g_app.sambu_assessment.evidence_mask,
+        quality_key,
+        (unsigned long)g_app.sambu_assessment.quality_flags,
         (unsigned)sambu_ledger_unique_count(&g_app.sambu_ledger),
         (unsigned)sambu_ledger_occurrences(&g_app.sambu_ledger,
             (uint32_t)g_app.sambu_assessment.finding),
+        (unsigned)sambu_ledger_recent_occurrences(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding, GetTickCount64()),
+        pattern_key,
         g_app.device_count);
     if (count < 0) {
         set_status(L"Не удалось сформировать отчёт: ошибка форматирования.");
@@ -1352,8 +1475,10 @@ static void save_report(void)
         L"Папка резервных копий: %ls\r\n"
         L"Backup Sentinel: %ls\r\n"
         L"Backup folders: %lu; marker-valid: %lu\r\n"
-        L"Возраст новейшего Info.plist: %llu дней (оценка по времени изменения)\r\n"
-        L"Duck Readiness: %d/100 (оценка Windows-side сигналов)\r\n"
+        L"Возраст новейшего Info.plist: %ls (оценка по времени изменения)\r\n"
+        L"Duck Readiness: %d/100 (покрытие измерениями %u%%)\r\n"
+        L"Проверка службы завершена: %ls\r\n"
+        L"Проверка Backup Sentinel завершена: %ls\r\n"
         L"USB Pulse за 10 минут: %u подключений / %u отключений\r\n"
         L"LinkDNA baseline: %ls\r\n"
         L"LinkDNA изменился: %ls\r\n\r\n"
@@ -1368,8 +1493,12 @@ static void save_report(void)
         g_app.backup_audit,
         (unsigned long)g_app.backup_folder_count,
         (unsigned long)g_app.backup_valid_count,
-        (unsigned long long)(g_app.backup_age_days == ~(ULONGLONG)0 ? 0 : g_app.backup_age_days),
-        g_app.readiness_score, recent_arrivals, recent_removals,
+        backup_age_text,
+        g_app.readiness_score,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.apple_service_query_complete ? L"да" : L"нет",
+        g_app.backup_scan_complete ? L"да" : L"нет",
+        recent_arrivals, recent_removals,
         g_app.link_baseline_known ? L"инициализирован" : L"не создан",
         g_app.link_profile_changed ? L"да" : L"нет");
     if (count < 0) {
@@ -1433,7 +1562,7 @@ static void draw_header(HDC dc, int width)
               DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"ToolzNG", (RECT){ 80, 20, 260, 55 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"APPLE DEVICE DIAGNOSTICS", (RECT){ 82, 54, 360, 74 },
+    draw_text(dc, L"APPLE DEVICE DIAGNOSTICS  ·  v0.6.1", (RECT){ 82, 54, 390, 74 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
     draw_button(dc, g_app.zoom_minus_button, L"A−", FALSE);
@@ -1489,7 +1618,7 @@ static void draw_sidebar(HDC dc)
                   COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
 
-    draw_text(dc, L"TOOLZNG  /  C17", (RECT){ 24, g_app.client_height - 48, 200,
+    draw_text(dc, L"TOOLZNG  0.6.1  /  C17", (RECT){ 24, g_app.client_height - 48, 210,
               g_app.client_height - 28 }, g_app.font_small, COL_MUTED,
               DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
@@ -1502,6 +1631,16 @@ static void draw_page_heading(HDC dc, const WCHAR *title, const WCHAR *subtitle)
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
 
+static void format_quality_summary(WCHAR *buffer, size_t buffer_count)
+{
+    const WCHAR *state = g_app.sambu_assessment.quality_flags == 0u
+        ? L"OK — сигналы согласованы"
+        : L"ВНИМАНИЕ — см. DuckFix";
+    swprintf_s(buffer, buffer_count,
+        L"SAMBU Quality Gate · %ls · confidence %u%%",
+        state, g_app.sambu_assessment.confidence_percent);
+}
+
 static void draw_overview(HDC dc)
 {
     int x = 250;
@@ -1512,6 +1651,7 @@ static void draw_overview(HDC dc)
     RECT hero = { x, 188, right, 388 };
     WCHAR headline[160];
     WCHAR subline[240];
+    WCHAR quality_line[220];
     int card_y = 416;
 
     draw_page_heading(dc, L"Центр управления", L"Проверяй подключение и обслуживай устройства Apple без рискованных вмешательств.");
@@ -1520,8 +1660,12 @@ static void draw_overview(HDC dc)
     draw_text(dc, L"СОСТОЯНИЕ ПОДКЛЮЧЕНИЯ", (RECT){ x + 24, 208, right - 24, 232 },
               g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     {
-        WCHAR score_line[96];
-        swprintf_s(score_line, ARRAYSIZE(score_line), L"DUCK READINESS  ·  %d/100", g_app.readiness_score);
+        WCHAR score_line[160];
+        swprintf_s(score_line, ARRAYSIZE(score_line),
+            L"DUCK READINESS  ·  %d/100  ·  coverage %u%%  ·  %ls",
+            g_app.sambu_assessment.readiness_score,
+            g_app.sambu_assessment.score_coverage_percent,
+            g_app.sambu_assessment.score_provisional ? L"partial" : L"complete");
         draw_text(dc, score_line, (RECT){ x + 24, 232, right - 176, 253 },
                   g_app.font_small, COL_AMBER, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
@@ -1586,10 +1730,10 @@ static void draw_overview(HDC dc)
               (RECT){ g_app.care_button.left + 16, card_y + 18,
                       g_app.care_button.right - 12, card_y + 43 },
               g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"Проверка скорости", (RECT){ g_app.care_button.left + 16,
+    draw_text(dc, L"Рекомендации iOS", (RECT){ g_app.care_button.left + 16,
               card_y + 53, g_app.care_button.right - 12, card_y + 82 },
               g_app.font_button, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"Практические настройки iOS: хранилище, аккумулятор, температура и сеть.",
+    draw_text(dc, L"Практические советы по настройкам и обслуживанию iOS — без ложных измерений.",
               (RECT){ g_app.care_button.left + 16, card_y + 88,
                       g_app.care_button.right - 16, card_y + 137 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_TOP | DT_WORDBREAK);
@@ -1609,6 +1753,11 @@ static void draw_overview(HDC dc)
         draw_text(dc, pulse, (RECT){ x + 2, 647, right, 668 },
                   g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     }
+    format_quality_summary(quality_line, ARRAYSIZE(quality_line));
+    draw_text(dc, quality_line, (RECT){ x + 2, 669, right, 691 },
+        g_app.font_small,
+        g_app.sambu_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
+        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 }
 
 static void draw_devices(HDC dc)
@@ -1626,35 +1775,53 @@ static void draw_devices(HDC dc)
               (RECT){ x + 18, 198, right - 18, 244 },
               g_app.font_body, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
+    {
+        WCHAR quality_line[220];
+        WCHAR backup_line[160];
+        format_quality_summary(quality_line, ARRAYSIZE(quality_line));
+        swprintf_s(backup_line, ARRAYSIZE(backup_line),
+            L"Backup markers: %lu / %lu folders verified",
+            (unsigned long)g_app.backup_valid_count,
+            (unsigned long)g_app.backup_folder_count);
+        draw_round_rect(dc, (RECT){ x, 262, right, 314 }, COL_CARD, COL_BORDER, 10);
+        draw_text(dc, quality_line, (RECT){ x + 16, 268, right - 16, 288 },
+            g_app.font_small,
+            g_app.sambu_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+        draw_text(dc, backup_line, (RECT){ x + 16, 290, right - 16, 308 },
+            g_app.font_small, COL_MUTED,
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+    }
+
     if (g_app.device_count == 0) {
-        draw_round_rect(dc, (RECT){ x, 274, right, 374 }, COL_CARD, COL_BORDER, 12);
+        draw_round_rect(dc, (RECT){ x, 326, right, 426 }, COL_CARD, COL_BORDER, 12);
         draw_text(dc, g_app.scan_complete ? L"Устройства Apple не найдены" : L"Нажми «Повторить поиск»",
-                  (RECT){ x + 20, 292, right - 20, 326 },
+                  (RECT){ x + 20, 344, right - 20, 378 },
                   g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         draw_text(dc, L"Проверь разблокировку iPhone/iPad, кабель с передачей данных и драйвер Apple Devices.",
-                  (RECT){ x + 20, 331, right - 20, 360 },
+                  (RECT){ x + 20, 383, right - 20, 412 },
                   g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     } else {
         for (i = 0; i < (int)g_app.device_count && i < 4; ++i) {
-            int top = 274 + i * 86;
-            RECT item = { x, top, right, top + 74 };
+            int top = 326 + i * 74;
+            RECT item = { x, top, right, top + 68 };
             WCHAR id_line[600];
             draw_round_rect(dc, item, COL_CARD, COL_BORDER, 10);
             draw_text(dc, g_app.devices[i].name,
-                      (RECT){ x + 18, top + 8, right - 18, top + 34 },
+                      (RECT){ x + 18, top + 6, right - 18, top + 31 },
                       g_app.font_button, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             swprintf_s(id_line, ARRAYSIZE(id_line), L"%ls  |  %ls",
                 g_app.devices[i].manufacturer[0] ? g_app.devices[i].manufacturer : L"Apple",
                 g_app.devices[i].hardware_id);
             draw_text(dc, id_line,
-                      (RECT){ x + 18, top + 37, right - 18, top + 64 },
+                      (RECT){ x + 18, top + 34, right - 18, top + 61 },
                       g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
         }
         if (g_app.device_count > 4) {
             WCHAR more[96];
             swprintf_s(more, ARRAYSIZE(more), L"Дополнительных записей: %u",
                        g_app.device_count - 4);
-            draw_text(dc, more, (RECT){ x + 2, 625, right, 648 },
+            draw_text(dc, more, (RECT){ x + 2, 620, right, 642 },
                       g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         }
     }
@@ -1807,8 +1974,8 @@ static void draw_help(HDC dc)
     draw_page_heading(dc, L"Справка ToolzNG",
         L"Локальное руководство — доступно без браузера и подключения к сети.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_bullet(dc, 210, L"Масштаб интерфейса",
-        L"Кнопки A− / A+ в верхней панели меняют масштаб интерфейса. Ctrl + плюс / минус — быстрый способ; Ctrl + 0 возвращает 100%. Значение сохраняется в профиле Windows.");
+    draw_bullet(dc, 210, L"Горячие клавиши и масштаб",
+        L"F5 запускает повторное USB-сканирование, Ctrl + R создаёт локальный отчёт, F1 открывает эту справку. Кнопки A− / A+ и Ctrl + плюс / минус меняют масштаб; Ctrl + 0 возвращает 100%.");
     draw_bullet(dc, 282, L"Отчёты и история",
         L"Создай отчёт на главном экране. Приватная версия автоматически сохранится в %LOCALAPPDATA%\\\\ToolzNG\\\\Reports и откроется во вкладке «Отчёты». История сохраняет последние 32 файла.");
     draw_bullet(dc, 354, L"Предпросмотр и копирование",
@@ -1829,8 +1996,11 @@ static void draw_about(HDC dc)
 
     draw_page_heading(dc, L"О ToolzNG", L"Нативная Windows-утилита на C17 и Win32 API.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_text(dc, L"ToolzNG  0.5.0", (RECT){ x + 24, 216, right - 24, 254 },
+    draw_text(dc, L"ToolzNG  0.6.1", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    draw_text(dc, L"SAMBU Engine 1.2.0 · evidence coverage · Recurrence Radar 10 min · ledger 32",
+              (RECT){ x + 24, 258, right - 24, 276 },
+              g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },
               g_app.font_button, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"C17 · Win32 API · GDI 2D · SetupAPI · Windows Service Control Manager · CMake",
@@ -2119,7 +2289,12 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 InvalidateRect(hwnd, NULL, FALSE);
                 return 0;
             }
+            if (wparam == VK_F5) {
+                handle_action(ACTION_SCAN);
+                return 0;
+            }
             if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+                if (wparam == L'R') { handle_action(ACTION_REPORT); return 0; }
                 if (wparam == VK_OEM_PLUS || wparam == VK_ADD) { adjust_zoom(10); return 0; }
                 if (wparam == VK_OEM_MINUS || wparam == VK_SUBTRACT) { adjust_zoom(-10); return 0; }
                 if (wparam == L'0') {

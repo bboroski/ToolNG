@@ -4,7 +4,7 @@ ToolzNG is a Windows-side connection diagnostics and safe-maintenance assistant,
 
 ## Five differentiated ToolzNG features
 
-1. **Duck Readiness Score** — a transparent 0–100 estimate based on visible Apple USB PnP presence, Apple service state, backup folder/marker presence, and a short USB stability observation window. It does not score iOS performance or device health.
+1. **Duck Readiness Score** — a transparent 0–100 Windows-side estimate normalized over successfully measured signals. Evidence coverage is shown separately; incomplete service, backup or USB checks remain unknown rather than being misreported as negative. A partial score is marked provisional. It does not score iOS performance or device health.
 2. **USB Pulse** — listens for Windows device-interface arrival/removal notifications and records recent events whose interface path contains `VID_05AC`. It is not a cable electrical test or throughput benchmark.
 3. **Backup Sentinel** — read-only checks for `Info.plist` plus `Manifest.db` or `Manifest.plist` inside backup subfolders. It does not verify backup contents, cryptographic integrity, completeness, or restore-ability.
 4. **Privacy Shield** — current 0.5 reports are private by default; Hardware IDs and exact backup paths are omitted and the report opens in the in-app preview. There is no full-detail report mode in 0.5.
@@ -49,10 +49,13 @@ ToolzNG provides evidence and cautious guidance. It does not claim to overclock 
 The baseline is initialized only after at least one Apple USB interface is visible. To reset the local baseline, close ToolzNG and delete `%LOCALAPPDATA%/ToolzNG/link-profile.ini`. The next scan with an Apple USB interface present will create a new local profile. The file contains only the digest, not the original hardware IDs.
 
 
-## ToolzNG 0.5 desktop experience
+## ToolzNG 0.5 desktop experience and SAMBU Engine 1.2.0
 
 - The UI declares Per-Monitor DPI v2 and handles monitor DPI changes. User zoom 80–160% is persisted separately in %LOCALAPPDATA%\\ToolzNG\\settings.ini; legacy LinkDNA/PulseVault data is retained.
 - Diagnostic TXT reports and DuckFix route exports are stored under %LOCALAPPDATA%\\ToolzNG\\Reports. The report list previews the latest files; content can be scrolled, copied, or explicitly exported as TXT.
+- The portable engine separates query completion from a negative result: a service that cannot be queried is not labelled stopped, and an inaccessible or partially enumerated backup directory is not labelled missing or structurally invalid.
+- Readiness is normalized over checks that completed, with a score-coverage percentage and five weighted contributions (40/25/10/15/10). The legacy confidence field is a coverage alias, not a probability.
+- USB stability contributes only when a device was enumerated, the Windows observer registered, and the warm-up window elapsed. An incomplete observation is explicitly unconfirmed.
 - The report engine currently creates TXT only. PDF/XLSX generation, report templates, content indexing/search, threaded cancellation, and server-side features are not supported in this version.
 - Local Help, Reports, and About pages use native GDI. The Apple backup folder action opens Windows Explorer; routine documentation navigation does not launch a browser.
 - SHA-256 sidecars detect later modifications to a report file but do not provide a trusted digital signature or authenticate the observations.

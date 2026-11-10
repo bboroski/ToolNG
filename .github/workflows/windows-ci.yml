@@ -1,0 +1,65 @@
+name: Windows and portable core CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: toolzng-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable-core-and-docs:
+    name: Portable C17 core + docs (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Configure portable SAMBU core
+        run: cmake -S . -B build -DBUILD_TESTING=ON
+      - name: Build portable core and tests
+        run: cmake --build build --parallel
+      - name: Run core tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Verify README links and SVG previews
+        run: python3 scripts/verify_docs.py
+
+  sanitized-core:
+    name: C17 core — AddressSanitizer + UndefinedBehaviorSanitizer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Configure sanitizer build
+        run: >-
+          cmake -S . -B build-sanitized -DBUILD_TESTING=ON
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build sanitized core
+        run: cmake --build build-sanitized --parallel
+      - name: Run sanitized tests
+        run: ctest --test-dir build-sanitized --output-on-failure
+
+  windows-build-and-test:
+    name: Windows x64 GUI + CTest
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Configure x64 build
+        run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+      - name: Build application and tests
+        run: cmake --build build --config Release --parallel
+      - name: Run SAMBU core tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Verify README links and SVG previews
+        run: python3 scripts/verify_docs.py

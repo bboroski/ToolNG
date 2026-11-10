@@ -1,60 +1,53 @@
-# 🦆 Building ToolzNG
+# Building ToolzNG
 
-## Visual Studio 2022
+ToolzNG has two build surfaces:
 
-Install the Desktop development with C++ workload and CMake 3.20+. Then run:
+- **SAMBU Engine and tests:** portable C17; can be configured on Windows, Linux, or macOS.
+- **ToolzNG desktop application:** native Win32/GDI; requires Windows.
 
-```powershell
-.\scripts\build-windows.ps1
-```
+## Requirements
 
-## CMake commands
+### Portable core and tests
 
-```powershell
-cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release --parallel
-```
+- CMake 3.20 or newer.
+- A C17 compiler (MSVC, GCC, or Clang).
 
-## CI artifact
+### Windows desktop application
 
-The workflow in `.github/workflows/build-windows.yml` runs on pushes to `main`/`master`, pull requests, manual dispatch, and version tags. It uploads `ToolzNG.exe` as a 30-day artifact. For tags beginning with `v`, it also attaches the executable to the GitHub Release.
+- Windows 10 or Windows 11 x64.
+- Visual Studio 2022 / Build Tools with the **Desktop development with C++** workload.
+- CMake 3.20 or newer.
 
-## Link dependencies
+## Portable configure, build, and test
 
-The executable uses Windows system libraries only:
+    cmake -S . -B build -DBUILD_TESTING=ON
+    cmake --build build --parallel
+    ctest --test-dir build --output-on-failure
 
-- `setupapi` — PnP device enumeration
-- `advapi32` — Service Control Manager queries
-- `shell32` — Known Folders and shell launch
-- `ole32` — COM task-memory release for Known Folder paths
-- `uuid` — Known Folder GUID definitions
+On non-Windows hosts, CMake builds the reusable SAMBU core and its tests, then returns before defining the Win32 application target.
 
-No third-party runtime is required for the current feature set.
+## Windows application
 
+Run the project helper from PowerShell:
 
-## 0.4 intelligence data
+    .\scripts\build-windows.ps1
 
-- PulseVault: %LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl with .old rotation at 256 KiB.
-- LinkDNA baseline: %LOCALAPPDATA%\ToolzNG\link-profile.ini.
-- Diagnostic reports: %LOCALAPPDATA%\ToolzNG\Reports\ToolzNG-report-*.txt plus *.sha256. Legacy Documents reports are copied into the app archive at first launch; originals are kept.
-- DuckFix export: Documents\ToolzNG-DuckFix-*.txt.
+Or invoke CMake directly:
 
-The journal and baseline remain local to the Windows account. They are not added to the Git repository.
+    cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release --parallel
+    ctest --test-dir build -C Release --output-on-failure
 
+The executable is written to `build\Release\ToolzNG.exe`.
 
-## 0.5 desktop experience
+The application manifest requests the current user's privileges (`asInvoker`); ordinary USB inspection does not require elevation.
 
-- Per-monitor DPI awareness: v2 manifest, WM_DPICHANGED, logical GDI layout, user zoom 80–160%, and Windows High Contrast palette switching.
-- Zoom preferences: %LOCALAPPDATA%\ToolzNG\settings.ini; existing 0.4 LinkDNA and PulseVault profile files are retained. Old reports under Documents are copied once; source files are not deleted.
-- Diagnostic report archive: %LOCALAPPDATA%\ToolzNG\Reports\ToolzNG-report-*.txt with optional SHA-256 sidecar. New reports are private by default and preview in the Reports page.
-- Report actions: in-app history (up to 32 entries), scrolling preview, copy to clipboard, optional Save As TXT export.
-- DuckFix route exports are stored in the same local Reports directory.
-- Help and product information are rendered by native GDI pages; routine use does not launch a browser.
-- The optional TXT export uses the Windows common file dialog (comdlg32). No external report viewer is required.
+## GitHub Actions
 
-The current native report engine intentionally produces TXT only. PDF and XLSX generation, background job cancellation, full-text query/filtering, template loops, server-side licensing, analytics, and automatic updates are not part of this release. Do not advertise those features as available until separate implementations and tests land.
+- `.github/workflows/windows-ci.yml` runs portable core tests and documentation validation on Ubuntu, and builds/tests the native application on Windows.
+- `.github/workflows/build-windows.yml` builds the Windows x64 executable and uploads a 30-day artifact. Tags beginning with `v` publish the downloaded executable to a GitHub Release. Only the tagged release job receives `contents: write`.
 
-### DPI smoke-test matrix
+## Local application data
 
 Run the Windows executable at 100%, 125%, 150%, and 200% on 1366×768, 1920×1080, 2560×1440, and 3840×2160 displays. Also test moving the window between monitors with different scaling values. Confirm zoom controls and Ctrl +/-/0, nav hit targets, report selection, and text clipping. GitHub CI compiles the binary but does not replace hardware/UI runtime tests.
 
@@ -77,3 +70,15 @@ ctest --test-dir build -C Release --output-on-failure
 ```
 
 The workflow test suite covers source spans, action allowlisting, duplicate names, manifest requirements, source/step budgets, preflight denial, incremental one-step dispatch and stop-on-first-failure behavior.
+- PulseVault: `%LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl`, with a rotated `.old` file after 256 KiB.
+- LinkDNA baseline: `%LOCALAPPDATA%\ToolzNG\link-profile.ini`.
+- Display preferences: `%LOCALAPPDATA%\ToolzNG\settings.ini`.
+- TXT reports and optional SHA-256 sidecars: `%LOCALAPPDATA%\ToolzNG\Reports\\`.
+
+The data remains under the current Windows account and is not committed to the source repository.
+
+## DPI smoke-test matrix
+
+On Windows, exercise the app at 100%, 125%, 150%, and 200% scaling on 1366×768, 1920×1080, 2560×1440, and 3840×2160 displays. Also move the window between monitors with different scaling values. Confirm navigation hit targets, text clipping, zoom controls, report selection, and scrolling.
+
+CI compiles the executable and runs portable engine tests. It does not replace manual runtime checks with a real iPhone/iPad.
