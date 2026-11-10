@@ -203,3 +203,9 @@ MIT — see [LICENSE](LICENSE).
 **ToolzNG — fewer guesses, clearer signals.** 🦆
 
 </div>
+
+## NUN Mesh integration
+
+<p align="center"><img src="assets/nun-mesh.svg" width="100%" alt="ToolNG highlighted within the NUN Mesh project ecosystem"></p>
+
+ToolNG is the native Windows operator surface in NUN Mesh. It retains local-only evidence handling and explicit user actions; SAMBU provides the portable policy/workflow core. [Integration guide](docs/ECOSYSTEM_INTEGRATION.md) · [GUI design](docs/GUI_DESIGN.md) · [Klipot portal](https://github.com/bboroski/Klipot)
