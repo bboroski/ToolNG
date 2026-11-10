@@ -64,7 +64,7 @@ It is a **Windows-side diagnostic assistant**, not an iPhone repair suite, backu
 |---|---|
 | **Apple USB Discovery** | Finds Windows PnP interfaces with Apple Vendor ID <code>05AC</code> and reports Apple Mobile Device Service state. |
 | **Duck Readiness** | Explainable 0–100 score based on measurable Windows signals, with evidence coverage shown separately. |
-| **SAMBU Quality Gate** | Detects incomplete scans, inconsistent backup counts and unsupported stability conclusions. |
+| **Evidence Quality Gate** | Detects incomplete scans, inconsistent backup counts and unsupported stability conclusions. |
 | **USB Pulse** | Observes Apple USB arrival/removal notifications and retains a bounded recent event window. |
 | **Recurrence Radar** | Distinguishes isolated, repeated and persistent state transitions over a 10-minute window. |
 | **Backup Sentinel** | Read-only check for expected <code>Info.plist</code> and <code>Manifest.db</code> / <code>Manifest.plist</code> markers. |
@@ -87,15 +87,12 @@ ToolzNG uses progressive disclosure: show the user the main result first, then r
 
 This is an information-architecture model, not a claim of hardware-accelerated animation or a web UI. The shipped application is native Win32/GDI.
 
-## SAMBU and ToolzNG boundaries
+## Internal architecture boundary
 
-These are companion projects with separate responsibilities:
-
-- **SAMBU** is a Python-hosted language and toolkit. Its creative metadata ontology and Text Craft analyzers live there.
-- **ToolzNG** is a native C17/Win32 Apple-connection diagnostic utility. It embeds the portable SAMBU policy/workflow core, not the Python interpreter or creative-text subsystem.
-- Shared principles are evidence-first decisions, bounded work, explicit capabilities, local-first handling and a strict distinction between “not found” and “not checked”.
-- The 2025 lyric corpus is not imported into ToolzNG and does not influence device diagnostics.
-
+- **Diagnostic core** — native C17 modules for Windows-signal assessment, evidence-quality validation and bounded diagnostic workflows.
+- **ToolzNG** is a standalone C17 / Win32 desktop utility. It does not embed Python, a general-purpose scripting runtime or creative-text processing.
+- Engineering principles include evidence-first decisions, bounded work, explicit capabilities, local-first handling and a strict distinction between “not found” and “not checked”.
+- User-authored creative text and lyric corpora are outside the diagnostic pipeline and never influence device findings.
 
 ## How assessment works
 
@@ -128,7 +125,7 @@ ToolzNG is local-first:
 - backup payload contents are not read for a structural marker check;
 - private reports omit Hardware ID and full backup paths;
 - report creation, clipboard access and export require an explicit user action;
-- device mutation and network transfer are denied by the SAMBU capability policy;
+- device mutation and network transfer are denied by the local capability policy;
 - the event journal and report history have fixed storage bounds;
 - ordinary operation does not require administrator privileges.
 
@@ -144,7 +141,7 @@ ToolzNG does not jailbreak, bypass passcodes or Activation Lock, flash or reset 
 | Device discovery | Windows SetupAPI / Plug and Play |
 | Apple service status | Windows Service Control Manager |
 | USB events | Windows device notifications |
-| Diagnostic core | Portable C17 SAMBU policy and workflow core |
+| Diagnostic core | Portable C17 diagnostic policy and workflow core |
 | Reports | Local TXT · SHA-256 sidecar |
 | Build | CMake 3.20+ |
 
@@ -189,7 +186,7 @@ The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation 
 ## Engineering standards
 
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — evidence, privacy, bounded behavior and visual standards.
-- [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — assessment model and restricted workflow.
+- [Core integration contract](docs/SAMBU_INTEGRATION.md) — assessment model and restricted workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — tests, resilience and release criteria.
 
 For material UI changes, provide real application captures or label preview images explicitly as illustrative.
