@@ -17,7 +17,7 @@ mu_t = mu_{t-1} + alpha(x_t-mu_{t-1})
 The variance estimate is updated as:
 
 [
-v_t = (1-alpha)left(v_{t-1}+alpha(x_t-mu_{t-1})^2ight)
+v_t = (1-alpha)\\left(v_{t-1}+alpha(x_t-mu_{t-1})^2ight)
 ]
 
 The result exposes the smoothed mean, variance, innovation residual, standardized residual, effective alpha, sample count and a warm-up flag. The warm-up flag becomes true after four accepted observations. A backwards monotonic timestamp starts a fresh window; identical timestamps do not advance the filter.
@@ -32,3 +32,8 @@ The result exposes the smoothed mean, variance, innovation residual, standardize
 - The existing recurrence ledger remains the auditable counter of finding occurrences; relaxation is not a substitute for evidence.
 
 The model provides a lightweight interpretation of relaxation and fluctuations without pretending that a USB event stream is a quantum system.
+
+
+## USB Pulse integration
+
+The Win32 shell feeds Apple USB arrival events as +1 and removal events as -1 into the estimator, using a 30-second time constant and `GetTickCount64()`. The local PulseVault JSONL schema is version 2 and includes the smoothed mean, variance, standardized residual and warm-up flag for each event. Local diagnostic reports show the trend as arrival-biased, removal-biased, balanced or not enough events. These values are explicitly advisory and never change Duck Readiness, the finding code or the evidence ledger.
