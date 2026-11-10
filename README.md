@@ -83,3 +83,7 @@ MIT — див. [LICENSE](LICENSE).
 - [Контракт и правила использования](docs/BIOLOGY_DOMAIN_PACK.md)
 
 Справочный офлайн-набор для обучения и метаданных; он не управляет системами, устройствами и диагностикой.
+
+## Reaper cycle evidence boundary
+
+[Read-only evidence adapter](docs/REAPER_EVIDENCE_ADAPTER.md) — simulation reports are inspected as local evidence only. ToolNG does not execute firmware or mutate devices.
