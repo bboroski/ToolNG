@@ -318,7 +318,9 @@ int sambu_relaxation_update(SambuRelaxationState *state, double observation,
 {
     double alpha;
     double residual;
-    double variance_scale;
+    double next_mean;
+    double next_variance;
+    double z_score;
 
     if (!state || !result || !isfinite(observation) ||
         !isfinite(tau_ms) || tau_ms <= 0.0)
@@ -340,6 +342,10 @@ int sambu_relaxation_update(SambuRelaxationState *state, double observation,
         return 1;
     }
 
+    if (!isfinite(state->mean) || !isfinite(state->variance) ||
+        state->variance < 0.0)
+        return 0;
+
     residual = observation - state->mean;
     if (!isfinite(residual))
         return 0;
@@ -352,18 +358,29 @@ int sambu_relaxation_update(SambuRelaxationState *state, double observation,
         alpha = ratio >= 50.0 ? 1.0 : 1.0 - exp(-ratio);
     }
 
-    state->mean += alpha * residual;
-    variance_scale = (1.0 - alpha) *
+    next_mean = state->mean + alpha * residual;
+    next_variance = (1.0 - alpha) *
         (state->variance + alpha * residual * residual);
-    state->variance = variance_scale < 0.0 ? 0.0 : variance_scale;
+    if (!isfinite(next_mean) || !isfinite(next_variance))
+        return 0;
+    if (next_variance < 0.0)
+        next_variance = 0.0;
+
+    z_score = next_variance > 1e-24
+        ? residual / sqrt(next_variance) : 0.0;
+    if (!isfinite(z_score))
+        return 0;
+
+    /* Commit only after every derived value has passed validation. */
+    state->mean = next_mean;
+    state->variance = next_variance;
     state->last_update_ms = monotonic_ms;
     if (state->samples < UINT32_MAX) ++state->samples;
 
     result->mean = state->mean;
     result->variance = state->variance;
     result->residual = residual;
-    result->z_score = state->variance > 1e-24
-        ? residual / sqrt(state->variance) : 0.0;
+    result->z_score = z_score;
     result->alpha = alpha;
     result->samples = state->samples;
     result->warm = state->samples >= SAMBU_RELAXATION_WARMUP_SAMPLES;
