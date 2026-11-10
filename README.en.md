@@ -75,6 +75,28 @@ It is a **Windows-side diagnostic assistant**, not an iPhone repair suite, backu
 | **Privacy Shield & Evidence Seal** | Redacts Hardware ID and full backup paths; SHA-256 sidecar detects later report changes. |
 | **Offline Reports & Help** | Local history (up to 32 reports), in-app preview, copy, TXT export and F1 help. |
 
+## Interface model: progressive disclosure
+
+ToolzNG uses progressive disclosure: show the user the main result first, then reveal the inspection details and supporting evidence.
+
+| Level | What appears | Location |
+|---|---|---|
+| **Overview** | Latest scan, readiness, evidence coverage and highest-priority finding | Dashboard |
+| **Inspection** | Device visibility, service state, backup markers, USB events and quality flags | USB / Backup / Safe Care pages |
+| **Evidence detail** | Stable finding code, score contribution, unknown-state reason and measurement limits | Local report preview and export |
+
+This is an information-architecture model, not a claim of hardware-accelerated animation or a web UI. The shipped application is native Win32/GDI.
+
+## SAMBU and ToolzNG boundaries
+
+These are companion projects with separate responsibilities:
+
+- **SAMBU** is a Python-hosted language and toolkit. Its creative metadata ontology and Text Craft analyzers live there.
+- **ToolzNG** is a native C17/Win32 Apple-connection diagnostic utility. It embeds the portable SAMBU policy/workflow core, not the Python interpreter or creative-text subsystem.
+- Shared principles are evidence-first decisions, bounded work, explicit capabilities, local-first handling and a strict distinction between “not found” and “not checked”.
+- The 2025 lyric corpus is not imported into ToolzNG and does not influence device diagnostics.
+
+
 ## How assessment works
 
 ToolzNG uses a fixed, inspectable score model:
@@ -157,7 +179,8 @@ The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation 
 
 ## Roadmap
 
-1. Optional Windows adapter for a supported <code>libimobiledevice</code> build with explicit pairing checks.
+1. Extract dashboard drawing, report composition and navigation/event routing from the Win32 host into focused C modules while preserving the portable-core boundary.
+2. Optional Windows adapter for a supported <code>libimobiledevice</code> build with explicit pairing checks.
 2. Show device model and iOS version only when a trusted pairing API returns them.
 3. Expand Apple USB driver diagnostics without silent system changes.
 4. Improve RU/EN localization, accessibility and keyboard navigation.
