@@ -313,6 +313,7 @@ static int test_quality_gate(void)
     memset(&evidence, 0, sizeof(evidence));
     evidence.scan_complete = 1;
     evidence.device_found = 1;
+    evidence.service_query_complete = 1;
     evidence.service_running = 1;
     evidence.backup_scan_complete = 1;
     evidence.backup_found = 1;
