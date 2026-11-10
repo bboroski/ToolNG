@@ -1,50 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="540" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
   <title id="title">ToolzNG — duck-powered Apple care</title>
   <desc id="desc">Dark gold banner with the ToolzNG duck engineer mascot and a native Windows device diagnostics panel.</desc>
   <defs>
-    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#10131b"/><stop offset="1" stop-color="#29232a"/></linearGradient>
-    <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#ffe07a"/><stop offset=".56" stop-color="#ffc02e"/><stop offset="1" stop-color="#e99416"/></linearGradient>
-    <linearGradient id="panel" x2="0" y2="1"><stop stop-color="#2a2d39"/><stop offset="1" stop-color="#1a1d27"/></linearGradient>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0D0D0D"/><stop offset="1" stop-color="#141414"/></linearGradient>
+    <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#FFD600"/><stop offset=".56" stop-color="#FFD600"/><stop offset="1" stop-color="#BFA100"/></linearGradient>
+    <linearGradient id="panel" x2="0" y2="1"><stop stop-color="#1A1A1A"/><stop offset="1" stop-color="#1A1A1A"/></linearGradient>
   </defs>
   <rect width="1280" height="360" rx="28" fill="url(#bg)"/>
-  <circle cx="210" cy="186" r="180" fill="#ffc02e" opacity=".055"/>
-  <path d="M0 312Q330 250 590 360H0z" fill="#ffc02e" opacity=".06"/>
-  <g transform="translate(42 26) scale(.68)" stroke="#573c0b" stroke-width="7" stroke-linejoin="round">
+  <circle cx="210" cy="186" r="180" fill="#FFD600" opacity=".055"/>
+  <path d="M0 312Q330 250 590 360H0z" fill="#FFD600" opacity=".06"/>
+  <g transform="translate(42 26) scale(.68)" stroke="#BFA100" stroke-width="7" stroke-linejoin="round">
     <ellipse cx="205" cy="289" rx="134" ry="91" fill="url(#gold)"/>
-    <ellipse cx="194" cy="307" rx="78" ry="46" fill="#ffe28a" opacity=".6" stroke="none"/>
+    <ellipse cx="194" cy="307" rx="78" ry="46" fill="#BFA100" opacity=".6" stroke="none"/>
     <ellipse cx="205" cy="153" rx="104" ry="101" fill="url(#gold)"/>
-    <path d="M127 115c23-44 85-62 129-24" fill="none" stroke="#fff0ad" stroke-width="13" stroke-linecap="round"/>
-    <g fill="#11141b" stroke="#08090d" stroke-width="7">
+    <path d="M127 115c23-44 85-62 129-24" fill="none" stroke="#E6E6E6" stroke-width="13" stroke-linecap="round"/>
+    <g fill="#141414" stroke="#0D0D0D" stroke-width="7">
       <path d="M135 133q3-13 17-13h43q14 0 15 14l-4 25q-2 12-15 12h-38q-13 0-15-13z"/>
       <path d="M216 134q2-14 16-14h42q14 0 15 14l-4 24q-2 13-15 13h-38q-14 0-15-13z"/>
       <path d="M208 138q7-7 14 0" fill="none" stroke-width="8"/>
     </g>
-    <path d="M269 174q34-13 66 8-18 31-64 23-18-8-2-31z" fill="#f58a28" stroke="#78400d"/>
-    <path d="M169 42l-8-26 28 16 19-26 17 26 29-15-10 29z" fill="#ffc533" stroke="#764f0d" stroke-width="5"/>
-    <path d="M154 366q-25 17-48 13 12-24 41-24M249 366q-14 18-39 17 6-23 29-28" fill="#ed8724" stroke="#78400d" stroke-width="6"/>
+    <path d="M269 174q34-13 66 8-18 31-64 23-18-8-2-31z" fill="#BFA100" stroke="#BFA100"/>
+    <path d="M169 42l-8-26 28 16 19-26 17 26 29-15-10 29z" fill="#FFD600" stroke="#BFA100" stroke-width="5"/>
+    <path d="M154 366q-25 17-48 13 12-24 41-24M249 366q-14 18-39 17 6-23 29-28" fill="#BFA100" stroke="#BFA100" stroke-width="6"/>
   </g>
   <g font-family="Segoe UI,Arial,sans-serif">
-    <text x="430" y="130" fill="#f5f2e9" font-size="66" font-weight="800">Toolz<tspan fill="#ffc02e">NG</tspan></text>
-    <text x="435" y="177" fill="#ffc02e" font-size="20" font-weight="700" letter-spacing="2">NATIVE APPLE DEVICE DIAGNOSTICS</text>
-    <text x="435" y="222" fill="#ddd8ca" font-size="20">USB-проверки и аудит backup-маркеров</text>
-    <text x="435" y="252" fill="#ddd8ca" font-size="20">Приватные отчёты. Всё локально.</text>
-    <rect x="435" y="282" width="258" height="42" rx="21" fill="#ffc02e"/>
-    <text x="564" y="310" text-anchor="middle" fill="#211a0e" font-size="17" font-weight="800">C17 · WIN32 · WINDOWS x64</text>
+    <text x="430" y="130" fill="#f5f2e9" font-size="66" font-weight="800">Toolz<tspan fill="#FFD600">NG</tspan></text>
+    <text x="435" y="177" fill="#FFD600" font-size="20" font-weight="700" letter-spacing="2">NATIVE APPLE DEVICE DIAGNOSTICS</text>
+    <text x="435" y="222" fill="#E6E6E6" font-size="20">USB-проверки и аудит backup-маркеров</text>
+    <text x="435" y="252" fill="#E6E6E6" font-size="20">Приватные отчёты. Всё локально.</text>
+    <rect x="435" y="282" width="258" height="42" rx="21" fill="#FFD600"/>
+    <text x="564" y="310" text-anchor="middle" fill="#0D0D0D" font-size="17" font-weight="800">C17 · WIN32 · WINDOWS x64</text>
   </g>
   <g transform="translate(825 48)">
-    <rect x="0" y="0" width="408" height="266" rx="18" fill="url(#panel)" stroke="#62583e" stroke-width="2"/>
-    <rect x="0" y="0" width="408" height="48" rx="18" fill="#33323a"/>
-    <path d="M0 32h408v16H0z" fill="#33323a"/>
-    <circle cx="25" cy="24" r="6" fill="#ffc02e"/><text x="44" y="30" fill="#f3f0e7" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="700">ToolzNG · Центр управления</text>
-    <rect x="24" y="72" width="360" height="72" rx="12" fill="#202631" stroke="#4c493f"/>
-    <circle cx="53" cy="108" r="12" fill="#e6b23a"/><path d="M47 108l5 5 9-11" fill="none" stroke="#241c0a" stroke-width="3" stroke-linecap="round"/>
-    <text x="78" y="101" fill="#f4f0e5" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="700">Готов к USB-проверке</text>
-    <text x="78" y="125" fill="#bcb6a8" font-family="Segoe UI,Arial,sans-serif" font-size="13">Подключи iPhone или iPad</text>
+    <rect x="0" y="0" width="408" height="266" rx="18" fill="url(#panel)" stroke="#262626" stroke-width="2"/>
+    <rect x="0" y="0" width="408" height="48" rx="18" fill="#141414"/>
+    <path d="M0 32h408v16H0z" fill="#141414"/>
+    <circle cx="25" cy="24" r="6" fill="#FFD600"/><text x="44" y="30" fill="#E6E6E6" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="700">ToolzNG · Центр управления</text>
+    <rect x="24" y="72" width="360" height="72" rx="12" fill="#141414" stroke="#262626"/>
+    <circle cx="53" cy="108" r="12" fill="#FFD600"/><path d="M47 108l5 5 9-11" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round"/>
+    <text x="78" y="101" fill="#E6E6E6" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="700">Готов к USB-проверке</text>
+    <text x="78" y="125" fill="#999999" font-family="Segoe UI,Arial,sans-serif" font-size="13">Подключи iPhone или iPad</text>
     <g font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="600" text-anchor="middle">
-      <rect x="24" y="162" width="108" height="62" rx="11" fill="#35333a" stroke="#5d543f"/><text x="78" y="188" fill="#ffc02e">01</text><text x="78" y="208" fill="#f4f0e5">USB</text>
-      <rect x="150" y="162" width="108" height="62" rx="11" fill="#35333a" stroke="#5d543f"/><text x="204" y="188" fill="#ffc02e">02</text><text x="204" y="208" fill="#f4f0e5">Backup</text>
-      <rect x="276" y="162" width="108" height="62" rx="11" fill="#35333a" stroke="#5d543f"/><text x="330" y="188" fill="#ffc02e">03</text><text x="330" y="208" fill="#f4f0e5">Отчёт</text>
+      <rect x="24" y="162" width="108" height="62" rx="11" fill="#1A1A1A" stroke="#262626"/><text x="78" y="188" fill="#FFD600">01</text><text x="78" y="208" fill="#E6E6E6">USB</text>
+      <rect x="150" y="162" width="108" height="62" rx="11" fill="#1A1A1A" stroke="#262626"/><text x="204" y="188" fill="#FFD600">02</text><text x="204" y="208" fill="#E6E6E6">Backup</text>
+      <rect x="276" y="162" width="108" height="62" rx="11" fill="#1A1A1A" stroke="#262626"/><text x="330" y="188" fill="#FFD600">03</text><text x="330" y="208" fill="#E6E6E6">Отчёт</text>
     </g>
-    <text x="204" y="248" text-anchor="middle" fill="#bcb6a8" font-family="Segoe UI,Arial,sans-serif" font-size="12">Проверяй. Понимай. Действуй безопасно.</text>
+    <text x="204" y="248" text-anchor="middle" fill="#999999" font-family="Segoe UI,Arial,sans-serif" font-size="12">Проверяй. Понимай. Действуй безопасно.</text>
   </g>
 </svg>
