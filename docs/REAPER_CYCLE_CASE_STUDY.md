@@ -1,12 +1,12 @@
 # Reaper Cycle Case Study — SAMBU diagnostic patterns
 
-This document uses the supplied analysis of the Reapers from *Mass Effect* as an engineering-design exercise. It does **not** add fictional entities, terminology, game assets, or gameplay behavior to the ToolzNG interface. ToolzNG remains a Windows-side Apple diagnostics utility.
+This document uses the supplied analysis of the Reapers from *Mass Effect* as an engineering-design exercise. It does **not** add fictional entities, terminology, game assets, or gameplay behavior to the ToolNG interface. ToolNG remains a Windows-side Apple diagnostics utility.
 
 ## 1. What the source contributes
 
 The source describes a threat model built around repeated galactic cycles, an early-warning Vanguard, infrastructure dependencies, progressive indoctrination, and distinct classes of deployed units. The useful software concepts are:
 
-| Source concept | General engineering pattern | ToolzNG/SAMBU application |
+| Source concept | General engineering pattern | ToolNG/SAMBU application |
 |---|---|---|
 | Repeated 50,000-year harvest cycles | Recurrence over a bounded observation window | SAMBU counts repeated diagnostic finding transitions in a 10-minute window. The fictional 50,000-year interval is not copied as a product setting. |
 | Sovereign as a hidden Vanguard | Early warning before a larger failure sequence | USB Pulse observes arrivals/removals before the user runs another full diagnostic pass. |
@@ -34,7 +34,7 @@ A finding is recorded only when the selected diagnostic state changes. A timer r
 | 2–3 | `recurrent` | The same finding returned |
 | 4+ | `persistent` | Repeated returns warrant checking the underlying cause |
 
-The window is 10 minutes because ToolzNG already uses a 10-minute USB Pulse observation window. It is an operational parameter, not a lore-derived time conversion.
+The window is 10 minutes because ToolNG already uses a 10-minute USB Pulse observation window. It is an operational parameter, not a lore-derived time conversion.
 
 ## 3. Example event sequence
 
@@ -55,7 +55,7 @@ DuckFix adds a short note when an unhealthy finding has repeated. The private TX
 - The ledger stores finding codes and timestamps only; it does not retain Hardware IDs, backup paths, personal device content, or the supplied lore text.
 - The recurrence note recommends checking the cause; it does not perform repairs, mutate device state, or upload data.
 - A missing or incomplete scan remains an unknown result, not proof that the device is absent.
-- The Reapers' fictional indoctrination process is only a source of inspiration for staged modelling. ToolzNG does not infer compromise, intent, or psychological state.
+- The Reapers' fictional indoctrination process is only a source of inspiration for staged modelling. ToolNG does not infer compromise, intent, or psychological state.
 
 ## 5. Verification
 
