@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.1.0"
+#define SAMBU_ENGINE_VERSION "1.2.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
@@ -52,8 +52,9 @@ typedef struct SambuEvidence {
     int device_found;
     int service_running;
     int backup_found;
-    int backup_marker_valid;
-    int backup_folders_seen;
+    int backup_marker_valid; /* true when at least one discovered folder has valid markers */
+    uint32_t backup_folders_seen;
+    uint32_t backup_folders_valid;
     int backup_age_known;
     uint32_t backup_age_days;
     uint32_t recent_usb_removals;
@@ -61,11 +62,19 @@ typedef struct SambuEvidence {
     int stability_window_elapsed;
 } SambuEvidence;
 
+enum {
+    SAMBU_QUALITY_DEVICE_WITHOUT_SCAN = 1u << 0,
+    SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT = 1u << 1,
+    SAMBU_QUALITY_BACKUP_SET_INCOMPLETE = 1u << 2,
+    SAMBU_QUALITY_STABILITY_WITHOUT_WATCH = 1u << 3
+};
+
 typedef struct SambuAssessment {
     SambuFinding finding;
     int readiness_score;
     unsigned confidence_percent;
     uint32_t evidence_mask;
+    uint32_t quality_flags;
 } SambuAssessment;
 
 typedef struct SambuLedgerEntry {
@@ -109,6 +118,7 @@ SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
                                   uint32_t finding_code,
                                   uint64_t now_ms);
 const char *sambu_pattern_key(SambuPattern pattern);
+const char *sambu_quality_key(uint32_t quality_flags);
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger);
 
 /* B — validate the dependency graph before the application starts. */
