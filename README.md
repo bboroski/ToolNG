@@ -51,7 +51,6 @@ ToolzNG uses a practical overview → detail → action flow: the dashboard stay
 ## 🧬 SAMBU Core 1.2 — инженерная система пяти букв
 
 В версии **0.6.1** в ToolzNG перенесены инженерные принципы репозитория [SAMBU](https://github.com/bboroski/SAMBU), адаптированные к нативному C17/Win32-приложению. Python-интерпретатор SAMBU не встраивается.
-В текущей ветке в ToolzNG перенесены инженерные принципы репозитория [SAMBU](https://github.com/bboroski/SAMBU), адаптированные к нативному C17/Win32-приложению. Python-интерпретатор SAMBU не встраивается.
 
 | Буква | Закон SAMBU | Реализация в ToolzNG |
 |---|---|---|
