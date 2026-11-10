@@ -104,6 +104,8 @@ typedef struct AppState {
     UINT zoom_percent;
     BOOL high_contrast;
     BOOL scan_complete;
+    BOOL apple_service_query_complete;
+    BOOL backup_scan_complete;
     UINT device_count;
     AppleDevice devices[MAX_APPLE_DEVICES];
     WCHAR status[320];
@@ -343,12 +345,13 @@ static void read_apple_service_status(void)
     size_t i;
 
     g_app.apple_service_running = FALSE;
+    g_app.apple_service_query_complete = FALSE;
     copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
-              L"Служба Apple не обнаружена.");
+              L"Статус службы Apple пока не проверен.");
 
     if (!manager) {
         copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
-                  L"Статус службы недоступен (нет доступа к Service Control Manager).");
+                  L"Статус службы недоступен: Windows не открыла Service Control Manager.");
         return;
     }
 
@@ -361,6 +364,7 @@ static void read_apple_service_status(void)
         ZeroMemory(&status, sizeof(status));
         if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO,
                 (LPBYTE)&status, sizeof(status), &bytes_needed)) {
+            g_app.apple_service_query_complete = TRUE;
             switch (status.dwCurrentState) {
                 case SERVICE_RUNNING:
                     g_app.apple_service_running = TRUE;
@@ -382,9 +386,19 @@ static void read_apple_service_status(void)
             }
         } else {
             copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
-                      L"Служба Apple найдена, но её статус прочитать не удалось.");
+                      L"Служба Apple найдена, но Windows не смогла прочитать её состояние.");
         }
         CloseServiceHandle(service);
+    } else {
+        const DWORD open_error = GetLastError();
+        if (open_error == ERROR_SERVICE_DOES_NOT_EXIST) {
+            g_app.apple_service_query_complete = TRUE;
+            copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
+                      L"Служба Apple не установлена (проверка завершена).");
+        } else {
+            copy_text(g_app.service_status, ARRAYSIZE(g_app.service_status),
+                      L"Наличие службы Apple не удалось подтвердить: проверка недоступна.");
+        }
     }
     CloseServiceHandle(manager);
 }
@@ -662,6 +676,8 @@ static void audit_backup_folder(void)
     DWORD folders = 0, valid = 0;
     FILETIME newest_write = {0};
     BOOL have_newest_write = FALSE;
+    DWORD enumeration_error = ERROR_SUCCESS;
+    g_app.backup_scan_complete = FALSE;
     g_app.backup_age_days = ~(ULONGLONG)0;
 
     g_app.backup_folder_count = 0;
@@ -701,7 +717,14 @@ static void audit_backup_folder(void)
             }
         }
     } while (FindNextFileW(find, &data));
+    enumeration_error = GetLastError();
     FindClose(find);
+    if (enumeration_error != ERROR_NO_MORE_FILES) {
+        copy_text(g_app.backup_audit, ARRAYSIZE(g_app.backup_audit),
+                  L"Backup Sentinel: перечисление прервано; результат неполный.");
+        return;
+    }
+    g_app.backup_scan_complete = TRUE;
 
     if (have_newest_write) {
         FILETIME now_file;
@@ -792,7 +815,9 @@ static void compute_readiness_and_coach(void)
 
     evidence.scan_complete = g_app.scan_complete != FALSE;
     evidence.device_found = g_app.device_count > 0;
+    evidence.service_query_complete = g_app.apple_service_query_complete != FALSE;
     evidence.service_running = g_app.apple_service_running != FALSE;
+    evidence.backup_scan_complete = g_app.backup_scan_complete != FALSE;
     evidence.backup_found = g_app.backup_found != FALSE;
     evidence.backup_marker_valid = g_app.backup_valid_count > 0;
     evidence.backup_folders_seen = (uint32_t)g_app.backup_folder_count;
@@ -857,6 +882,24 @@ static void compute_readiness_and_coach(void)
                       L"DuckFix: создай резервную копию");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. ToolzNG не создаёт и не изменяет backup самостоятельно.");
+            break;
+        case SAMBU_FINDING_SERVICE_UNKNOWN:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: статус службы Apple не подтверждён");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Windows не смогла получить доступ к Service Control Manager или прочитать состояние службы. Это не означает, что служба остановлена или отсутствует. Проверь доступность системной службы и повтори диагностику; ToolzNG не меняет её состояние автоматически.");
+            break;
+        case SAMBU_FINDING_BACKUP_UNKNOWN:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: проверка резервной копии неполная");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"ToolzNG не смог полностью перечислить стандартный каталог backup. Это не доказывает, что копии нет или что её маркеры повреждены. Проверь доступ к папке и повтори сканирование; содержимое резервной копии не открывается.");
+            break;
+        case SAMBU_FINDING_STABILITY_UNCONFIRMED:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: стабильность USB ещё не подтверждена");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Для вывода о стабильности требуется зарегистрированный Windows-наблюдатель и завершённое окно наблюдения. Отсутствие этих данных не означает, что кабель неисправен или что соединение стабильно.");
             break;
         case SAMBU_FINDING_HEALTHY:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
@@ -1046,9 +1089,9 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: %ls · diagnostic schema: %ls\r\n"
-        L"SAMBU finding code: %u · confidence: %u%% · quality flags: 0x%08lX\r\n"
-        L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
+        L"SAMBU engine: 1.2.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU finding code: %u · evidence coverage: %u%%\r\n"
+        L"Оценка: %ls\r\nСостояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
         L"ПЕРСОНАЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ\r\n%ls\r\n%ls\r\n\r\n"
@@ -1062,8 +1105,8 @@ static void save_duckfix_route(void)
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
         engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding,
-        g_app.sambu_assessment.confidence_percent,
-        (unsigned long)g_app.sambu_assessment.quality_flags,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.sambu_assessment.score_provisional ? L"предварительная" : L"полная",
         g_app.status, g_app.readiness_score, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1276,8 +1319,9 @@ static void save_report(void)
         L"Diagnostic schema: %ls\r\n"
         L"SAMBU finding code: %u\r\n"
         L"SAMBU finding key: %ls\r\n"
-        L"SAMBU confidence: %u%%\r\n"
-        L"SAMBU readiness: %d/100\r\n"
+        L"Evidence coverage: %u%% (legacy confidence field; not a probability)\r\n"
+        L"Readiness score: %d/100; status: %ls\r\n"
+        L"Score contributors: Apple USB %d/40; Apple service %d/25; backup folder %d/10; markers %d/15; stable USB %d/10\r\n"
         L"SAMBU evidence mask: 0x%08lX\r\n"
         L"SAMBU evidence quality: %ls (0x%08lX)\r\n"
         L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n"
@@ -1286,8 +1330,14 @@ static void save_report(void)
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
         now.wSecond, engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding, finding_key,
-        g_app.sambu_assessment.confidence_percent,
-        g_app.sambu_assessment.readiness_score,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.readiness_score,
+        g_app.sambu_assessment.score_provisional ? L"provisional" : L"complete",
+        g_app.sambu_assessment.device_points,
+        g_app.sambu_assessment.service_points,
+        g_app.sambu_assessment.backup_points,
+        g_app.sambu_assessment.marker_points,
+        g_app.sambu_assessment.stability_points,
         (unsigned long)g_app.sambu_assessment.evidence_mask,
         quality_key,
         (unsigned long)g_app.sambu_assessment.quality_flags,
@@ -1317,7 +1367,9 @@ static void save_report(void)
         L"Backup Sentinel: %ls\r\n"
         L"Backup folders: %lu; marker-valid: %lu\r\n"
         L"Возраст новейшего Info.plist: %ls (оценка по времени изменения)\r\n"
-        L"Duck Readiness: %d/100 (оценка Windows-side сигналов)\r\n"
+        L"Duck Readiness: %d/100 (покрытие измерениями %u%%)\r\n"
+        L"Проверка службы завершена: %ls\r\n"
+        L"Проверка Backup Sentinel завершена: %ls\r\n"
         L"USB Pulse за 10 минут: %u подключений / %u отключений\r\n"
         L"LinkDNA baseline: %ls\r\n"
         L"LinkDNA изменился: %ls\r\n\r\n"
@@ -1333,7 +1385,11 @@ static void save_report(void)
         (unsigned long)g_app.backup_folder_count,
         (unsigned long)g_app.backup_valid_count,
         backup_age_text,
-        g_app.readiness_score, recent_arrivals, recent_removals,
+        g_app.readiness_score,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.apple_service_query_complete ? L"да" : L"нет",
+        g_app.backup_scan_complete ? L"да" : L"нет",
+        recent_arrivals, recent_removals,
         g_app.link_baseline_known ? L"инициализирован" : L"не создан",
         g_app.link_profile_changed ? L"да" : L"нет");
     if (count < 0) {
@@ -1465,11 +1521,12 @@ static void draw_overview(HDC dc)
     draw_text(dc, L"СОСТОЯНИЕ ПОДКЛЮЧЕНИЯ", (RECT){ x + 24, 208, right - 24, 232 },
               g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     {
-        WCHAR score_line[128];
+        WCHAR score_line[160];
         swprintf_s(score_line, ARRAYSIZE(score_line),
-            L"DUCK READINESS  ·  %d/100  ·  confidence %u%%",
+            L"DUCK READINESS  ·  %d/100  ·  coverage %u%%  ·  %ls",
             g_app.sambu_assessment.readiness_score,
-            g_app.sambu_assessment.confidence_percent);
+            g_app.sambu_assessment.score_coverage_percent,
+            g_app.sambu_assessment.score_provisional ? L"partial" : L"complete");
         draw_text(dc, score_line, (RECT){ x + 24, 232, right - 176, 253 },
                   g_app.font_small, COL_AMBER, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
@@ -1802,7 +1859,7 @@ static void draw_about(HDC dc)
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
     draw_text(dc, L"ToolzNG  0.6.1", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"SAMBU Engine 1.2.0 · Quality Gate · Recurrence Radar · 10 min",
+    draw_text(dc, L"SAMBU Engine 1.2.0 · evidence coverage · Recurrence Radar 10 min · ledger 32",
               (RECT){ x + 24, 258, right - 24, 276 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },

@@ -1,8 +1,8 @@
 # SAMBU engineering core in ToolzNG
 
-**Integration baseline:** ToolzNG 0.6.x, C17 / Win32  
+**Integration baseline:** ToolzNG 0.5.x, C17 / Win32  
 **Core revision:** 1.2.0  
-**Report contract:** toolzng.diagnostic.v1
+**Report contract:** `toolzng.diagnostic.v1`
 
 This integration ports selected engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's host runtime, or claim that ToolzNG controls private iOS functions.
 
@@ -101,22 +101,30 @@ The four grammatical endings inform API design roles: operation, resource/entity
 
 ## Memory and recurrence
 
-The ledger retains numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes. Repeated transitions increment lifetime count and an active 10-minute episode window. Repeated UI refreshes of an unchanged finding do not create new episodes. Patterns are single (1), recurrent (2–3), or persistent (4+).
+The engine retains the original signal weights but now distinguishes **verified negative** from **not measured**. The weights are not silently treated as zero when Windows could not complete a check.
 
-The ledger is in-memory only and resets when the application exits. It does not retain raw Hardware IDs, backup paths, source text or device payloads.
+| Signal | Maximum contribution | When it is measurable |
+|---|---:|---|
+| Apple USB interface visible | 40 | Windows PnP enumeration completed |
+| Apple Mobile Device Service running | 25 | Service Control Manager query and service status call completed, or service absence was explicitly confirmed |
+| Local backup directory found | 10 | Backup directory enumeration completed |
+| Expected backup marker files present | 15 | Backup directory enumeration completed |
+| USB connection stable | 10 | Device visible, USB watcher registered, and the warm-up window elapsed without removals |
 
-## Compatibility and reporting
+The score is normalized over the measured weights: `earned points / measurable points × 100`. **Evidence coverage** is the sum of measurable weights, expressed as a percentage of the full 100-point model. If coverage is below 100%, the score is marked provisional. A perfect score with 40% coverage therefore means only that the measured portion passed; it is not a complete all-checks result.
 
-The report schema remains toolzng.diagnostic.v1. SAMBU Engine 1.2.0 adds readiness and evidence quality fields to the existing text report; these fields are additive. Consumers should rely on stable finding keys and schema identity, not on localized Russian display strings.
+The existing `confidence_percent` field remains as a compatibility alias for coverage. It is explicitly **not** a probability or a statistical confidence estimate.
+
+The finding priority keeps uncertainty explicit: scan unavailable → device not visible → Apple service status unknown → service confirmed unavailable → unstable USB → backup scan incomplete → invalid backup markers → stale backup marker → backup not verified → USB stability unconfirmed → Windows-side checks passed.
 
 SHA-256 sidecar detects later changes to the saved report. It does not prove that the recorded observations were true.
 
 ## Verification
 
 The CTest target checks:
-
-- fail-closed capability rules, including unknown origins;
-- incomplete-scan handling and score calculation;
+- fail-closed capability rules;
+- incomplete-scan handling, evidence coverage and normalized score contributions;
+- distinction between unknown service/backup/stability states and verified negative findings;
 - finding priority for stale backups and unstable USB;
 - backup counter consistency and all-folders-complete semantics;
 - quality flags for incomplete backup sets and absent USB watcher;
