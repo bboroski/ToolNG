@@ -491,10 +491,10 @@ static void register_usb_watch(HWND hwnd)
 
 static void compute_readiness_and_coach(void)
 {
-    UINT arrivals = 0, removals = 0;
+    UINT removals = 0;
     ULONGLONG elapsed = GetTickCount64() - g_app.app_started_at;
     int score = 0;
-    get_recent_usb_counts(&arrivals, &removals);
+    get_recent_usb_counts(NULL, &removals);
 
     /* Explainable score: only measurable Windows-side signals contribute. */
     if (g_app.device_count > 0) score += 40;
@@ -1019,7 +1019,7 @@ static void draw_care(HDC dc)
 {
     int x = 250;
     int right = g_app.client_width - 28;
-    RECT panel = { x, 188, right, 574 };
+    RECT panel = { x, 188, right, 700 };
 
     draw_page_heading(dc, L"Безопасная оптимизация", L"ToolzNG не обещает программно разогнать iOS — здесь только реальные и безопасные проверки.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
