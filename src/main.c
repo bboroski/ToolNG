@@ -37,6 +37,7 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define USB_EVENT_CAPACITY  64
 #define USB_STABILITY_WINDOW_MS (10ULL * 60ULL * 1000ULL)
 #define USB_STABILITY_WARMUP_MS 30000ULL
+#define USB_PULSE_RELAXATION_TAU_MS 30000.0
 #define TIMER_USB_REFRESH   42
 #define TIMER_READINESS      43
 #define TIMER_WORKFLOW       44
@@ -154,6 +155,9 @@ typedef struct AppState {
     int readiness_score;
     SambuAssessment sambu_assessment;
     SambuLedger sambu_ledger;
+    SambuRelaxationState usb_pulse_filter;
+    SambuRelaxationResult usb_pulse_signal;
+    BOOL usb_pulse_signal_available;
     SambuWorkflow sambu_workflow;
     SambuWorkflowSession sambu_workflow_session;
     SambuFinding last_ledger_finding;
@@ -543,8 +547,8 @@ static void adjust_zoom(int delta)
 static void append_pulse_vault(const UsbPulseEvent *event)
 {
     SYSTEMTIME st;
-    WCHAR line[256], old_path[MAX_PATH * 2];
-    char utf8[600];
+    WCHAR line[512], old_path[MAX_PATH * 2];
+    char utf8[1024];
     int bytes;
     HANDLE file;
     WIN32_FILE_ATTRIBUTE_DATA attrs;
@@ -564,10 +568,17 @@ static void append_pulse_vault(const UsbPulseEvent *event)
     }
     GetLocalTime(&st);
     swprintf_s(line, ARRAYSIZE(line),
-        L"{\"schema\":1,\"time\":\"%04u-%02u-%02uT%02u:%02u:%02u\","
-        L"\"event\":\"%ls\",\"devices\":%u}\r\n",
+        L"{\"schema\":2,\"time\":\"%04u-%02u-%02uT%02u:%02u:%02u\","
+        L"\"event\":\"%ls\",\"devices\":%u,"
+        L"\"relaxation_mean\":%.6f,\"relaxation_variance\":%.6f,"
+        L"\"relaxation_z\":%.6f,\"relaxation_warm\":%ls}\r\n",
         st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
-        event->arrival ? L"arrival" : L"removal", g_app.device_count);
+        event->arrival ? L"arrival" : L"removal", g_app.device_count,
+        g_app.usb_pulse_signal_available ? g_app.usb_pulse_signal.mean : 0.0,
+        g_app.usb_pulse_signal_available ? g_app.usb_pulse_signal.variance : 0.0,
+        g_app.usb_pulse_signal_available ? g_app.usb_pulse_signal.z_score : 0.0,
+        g_app.usb_pulse_signal_available && g_app.usb_pulse_signal.warm
+            ? L"true" : L"false");
     bytes = WideCharToMultiByte(CP_UTF8, 0, line, -1, utf8,
                                 (int)sizeof(utf8), NULL, NULL);
     if (bytes <= 1) return;
@@ -782,6 +793,13 @@ static void record_usb_pulse(BOOL arrival)
     if (g_app.usb_event_count < USB_EVENT_CAPACITY) ++g_app.usb_event_count;
     if (arrival) ++g_app.usb_arrivals_total;
     else ++g_app.usb_removals_total;
+
+    /* +1 is an arrival, -1 is a removal. This trend is advisory only. */
+    if (sambu_relaxation_update(&g_app.usb_pulse_filter,
+            arrival ? 1.0 : -1.0, (uint64_t)event->tick,
+            USB_PULSE_RELAXATION_TAU_MS, &g_app.usb_pulse_signal)) {
+        g_app.usb_pulse_signal_available = TRUE;
+    }
 
     append_pulse_vault(event);
     set_status(arrival
@@ -1503,6 +1521,25 @@ static void save_report(void)
         g_app.link_profile_changed ? L"да" : L"нет");
     if (count < 0) {
         set_status(L"Не удалось завершить формирование отчёта.");
+        return;
+    }
+    used += (size_t)count;
+    count = swprintf_s(report + used, ARRAYSIZE(report) - used,
+    count = swprintf_s(report + used, ARRAYSIZE(report) - used,
+        L"\r\nUSB Pulse relaxation (30 s): %ls; mean %.3f; variance %.4f; z %.3f; samples %u; warm-up %ls.\r\n"
+        L"Trend is advisory only; it does not modify Duck Readiness.\r\n",
+        g_app.usb_pulse_signal_available
+            ? (g_app.usb_pulse_signal.mean > 0.15 ? L"arrival-biased"
+                : (g_app.usb_pulse_signal.mean < -0.15 ? L"removal-biased" : L"balanced"))
+            : L"not enough events",
+        g_app.usb_pulse_signal_available ? g_app.usb_pulse_signal.mean : 0.0,
+        g_app.usb_pulse_signal_available ? g_app.usb_pulse_signal.variance : 0.0,
+        g_app.usb_pulse_signal_available ? g_app.usb_pulse_signal.z_score : 0.0,
+        g_app.usb_pulse_signal_available ? (unsigned)g_app.usb_pulse_signal.samples : 0u,
+        g_app.usb_pulse_signal_available && g_app.usb_pulse_signal.warm
+            ? L"complete" : L"warming");
+    if (count < 0) {
+        set_status(L"Не удалось добавить USB Pulse relaxation в отчёт.");
         return;
     }
     used += (size_t)count;
