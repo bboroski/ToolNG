@@ -954,7 +954,7 @@ static void compute_readiness_and_coach(void)
         copy_ascii_to_wide(quality_key, ARRAYSIZE(quality_key),
             sambu_quality_key(g_app.sambu_assessment.quality_flags));
         if (swprintf_s(note, ARRAYSIZE(note),
-                L"\r\nSAMBU Quality Gate: %ls. Повтори проверку; неподтверждённые сигналы не учитываются в оценке.",
+                L"\r\nEvidence Quality Gate: %ls. Повтори проверку; неподтверждённые сигналы не учитываются в оценке.",
                 quality_key) > 0) {
             (void)wcscat_s(g_app.coach_body, ARRAYSIZE(g_app.coach_body), note);
         }
@@ -1044,7 +1044,7 @@ static void refresh_diagnostics(void)
             sizeof(kAppleConnectionWorkflow) - 1u, &g_app.sambu_workflow, &diagnostic)) {
         copy_ascii_to_wide(message, ARRAYSIZE(message), diagnostic.message);
         swprintf_s(g_app.status, ARRAYSIZE(g_app.status),
-            L"SAMBU workflow compile error at %lu:%lu: %ls",
+            L"Diagnostic workflow compile error at %lu:%lu: %ls",
             (unsigned long)diagnostic.source.line,
             (unsigned long)diagnostic.source.column, message);
         InvalidateRect(g_app.hwnd, NULL, FALSE);
@@ -1054,13 +1054,13 @@ static void refresh_diagnostics(void)
                               &policy, &host, &diagnostic)) {
         copy_ascii_to_wide(message, ARRAYSIZE(message), diagnostic.message);
         swprintf_s(g_app.status, ARRAYSIZE(g_app.status),
-            L"SAMBU workflow preflight denied at %lu:%lu: %ls",
+            L"Diagnostic workflow preflight denied at %lu:%lu: %ls",
             (unsigned long)diagnostic.source.line,
             (unsigned long)diagnostic.source.column, message);
         InvalidateRect(g_app.hwnd, NULL, FALSE);
         return;
     }
-    set_status(L"SAMBU: проверка допущена; выполняется ограниченный диагностический сценарий...");
+    set_status(L"Проверка допущена; выполняется ограниченный диагностический сценарий...");
     if (g_app.hwnd) SetTimer(g_app.hwnd, TIMER_WORKFLOW, 20u, NULL);
     InvalidateRect(g_app.hwnd, NULL, FALSE);
 }
@@ -1203,8 +1203,8 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: %ls · diagnostic schema: %ls\r\n"
-        L"SAMBU finding: %u (%ls)\r\n"
+        L"Diagnostic engine: %ls · diagnostic schema: %ls\r\n"
+        L"Finding: %u (%ls)\r\n"
         L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
         L"Evidence coverage: %u%% · Duck Readiness: %d/100 · %ls\r\n"
         L"Состояние: %ls\r\nUSB interfaces: %u\r\n"
@@ -1440,17 +1440,17 @@ static void save_report(void)
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
         L"Автор: ToolzNG (локальная генерация)\r\n"
         L"Платформа: Windows\r\n"
-        L"SAMBU engine: %ls\r\n"
+        L"Diagnostic engine: %ls\r\n"
         L"Diagnostic schema: %ls\r\n"
-        L"SAMBU finding code: %u\r\n"
-        L"SAMBU finding key: %ls\r\n"
+        L"Finding code: %u\r\n"
+        L"Finding key: %ls\r\n"
         L"Evidence coverage: %u%% (legacy confidence field; not a probability)\r\n"
         L"Readiness score: %d/100; status: %ls\r\n"
         L"Score contributors: Apple USB %d/40; Apple service %d/25; backup folder %d/10; markers %d/15; stable USB %d/10\r\n"
-        L"SAMBU evidence mask: 0x%08lX\r\n"
-        L"SAMBU evidence quality: %ls (0x%08lX)\r\n"
-        L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n"
-        L"SAMBU recurrence (10 min): %u; pattern: %ls\r\n\r\n"
+        L"Evidence mask: 0x%08lX\r\n"
+        L"Evidence quality: %ls (0x%08lX)\r\n"
+        L"Finding memory: %u unique findings; current state observed %u time(s)\r\n"
+        L"Recurrence (10 min): %u; pattern: %ls\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
         now.wSecond, engine_version, report_schema,
@@ -1541,7 +1541,7 @@ static void save_report(void)
     }
     used += (size_t)count;
     count = swprintf_s(report + used, ARRAYSIZE(report) - used,
-        L"\r\nSAMBU workflow: apple_connection (%ls)\r\n"
+        L"\r\nDiagnostic workflow: apple_connection (%ls)\r\n"
         L"Workflow preflight: %ls; steps: attempted=%u, passed=%u, failed=%u\r\n",
         L"local_record",
         g_app.sambu_workflow_session.run.preflight_approved ? L"approved" : L"denied",
@@ -1671,7 +1671,7 @@ static void format_quality_summary(WCHAR *buffer, size_t buffer_count)
         ? L"OK — сигналы согласованы"
         : L"ВНИМАНИЕ — см. DuckFix";
     swprintf_s(buffer, buffer_count,
-        L"SAMBU Quality Gate · %ls · coverage %u%% · %ls",
+        L"Evidence Quality Gate · %ls · coverage %u%% · %ls",
         state,
         g_app.sambu_assessment.score_coverage_percent,
         g_app.sambu_assessment.score_provisional ? L"partial" : L"complete");
@@ -2034,7 +2034,7 @@ static void draw_about(HDC dc)
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
     draw_text(dc, L"ToolzNG  0.6.1", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"SAMBU Engine 1.2.0 · evidence coverage · Recurrence Radar 10 min · ledger 32",
+    draw_text(dc, L"Diagnostic Engine 1.2.0 · evidence coverage · Recurrence Radar 10 min · ledger 32",
               (RECT){ x + 24, 258, right - 24, 276 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },
@@ -2380,7 +2380,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 if (state == SAMBU_WF_COMPLETED) {
                     WCHAR status[180];
                     swprintf_s(status, ARRAYSIZE(status),
-                        L"SAMBU: сценарий завершён — %u/%u шагов подтверждено.",
+                        L"Сценарий завершён — %u/%u шагов подтверждено.",
                         (unsigned)g_app.sambu_workflow_session.run.passed,
                         (unsigned)g_app.sambu_workflow.step_count);
                     set_status(status);
@@ -2391,7 +2391,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                     copy_ascii_to_wide(detail, ARRAYSIZE(detail),
                         g_app.sambu_workflow_session.run.diagnostic.message);
                     swprintf_s(status, ARRAYSIZE(status),
-                        L"SAMBU остановлен на %lu:%lu: %ls",
+                        L"Сценарий остановлен на %lu:%lu: %ls",
                         (unsigned long)g_app.sambu_workflow_session.run.diagnostic.source.line,
                         (unsigned long)g_app.sambu_workflow_session.run.diagnostic.source.column,
                         detail);
@@ -2399,7 +2399,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 } else {
                     WCHAR status[180];
                     swprintf_s(status, ARRAYSIZE(status),
-                        L"SAMBU: шаг %u из %u...",
+                        L"Шаг %u из %u...",
                         (unsigned)g_app.sambu_workflow_session.run.attempted + 1u,
                         (unsigned)g_app.sambu_workflow.step_count);
                     set_status(status);
@@ -2462,7 +2462,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
 
     ZeroMemory(&g_app, sizeof(g_app));
     if (!sambu_architecture_validate()) {
-        MessageBoxW(NULL, L"Проверка архитектуры SAMBU не пройдена. Запуск остановлен.",
+        MessageBoxW(NULL, L"Проверка архитектуры диагностики не пройдена. Запуск остановлен.",
                     APP_TITLE, MB_OK | MB_ICONERROR);
         return 2;
     }
