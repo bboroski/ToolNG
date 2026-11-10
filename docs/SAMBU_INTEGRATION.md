@@ -63,7 +63,7 @@ Confidence is 40% when device scanning is unavailable, 85% when the scan complet
 
 ## Memory, privacy and compatibility
 
-The ledger retains only numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes; repeated finding transitions increment a lifetime counter and a active 10-minute episode window. Repeated UI refreshes of an unchanged finding do not create new episodes. Patterns are labelled single (1), recurrent (2–3), or persistent (4+). The ledger is in-memory only and resets when the application exits, matching SAMBU's explicit-export memory model.
+The ledger retains only numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes; repeated finding transitions increment a lifetime counter and an active 10-minute episode window. Repeated UI refreshes of an unchanged finding do not create new episodes. Patterns are labelled single (1), recurrent (2–3), or persistent (4+). The ledger is in-memory only and resets when the application exits, matching SAMBU's explicit-export memory model.
 
 The report schema is additive and versioned. Consumers should rely on stable finding codes and schema version, not on Russian display strings. The SHA-256 sidecar detects later file changes; it does not prove that the observations themselves are true.
 
@@ -78,7 +78,15 @@ The CTest target checks:
 - dependency-graph validation;
 - stable engine and report identifiers.
 
-Build the application and run the tests on Windows with:
+The portable C17 engine can be built and tested without the Win32 GUI (for example, in Linux CI):
+
+```bash
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
+
+Build the desktop application and run the same tests on Windows with:
 
 ```powershell
 cmake -S . -B build -A x64

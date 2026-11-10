@@ -11,6 +11,13 @@
 - Compile the SAMBU engine as part of ToolzNG; its functions were already referenced by the Win32 application but omitted from the executable sources.
 - Register the existing SAMBU engine tests with CTest and run them in the Windows CI workflow.
 - Count finding transitions rather than repeated UI refreshes, preventing false recurrence inflation.
+- Added three explicitly labelled static SVG UI previews and a README local-link/SVG integrity check.
+- Enabled portable SAMBU C17 core builds on non-Windows hosts while keeping the desktop GUI Windows-only.
+- Added Linux documentation/core CI alongside Windows GUI and CTest verification.
+- Restricted GitHub Actions write permission to the tag-triggered release job; normal CI uses read-only repository permissions.
+- Clarified unknown backup age, clamped oversized age values, and added millisecond filename precision to avoid report collisions.
+- Removed the automatic browser launch when no local backup folder is detected.
+- Added overview confidence display and documented Recurrence Radar's 10-minute episode classes.
 
 ## 0.5.0 — Duck Desktop Experience
 

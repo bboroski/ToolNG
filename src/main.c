@@ -795,10 +795,12 @@ static void compute_readiness_and_coach(void)
     evidence.service_running = g_app.apple_service_running != FALSE;
     evidence.backup_found = g_app.backup_found != FALSE;
     evidence.backup_marker_valid = g_app.backup_valid_count > 0;
-    evidence.backup_folders_seen = (int)g_app.backup_folder_count;
+    evidence.backup_folders_seen = g_app.backup_folder_count > 0 ? 1 : 0;
     evidence.backup_age_known = g_app.backup_age_days != ~(ULONGLONG)0;
     evidence.backup_age_days = evidence.backup_age_known
-        ? (uint32_t)g_app.backup_age_days : 0u;
+        ? (g_app.backup_age_days > UINT32_MAX
+            ? UINT32_MAX : (uint32_t)g_app.backup_age_days)
+        : 0u;
     evidence.recent_usb_removals = removals;
     evidence.usb_watch_registered = g_app.usb_watch_registered != FALSE;
     evidence.stability_window_elapsed = elapsed >= USB_STABILITY_WARMUP_MS;
@@ -908,8 +910,6 @@ static void open_backup_folder(void)
             L"Создай резервную копию через приложение Apple Devices или iTunes — после этого ToolzNG сможет открыть её расположение.\n\n"
             L"ToolzNG ничего не удаляет из резервных копий.",
             APP_TITLE, MB_OK | MB_ICONINFORMATION);
-        (void)ShellExecuteW(g_app.hwnd, L"open",
-            L"https://support.apple.com/en-us/108809", NULL, NULL, SW_SHOWNORMAL);
         return;
     }
 
@@ -1024,12 +1024,13 @@ static void save_duckfix_route(void)
     }
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
-        L"DuckFix-%04u%02u%02u-%02u%02u%02u.txt",
-        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+        L"DuckFix-%04u%02u%02u-%02u%02u%02u-%03u.txt",
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
+        now.wSecond, now.wMilliseconds);
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: 1.0.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU engine: 1.1.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
         L"SAMBU finding code: %u · confidence: %u%%\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
@@ -1208,6 +1209,7 @@ static void save_report(void)
     WCHAR engine_version[32];
     WCHAR report_schema[64];
     WCHAR pattern_key[32];
+    WCHAR backup_age_text[64] = L"нет данных";
     WCHAR report[REPORT_CHARS];
     SYSTEMTIME now;
     int count;
@@ -1232,10 +1234,15 @@ static void save_report(void)
     copy_ascii_to_wide(pattern_key, ARRAYSIZE(pattern_key),
         sambu_pattern_key(sambu_ledger_pattern(&g_app.sambu_ledger,
             (uint32_t)g_app.sambu_assessment.finding, GetTickCount64())));
+    if (g_app.backup_age_days != ~(ULONGLONG)0) {
+        swprintf_s(backup_age_text, ARRAYSIZE(backup_age_text),
+            L"%llu дней", (unsigned long long)g_app.backup_age_days);
+    }
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
-        L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
-        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+        L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u-%03u.txt",
+        now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
+        now.wSecond, now.wMilliseconds);
     append_path(report_path, ARRAYSIZE(report_path), g_app.reports_dir, filename);
 
     count = swprintf_s(report, ARRAYSIZE(report),
@@ -1283,7 +1290,7 @@ static void save_report(void)
         L"Папка резервных копий: %ls\r\n"
         L"Backup Sentinel: %ls\r\n"
         L"Backup folders: %lu; marker-valid: %lu\r\n"
-        L"Возраст новейшего Info.plist: %llu дней (оценка по времени изменения)\r\n"
+        L"Возраст новейшего Info.plist: %ls (оценка по времени изменения)\r\n"
         L"Duck Readiness: %d/100 (оценка Windows-side сигналов)\r\n"
         L"USB Pulse за 10 минут: %u подключений / %u отключений\r\n"
         L"LinkDNA baseline: %ls\r\n"
@@ -1299,7 +1306,7 @@ static void save_report(void)
         g_app.backup_audit,
         (unsigned long)g_app.backup_folder_count,
         (unsigned long)g_app.backup_valid_count,
-        (unsigned long long)(g_app.backup_age_days == ~(ULONGLONG)0 ? 0 : g_app.backup_age_days),
+        backup_age_text,
         g_app.readiness_score, recent_arrivals, recent_removals,
         g_app.link_baseline_known ? L"инициализирован" : L"не создан",
         g_app.link_profile_changed ? L"да" : L"нет");
@@ -1421,8 +1428,11 @@ static void draw_overview(HDC dc)
     draw_text(dc, L"СОСТОЯНИЕ ПОДКЛЮЧЕНИЯ", (RECT){ x + 24, 208, right - 24, 232 },
               g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     {
-        WCHAR score_line[96];
-        swprintf_s(score_line, ARRAYSIZE(score_line), L"DUCK READINESS  ·  %d/100", g_app.readiness_score);
+        WCHAR score_line[128];
+        swprintf_s(score_line, ARRAYSIZE(score_line),
+            L"DUCK READINESS  ·  %d/100  ·  confidence %u%%",
+            g_app.sambu_assessment.readiness_score,
+            g_app.sambu_assessment.confidence_percent);
         draw_text(dc, score_line, (RECT){ x + 24, 232, right - 176, 253 },
                   g_app.font_small, COL_AMBER, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
@@ -1732,6 +1742,9 @@ static void draw_about(HDC dc)
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
     draw_text(dc, L"ToolzNG  0.5.0", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    draw_text(dc, L"SAMBU Engine 1.1.0 · Recurrence Radar · 10 min · ledger 32",
+              (RECT){ x + 24, 258, right - 24, 276 },
+              g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },
               g_app.font_button, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"C17 · Win32 API · GDI 2D · SetupAPI · Windows Service Control Manager · CMake",
