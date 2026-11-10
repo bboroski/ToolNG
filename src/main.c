@@ -12,6 +12,7 @@
 #include <winsvc.h>
 #include <wincrypt.h>
 #include <commctrl.h>
+#include <commdlg.h>
 #include <dbt.h>
 #include <usbiodef.h>
 
@@ -135,6 +136,7 @@ typedef struct AppState {
     ReportEntry reports[MAX_REPORTS];
     RECT report_rows[REPORT_ROWS];
     RECT report_copy_button;
+    RECT report_export_button;
     RECT report_refresh_button;
     RECT zoom_minus_button;
     RECT zoom_plus_button;
@@ -160,6 +162,8 @@ typedef struct AppState {
 
 static AppState g_app;
 
+static void create_fonts(void);
+static void delete_fonts(void);
 static void copy_text(WCHAR *dst, size_t dst_count, const WCHAR *src)
 {
     if (!dst || dst_count == 0) return;
@@ -1050,6 +1054,28 @@ static BOOL copy_report_to_clipboard(void)
     return TRUE;
 }
 
+static void export_report_copy(void)
+{
+    OPENFILENAMEW dialog;
+    WCHAR target[MAX_PATH * 2] = L"ToolzNG-report.txt";
+    ZeroMemory(&dialog, sizeof(dialog));
+    dialog.lStructSize = sizeof(dialog);
+    dialog.hwndOwner = g_app.hwnd;
+    dialog.lpstrFilter = L"Текстовый отчёт (*.txt)\0*.txt\0Все файлы (*.*)\0*.*\0\0";
+    dialog.lpstrFile = target;
+    dialog.nMaxFile = ARRAYSIZE(target);
+    dialog.lpstrDefExt = L"txt";
+    dialog.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+    if (GetSaveFileNameW(&dialog)) {
+        if (write_utf8_file(target, g_app.report_content)) {
+            (void)write_sha256_seal(target);
+            set_status(L"Копия отчёта экспортирована по выбранному пути.");
+        } else {
+            set_status(L"Не удалось экспортировать TXT-копию отчёта.");
+        }
+    }
+}
+
 static void save_report(void)
 {
     WCHAR report_path[MAX_PATH * 2];
@@ -1505,9 +1531,12 @@ static void draw_reports(HDC dc)
     }
     g_app.report_copy_button = (RECT){ right - 170, g_app.client_height - 66,
                                        right - 20, g_app.client_height - 30 };
+    g_app.report_export_button = (RECT){ right - 342, g_app.client_height - 66,
+                                         right - 182, g_app.client_height - 30 };
+    draw_button(dc, g_app.report_export_button, L"Экспорт TXT", FALSE);
     draw_button(dc, g_app.report_copy_button, L"Копировать", TRUE);
-    draw_text(dc, L"Колёсико мыши / PgUp / PgDn — прокрутка предпросмотра",
-        (RECT){ list_right + 30, g_app.client_height - 66, right - 184,
+    draw_text(dc, L"Колёсико мыши / PgUp / PgDn — прокрутка",
+        (RECT){ list_right + 30, g_app.client_height - 66, right - 352,
                 g_app.client_height - 30 }, g_app.font_small, COL_MUTED,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 }
@@ -1695,6 +1724,8 @@ static void handle_click(POINT point)
             set_status(copy_report_to_clipboard()
                 ? L"Содержимое отчёта скопировано в буфер обмена."
                 : L"Не удалось скопировать отчёт в буфер обмена.");
+        } else if (point_in_rect(point, g_app.report_export_button)) {
+            export_report_copy();
         }
     }
 }
@@ -1794,7 +1825,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 InvalidateRect(hwnd, NULL, FALSE);
                 return 0;
             }
-            break;
+            return DefWindowProcW(hwnd, message, wparam, lparam);
 
         case WM_KEYDOWN:
             if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
@@ -1817,7 +1848,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 InvalidateRect(hwnd, NULL, FALSE);
                 return 0;
             }
-            break;
+            return DefWindowProcW(hwnd, message, wparam, lparam);
 
         case WM_DEVICECHANGE:
             if ((wparam == DBT_DEVICEARRIVAL || wparam == DBT_DEVICEREMOVECOMPLETE) && lparam) {
@@ -1887,12 +1918,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     (void)command_line;
 
     ZeroMemory(&g_app, sizeof(g_app));
+    (void)SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     g_app.dpi = GetDpiForSystem();
     if (!g_app.dpi) g_app.dpi = 96;
     initialize_local_store();
     load_display_settings();
     g_app.effective_dpi = effective_dpi();
-    (void)SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     ZeroMemory(&wc, sizeof(wc));
     wc.cbSize = sizeof(wc);
     wc.style = CS_HREDRAW | CS_VREDRAW;
