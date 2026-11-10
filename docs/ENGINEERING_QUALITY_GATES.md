@@ -1,9 +1,9 @@
-# ToolzNG Engineering Quality and Visual Evidence Gates
+# ToolNG Engineering Quality and Visual Evidence Gates
 
-**Baseline:** ToolzNG 0.6.1, portable C17 engine/workflow and Windows-only Win32 desktop UI.  
+**Baseline:** ToolNG 0.6.1, portable C17 engine/workflow and Windows-only Win32 desktop UI.  
 **Purpose:** translate the SAMBU/ToolNG improvement brief into release gates that match the actual product boundary.
 
-ToolzNG is a local Windows-side Apple-device connection and backup-marker diagnostic utility. It is not a creative-text processor, an NLP service, an iOS repair tool or an automatic device-management system. The Python creative ontology belongs in SAMBU; ToolzNG adopts only the engineering principles that are relevant to a native diagnostic application.
+ToolNG is a local Windows-side Apple-device connection and backup-marker diagnostic utility. It is not a creative-text processor, an NLP service, an iOS repair tool or an automatic device-management system. The Python creative ontology belongs in SAMBU; ToolNG adopts only the engineering principles that are relevant to a native diagnostic application.
 
 ## 1. Hot Ice: change only what improves the system
 
@@ -140,7 +140,7 @@ A 5% regression threshold may be used as a review trigger after a stable baselin
 ## 9. Deterministic workflow tick and session integrity
 
 A workflow session is caller-visible state, so preflight approval is not a
-permanent trust token. Before every host callback, `sambu_workflow_tick`
+permanent trust token. Before every host callback, `toolng_workflow_tick`
 revalidates the bounded step count, cursor, policy budget, attempted/passed/
 failed counters, prior evidence sequence, current allowlisted action and
 local-record permission. A malformed or modified session transitions to
