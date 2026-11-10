@@ -43,7 +43,8 @@ typedef enum SambuWorkflowError {
     SAMBU_WF_DUPLICATE_STEP,
     SAMBU_WF_BUDGET,
     SAMBU_WF_POLICY,
-    SAMBU_WF_HOST_FAILURE
+    SAMBU_WF_HOST_FAILURE,
+    SAMBU_WF_SESSION_INVALID
 } SambuWorkflowError;
 
 typedef struct SambuSourceSpan {

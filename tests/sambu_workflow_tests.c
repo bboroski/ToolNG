@@ -154,6 +154,48 @@ static void test_fail_fast(void)
     assert(state.calls == 2u);
 }
 
+static void test_tampered_session_fails_closed(void)
+{
+    SambuWorkflow program;
+    SambuWorkflowDiagnostic diagnostic;
+    SambuWorkflowPolicy policy = { 5u, true, true };
+    SambuWorkflowHost host;
+    SambuWorkflowSession session;
+    HostState state = { 0u, 0u };
+
+    assert(sambu_workflow_compile(valid_source, sizeof(valid_source) - 1u,
+                                  &program, &diagnostic));
+    host.handler = test_host;
+    host.context = &state;
+    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+
+    session.program.steps[0].action = (SambuWorkflowAction)999;
+    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(state.calls == 0u);
+    assert(session.run.attempted == 0u);
+    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+    assert(strcmp(sambu_workflow_error_name(session.run.diagnostic.code),
+                  "session_invalid") == 0);
+
+    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.cursor = (uint16_t)(SAMBU_WORKFLOW_STEP_CAP + 1u);
+    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(state.calls == 0u);
+    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+
+    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.program.autonomy = (SambuWorkflowAutonomy)999;
+    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(state.calls == 0u);
+    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+
+    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.policy.allow_observation = false;
+    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(state.calls == 0u);
+    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+}
+
 int main(void)
 {
     test_compile_and_incremental_run();
@@ -163,6 +205,7 @@ int main(void)
     test_observe_only_cannot_record();
     test_rejects_unbounded_numeric_manifest();
     test_fail_fast();
+    test_tampered_session_fails_closed();
     puts("SAMBU workflow tests passed.");
     return 0;
 }

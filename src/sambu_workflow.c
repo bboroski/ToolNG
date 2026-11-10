@@ -474,19 +474,79 @@ bool sambu_workflow_begin(SambuWorkflowSession *session,
     return true;
 }
 
+static SambuWorkflowState workflow_session_invalid(
+    SambuWorkflowSession *session, const char *message)
+{
+    session->state = SAMBU_WF_FAILED;
+    session->run.completed = false;
+    session->run.diagnostic.code = SAMBU_WF_SESSION_INVALID;
+    memset(&session->run.diagnostic.source, 0,
+           sizeof(session->run.diagnostic.source));
+    copy_string(session->run.diagnostic.message,
+                sizeof(session->run.diagnostic.message), message);
+    return session->state;
+}
+
 SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
 {
     SambuWorkflowEvidence *entry;
     const SambuWorkflowStep *step;
     bool ok;
-    if (!session || session->state != SAMBU_WF_RUNNING)
-        return session ? session->state : SAMBU_WF_FAILED;
-    if (session->cursor >= session->program.step_count) {
-        session->state = SAMBU_WF_COMPLETED;
-        session->run.completed = true;
-        return session->state;
+    if (session == NULL) return SAMBU_WF_FAILED;
+    if (session->state != SAMBU_WF_RUNNING) return session->state;
+
+    /* The session is public caller-owned state. Recheck its execution contract
+       before indexing evidence or invoking a platform callback. */
+    if (!session->run.preflight_approved || session->run.completed ||
+        session->host.handler == NULL ||
+        session->program.step_count == 0u ||
+        session->program.step_count > SAMBU_WORKFLOW_STEP_CAP ||
+        session->program.max_steps == 0u ||
+        session->policy.max_steps == 0u ||
+        session->program.max_steps > session->policy.max_steps ||
+        session->program.step_count > session->program.max_steps ||
+        session->policy.max_steps < session->program.step_count ||
+        session->cursor >= session->program.step_count ||
+        session->run.attempted != session->cursor ||
+        session->run.failed != 0u ||
+        session->run.passed != session->cursor ||
+        session->run.attempted >= session->program.max_steps) {
+        return workflow_session_invalid(
+            session, "Workflow session invariants changed after preflight; no action was executed.");
+    }
+    for (uint16_t i = 0u; i < session->cursor; ++i) {
+        const SambuWorkflowEvidence *prior = &session->run.evidence[i];
+        if (prior->sequence != (uint16_t)(i + 1u) ||
+            prior->action != session->program.steps[i].action ||
+            !prior->succeeded) {
+            return workflow_session_invalid(
+                session, "Prior workflow evidence does not match the executed step sequence.");
+        }
+    }
+    if (session->program.autonomy != SAMBU_WF_OBSERVE_ONLY &&
+        session->program.autonomy != SAMBU_WF_LOCAL_RECORD) {
+        return workflow_session_invalid(
+            session, "Workflow autonomy mode is not recognized.");
+    }
+    if (!session->policy.allow_observation) {
+        return workflow_session_invalid(
+            session, "Observation permission was revoked after preflight.");
     }
     step = &session->program.steps[session->cursor];
+    if (step->action < SAMBU_WF_SCAN_USB ||
+        step->action > SAMBU_WF_ASSESS_READINESS ||
+        memchr(step->name, '\0', sizeof(step->name)) == NULL ||
+        step->name[0] == '\0') {
+        return workflow_session_invalid(
+            session, "Current workflow step is malformed or not allowlisted.");
+    }
+    if (step->action == SAMBU_WF_RECORD_PROFILE &&
+        (session->program.autonomy != SAMBU_WF_LOCAL_RECORD ||
+         !session->policy.allow_local_record ||
+         !sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL))) {
+        return workflow_session_invalid(
+            session, "Current workflow step no longer satisfies local-record policy.");
+    }
     entry = &session->run.evidence[session->cursor];
     memset(entry, 0, sizeof(*entry));
     entry->sequence = (uint16_t)(session->cursor + 1u);
@@ -540,6 +600,7 @@ const char *sambu_workflow_error_name(SambuWorkflowError error)
         case SAMBU_WF_BUDGET: return "budget";
         case SAMBU_WF_POLICY: return "policy";
         case SAMBU_WF_HOST_FAILURE: return "host_failure";
+        case SAMBU_WF_SESSION_INVALID: return "session_invalid";
         case SAMBU_WF_OK: default: return "ok";
     }
 }
