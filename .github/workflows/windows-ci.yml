@@ -1,0 +1,19 @@
+name: Windows C17 CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Configure x64 build
+        run: cmake -S . -B build -A x64
+      - name: Build application and tests
+        run: cmake --build build --config Release --parallel
+      - name: Run SAMBU core tests
+        run: ctest --test-dir build -C Release --output-on-failure
