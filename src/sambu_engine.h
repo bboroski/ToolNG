@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.1.0"
+#define SAMBU_ENGINE_VERSION "1.2.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
@@ -33,7 +33,10 @@ typedef enum SambuFinding {
     SAMBU_FINDING_BACKUP_STRUCTURE = 5,
     SAMBU_FINDING_BACKUP_STALE = 6,
     SAMBU_FINDING_BACKUP_MISSING = 7,
-    SAMBU_FINDING_HEALTHY = 8
+    SAMBU_FINDING_HEALTHY = 8,
+    SAMBU_FINDING_SERVICE_UNKNOWN = 9,
+    SAMBU_FINDING_BACKUP_UNKNOWN = 10,
+    SAMBU_FINDING_STABILITY_UNCONFIRMED = 11
 } SambuFinding;
 
 enum {
@@ -44,13 +47,17 @@ enum {
     SAMBU_EVIDENCE_BACKUP_MARKERS = 1u << 4,
     SAMBU_EVIDENCE_USB_WATCH = 1u << 5,
     SAMBU_EVIDENCE_USB_REMOVAL = 1u << 6,
-    SAMBU_EVIDENCE_STABILITY_WINDOW = 1u << 7
+    SAMBU_EVIDENCE_STABILITY_WINDOW = 1u << 7,
+    SAMBU_EVIDENCE_SERVICE_CHECKED = 1u << 8,
+    SAMBU_EVIDENCE_BACKUP_CHECKED = 1u << 9
 };
 
 typedef struct SambuEvidence {
     int scan_complete;
     int device_found;
+    int service_query_complete;
     int service_running;
+    int backup_scan_complete;
     int backup_found;
     int backup_marker_valid;
     int backup_folders_seen;
@@ -64,7 +71,15 @@ typedef struct SambuEvidence {
 typedef struct SambuAssessment {
     SambuFinding finding;
     int readiness_score;
+    /* Kept for report/API compatibility: this is measured coverage, not probability. */
     unsigned confidence_percent;
+    unsigned score_coverage_percent;
+    int score_provisional;
+    int device_points;      /* 0..40 */
+    int service_points;     /* 0..25 */
+    int backup_points;      /* 0..10 */
+    int marker_points;      /* 0..15 */
+    int stability_points;   /* 0..10 */
     uint32_t evidence_mask;
 } SambuAssessment;
 
@@ -93,7 +108,7 @@ typedef struct SambuLedger {
 /* S — fail-closed action policy. Device mutation and network upload are never granted. */
 int sambu_authorize(SambuOperation operation, SambuOrigin origin);
 
-/* A/V — deterministic evidence assessment and explainable readiness score. */
+/* A/V — deterministic assessment, known-evidence normalization and score breakdown. */
 SambuAssessment sambu_assess(const SambuEvidence *evidence);
 
 /* M — bounded failure/finding memory; stores codes and counters, never raw device data. */

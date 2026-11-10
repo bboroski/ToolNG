@@ -53,32 +53,47 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     SambuAssessment result;
     const SambuEvidence empty = {0};
     const SambuEvidence *e = evidence ? evidence : &empty;
-    int score = 0;
+    int possible = 0;
+    int earned = 0;
 
     memset(&result, 0, sizeof(result));
     result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
-    result.confidence_percent = e->scan_complete
-        ? (e->usb_watch_registered ? 100u : 85u) : 40u;
 
     if (e->scan_complete) {
         result.evidence_mask |= SAMBU_EVIDENCE_SCAN_COMPLETE;
+        possible += 40;
         if (e->device_found) {
             result.evidence_mask |= SAMBU_EVIDENCE_DEVICE_VISIBLE;
-            score += 40;
+            result.device_points = 40;
+            earned += result.device_points;
         }
     }
-    if (e->service_running) {
-        result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_RUNNING;
-        score += 25;
+
+    if (e->service_query_complete) {
+        result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_CHECKED;
+        possible += 25;
+        if (e->service_running) {
+            result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_RUNNING;
+            result.service_points = 25;
+            earned += result.service_points;
+        }
     }
-    if (e->backup_found) {
-        result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_FOUND;
-        score += 10;
+
+    if (e->backup_scan_complete) {
+        result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_CHECKED;
+        possible += 25;
+        if (e->backup_found) {
+            result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_FOUND;
+            result.backup_points = 10;
+            earned += result.backup_points;
+        }
+        if (e->backup_marker_valid) {
+            result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_MARKERS;
+            result.marker_points = 15;
+            earned += result.marker_points;
+        }
     }
-    if (e->backup_marker_valid) {
-        result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_MARKERS;
-        score += 15;
-    }
+
     if (e->usb_watch_registered)
         result.evidence_mask |= SAMBU_EVIDENCE_USB_WATCH;
     if (e->recent_usb_removals > 0)
@@ -86,23 +101,38 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     if (e->stability_window_elapsed)
         result.evidence_mask |= SAMBU_EVIDENCE_STABILITY_WINDOW;
 
-    if (e->scan_complete && e->usb_watch_registered && e->device_found &&
-        e->stability_window_elapsed && e->recent_usb_removals == 0) {
-        score += 10;
+    /* A stable-connection score is meaningful only after a device was found
+       and the registered observer completed its full warm-up window. */
+    if (e->scan_complete && e->device_found &&
+        e->usb_watch_registered && e->stability_window_elapsed) {
+        possible += 10;
+        if (e->recent_usb_removals == 0) {
+            result.stability_points = 10;
+            earned += result.stability_points;
+        }
     }
 
-    if (score > 100) score = 100;
-    result.readiness_score = score;
+    if (possible > 100) possible = 100;
+    if (earned > possible) earned = possible;
+    result.score_coverage_percent = (unsigned)possible;
+    result.confidence_percent = (unsigned)possible; /* compatibility alias */
+    result.score_provisional = possible < 100;
+    result.readiness_score = possible > 0 ? (earned * 100) / possible : 0;
 
-    /* The first matching condition is the highest-priority actionable finding. */
+    /* First matching item is the highest-priority actionable finding.
+       Unknown states are kept distinct from verified negative observations. */
     if (!e->scan_complete) {
         result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
     } else if (!e->device_found) {
         result.finding = SAMBU_FINDING_NO_DEVICE;
+    } else if (!e->service_query_complete) {
+        result.finding = SAMBU_FINDING_SERVICE_UNKNOWN;
     } else if (!e->service_running) {
         result.finding = SAMBU_FINDING_SERVICE_UNAVAILABLE;
     } else if (e->recent_usb_removals > 0) {
         result.finding = SAMBU_FINDING_USB_UNSTABLE;
+    } else if (!e->backup_scan_complete) {
+        result.finding = SAMBU_FINDING_BACKUP_UNKNOWN;
     } else if (e->backup_folders_seen > 0 && !e->backup_marker_valid) {
         result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
     } else if (e->backup_marker_valid && e->backup_age_known &&
@@ -110,6 +140,8 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
         result.finding = SAMBU_FINDING_BACKUP_STALE;
     } else if (!e->backup_found || !e->backup_marker_valid) {
         result.finding = SAMBU_FINDING_BACKUP_MISSING;
+    } else if (!e->usb_watch_registered || !e->stability_window_elapsed) {
+        result.finding = SAMBU_FINDING_STABILITY_UNCONFIRMED;
     } else {
         result.finding = SAMBU_FINDING_HEALTHY;
     }
@@ -271,8 +303,12 @@ const char *sambu_finding_key(SambuFinding finding)
         case SAMBU_FINDING_BACKUP_STALE: return "backup_marker_stale";
         case SAMBU_FINDING_BACKUP_MISSING: return "backup_not_verified";
         case SAMBU_FINDING_HEALTHY: return "windows_side_checks_passed";
+        case SAMBU_FINDING_SERVICE_UNKNOWN: return "apple_service_status_unknown";
+        case SAMBU_FINDING_BACKUP_UNKNOWN: return "backup_scan_incomplete";
+        case SAMBU_FINDING_STABILITY_UNCONFIRMED: return "usb_stability_unconfirmed";
         case SAMBU_FINDING_NONE:
-        default: return "none";
+        default:
+            return "none";
     }
 }
 
