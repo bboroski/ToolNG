@@ -1266,7 +1266,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 SetTimer(hwnd, TIMER_READINESS, (UINT)USB_STABILITY_WARMUP_MS, NULL);
                 return 0;
             }
-            break;
+            return DefWindowProcW(hwnd, message, wparam, lparam);
 
         case WM_LBUTTONUP: {
             POINT point;
