@@ -25,8 +25,8 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include <string.h>
 #include <wchar.h>
 
-#include "wdep_engine.h"
-#include "wdep_workflow.h"
+#include "sambu_engine.h"
+#include "sambu_workflow.h"
 
 #define APP_TITLE           L"WDEP | Device Evidence"
 #define MAX_APPLE_DEVICES   32
