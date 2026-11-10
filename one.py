@@ -34,10 +34,10 @@ def launch() -> None:
     if sys.platform != "win32":
         print("The native desktop shell is Win32-only. Portable core build and tests passed.")
         return
-    candidates = (BUILD / "Release" / "ToolzNG.exe", BUILD / "ToolzNG.exe")
+    candidates = (BUILD / "Release" / "WDEP.exe", BUILD / "WDEP.exe")
     executable = next((item for item in candidates if item.is_file()), None)
     if executable is None:
-        raise RuntimeError("Build completed but ToolzNG.exe was not found.")
+        raise RuntimeError("Build completed but WDEP.exe was not found.")
     print(f"\n==> Launch {executable}", flush=True)
     subprocess.Popen([str(executable)], cwd=ROOT)
 
