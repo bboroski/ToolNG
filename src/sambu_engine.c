@@ -191,13 +191,45 @@ void sambu_ledger_init(SambuLedger *ledger)
     if (ledger) memset(ledger, 0, sizeof(*ledger));
 }
 
+int sambu_ledger_validate(const SambuLedger *ledger)
+{
+    size_t i;
+    size_t j;
+
+    if (!ledger || ledger->count > SAMBU_LEDGER_CAPACITY ||
+        ledger->next >= SAMBU_LEDGER_CAPACITY)
+        return 0;
+
+    /* Before the ring fills, next always identifies the next free slot. */
+    if (ledger->count < SAMBU_LEDGER_CAPACITY &&
+        ledger->next != ledger->count)
+        return 0;
+
+    for (i = 0u; i < ledger->count; ++i) {
+        const SambuLedgerEntry *entry = &ledger->entries[i];
+
+        if (entry->finding_code == 0u || entry->occurrences == 0u ||
+            entry->window_occurrences == 0u ||
+            entry->window_occurrences > entry->occurrences ||
+            entry->last_seen_ms < entry->window_start_ms)
+            return 0;
+
+        for (j = i + 1u; j < ledger->count; ++j) {
+            if (ledger->entries[j].finding_code == entry->finding_code)
+                return 0;
+        }
+    }
+
+    return 1;
+}
+
 void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
                          uint64_t monotonic_ms)
 {
     size_t i;
     SambuLedgerEntry *entry;
 
-    if (!ledger || finding_code == 0u) return;
+    if (!sambu_ledger_validate(ledger) || finding_code == 0u) return;
 
     for (i = 0; i < ledger->count; ++i) {
         entry = &ledger->entries[i];
@@ -236,7 +268,7 @@ uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
                                   uint32_t finding_code)
 {
     size_t i;
-    if (!ledger || finding_code == 0u) return 0u;
+    if (!sambu_ledger_validate(ledger) || finding_code == 0u) return 0u;
     for (i = 0; i < ledger->count; ++i) {
         if (ledger->entries[i].finding_code == finding_code)
             return ledger->entries[i].occurrences;
@@ -249,7 +281,7 @@ uint32_t sambu_ledger_recent_occurrences(const SambuLedger *ledger,
                                          uint64_t now_ms)
 {
     size_t i;
-    if (!ledger || finding_code == 0u) return 0u;
+    if (!sambu_ledger_validate(ledger) || finding_code == 0u) return 0u;
 
     for (i = 0; i < ledger->count; ++i) {
         const SambuLedgerEntry *entry = &ledger->entries[i];
@@ -309,7 +341,7 @@ const char *sambu_quality_key(uint32_t quality_flags)
 
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger)
 {
-    if (!ledger) return 0u;
+    if (!sambu_ledger_validate(ledger)) return 0u;
     return (uint32_t)ledger->count;
 }
 
@@ -324,7 +356,8 @@ int sambu_relaxation_update(SambuRelaxationState *state, double observation,
     double z_score;
 
     if (!state || !result || !isfinite(observation) ||
-        !isfinite(tau_ms) || tau_ms <= 0.0)
+        !isfinite(tau_ms) || tau_ms <= 0.0 ||
+        (state->initialized != 0 && state->initialized != 1))
         return 0;
 
     if (!state->initialized || monotonic_ms < state->last_update_ms) {
@@ -343,8 +376,8 @@ int sambu_relaxation_update(SambuRelaxationState *state, double observation,
         return 1;
     }
 
-    if (!isfinite(state->mean) || !isfinite(state->variance) ||
-        state->variance < 0.0)
+    if (state->samples == 0u || !isfinite(state->mean) ||
+        !isfinite(state->variance) || state->variance < 0.0)
         return 0;
 
     residual = observation - state->mean;
