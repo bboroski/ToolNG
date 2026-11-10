@@ -56,6 +56,29 @@ It is a **Windows-side diagnostic assistant**, not an iPhone repair suite, backu
 
 > **Visual note:** the three interface panels are static SVG previews with illustrative SAMPLE DATA. They are not screenshots of a live scan or real device measurements.
 
+## Interface model: progressive disclosure
+
+ToolzNG uses a practical version of the “Curtain Dynamics” idea: expose the next useful level of detail without hiding the evidence behind a summary.
+
+| Level | User sees | Where |
+|---|---|---|
+| **Overview** | Latest scan state, readiness, evidence coverage and highest-priority finding | Dashboard |
+| **Inspection** | Device visibility, service state, backup markers, USB events and quality flags | USB / Backup / Safe Care pages |
+| **Evidence detail** | Stable finding key, score contributions, unknown-state reasons and measurement limits | Private report preview and exported report |
+
+This is progressive navigation, not a claim of GPU-accelerated animation or a hidden inference engine. The shipped interface is native Win32/GDI; motion effects remain out of scope until implemented and measured.
+
+## SAMBU and ToolzNG: a deliberate boundary
+
+These are companion projects, not two names for one executable:
+
+- **SAMBU** is a Python-hosted language and toolkit. Its creative-data ontology is human-annotated metadata; Text Craft provides deterministic text, structure, prosody and written-cue diagnostics.
+- **ToolzNG** is a native C17 / Win32 Apple-connection diagnostic application. It embeds the portable SAMBU policy/workflow core, not the full Python interpreter or the creative-text subsystem.
+- The shared engineering contract is evidence-first design, bounded work, explicit capability checks, local-first data handling and a strict distinction between “not found” and “not checked”.
+- The 2025 creative corpus is not imported into ToolzNG and does not influence device diagnostics.
+
+The current source boundary is intentionally small: \`src/sambu_engine.c\` and \`src/sambu_workflow.c\` form the portable C17 core; \`src/main.c\` is the Win32 host and UI. Further extraction of dashboard, report and navigation code into focused view modules is a roadmap item, not a completed refactor.
+
 ## Capabilities
 
 | Module | Value |
@@ -162,11 +185,12 @@ The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation 
 
 ## Roadmap
 
-1. Optional Windows adapter for a supported <code>libimobiledevice</code> build with explicit pairing checks.
-2. Show device model and iOS version only when a trusted pairing API returns them.
-3. Expand Apple USB driver diagnostics without silent system changes.
-4. Improve RU/EN localization, accessibility and keyboard navigation.
-5. Signed installer, reproducible packaging and physical-device smoke tests.
+1. Extract the dashboard, report composition and navigation/event routing from the large Win32 host into focused C modules while preserving the portable-core boundary.
+2. Optional Windows adapter for a supported <code>libimobiledevice</code> build with explicit pairing checks.
+3. Show device model and iOS version only when a trusted pairing API returns them.
+4. Expand Apple USB driver diagnostics without silent system changes.
+5. Improve RU/EN localization, accessibility, keyboard navigation and real screenshot coverage.
+6. Signed installer, reproducible packaging and physical-device smoke tests.
 
 ## Engineering standards
 
