@@ -1,196 +1,172 @@
-<!-- ToolzNG Duck Edition -->
 <div align="center">
-  <img src="assets/readme-hero.svg" alt="ToolzNG — утка-инженер и диагностика устройств Apple" width="100%" />
+
+  <img src="assets/readme-hero.svg" alt="ToolzNG — native Apple device diagnostics for Windows" width="100%" />
+
   <br />
-  <img alt="ToolzNG 0.6.0" src="https://img.shields.io/badge/ToolzNG-0.6.0-FFD600?style=for-the-badge&labelColor=171923" />
-  <img alt="SAMBU Engine 1.2.0" src="https://img.shields.io/badge/SAMBU%20Engine-1.2.0-FFD600?style=for-the-badge&labelColor=171923" />
+  <img alt="ToolzNG 0.6.1" src="https://img.shields.io/badge/ToolzNG-0.6.1-FFD600?style=for-the-badge&labelColor=171923" />
+  <img alt="SAMBU Engine 1.2.0" src="https://img.shields.io/badge/SAMBU-1.2.0-FFD600?style=for-the-badge&labelColor=171923" />
   <img alt="C17" src="https://img.shields.io/badge/C-17-FFD600?style=for-the-badge&labelColor=171923" />
-  <img alt="Windows" src="https://img.shields.io/badge/Windows-10%2F11-FFD600?style=for-the-badge&labelColor=171923" />
-  <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-FFD600?style=for-the-badge&labelColor=171923" />
+  <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-FFD600?style=for-the-badge&labelColor=171923" />
+  <img alt="MIT" src="https://img.shields.io/badge/License-MIT-FFD600?style=for-the-badge&labelColor=171923" />
   <a href="https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml"><img alt="CI" src="https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml/badge.svg" /></a>
+
+  **Проверяй. Понимай. Действуй безопасно.**
+
+  Нативная диагностика Apple USB, read-only аудит локальных backup-маркеров и приватные отчёты — в одном лёгком Windows-приложении.
+
 </div>
 
-# 🦆 ToolzNG
+---
 
-**ToolzNG** — компактная нативная Windows-утилита на C17 для диагностики USB-подключения Apple, проверки структуры локальных резервных копий и создания приватных диагностических отчётов. В основе — нативный Win32/GDI UI, переносимое ядро SAMBU, графитово-чёрная и жёлтая тема и утка-инженер.
+## ToolzNG — когда нужно знать, а не гадать
 
-> **Duck Design:** сначала доказательства, потом выводы. Сначала безопасность, потом удобство. Ни одной кнопки, обещающей то, чего программа не умеет.
+Подключение iPhone к Windows иногда превращается в квест: устройство не отображается, служба Apple недоступна, USB-соединение периодически пропадает, а папка резервной копии выглядит подозрительно.
 
-ToolzNG показывает только то, что Windows действительно может наблюдать. Приложение не является продуктом Apple и не пытается управлять закрытыми механизмами iOS.
+**ToolzNG собирает понятную картину Windows-side состояния** и показывает, какие сигналы реально подтверждены, какие требуют повторной проверки и что безопасно сделать дальше.
 
-## 📍 Состояние проекта
+Это не «ускоритель iPhone» и не магическая кнопка ремонта. Это компактная инженерная панель на C17 и Win32 API: без Electron, без обязательного аккаунта, без облачной отправки диагностических данных.
 
-| Компонент | Версия / статус |
+## Что ToolzNG умеет
+
+| Возможность | Польза |
 |---|---|
-| Windows-приложение | **0.6.0** · Win32 / GDI |
-| Диагностическое ядро | **SAMBU Engine 1.2.0** · переносимый C17 |
-| Контракт отчёта | <code>toolzng.diagnostic.v1</code> |
-| Windows GUI | Windows 10 / 11 x64 |
-| Переносимые проверки ядра | Windows, Linux и macOS с C17 toolchain и CMake |
-| Лицензия | MIT |
-| Зрелость | Экспериментальный utility-проект; не сертифицирован Apple |
+| **Apple USB Discovery** | Находит присутствующие Windows PnP-интерфейсы Apple по Vendor ID 05AC и показывает доступность Apple Mobile Device Service. |
+| **Duck Readiness** | Сводит проверяемые Windows-side сигналы в объяснимую оценку от 0 до 100. |
+| **SAMBU Quality Gate** | Выявляет неполные и противоречивые данные, прежде чем они попадут в итоговую оценку. |
+| **USB Pulse + Recurrence Radar** | Отслеживает подключения и отключения Apple USB и помогает отличать одиночный эпизод от повторяющегося сбоя. |
+| **Backup Sentinel** | Read-only проверяет структурные маркеры локальных резервных копий, не открывая их личное содержимое. |
+| **Backup Freshness** | Показывает возраст самого свежего Info.plist по времени изменения. |
+| **DuckFix Guide** | Предлагает следующий безопасный шаг на основании приоритетного finding. |
+| **LinkDNA** | Сравнивает локальный FNV-1a отпечаток набора Windows-visible сигналов Apple. |
+| **PulseVault** | Ведёт ограниченный локальный JSONL-журнал USB-событий с ротацией. |
+| **Privacy Shield + Evidence Seal** | Скрывает Hardware ID и полный путь backup в приватном отчёте; SHA-256 sidecar помогает заметить последующее изменение файла. |
+| **Offline Reports & Help** | Даёт локальную историю до 32 отчётов, встроенный предпросмотр, копирование, TXT-экспорт и справку F1. |
 
-## 🚀 Что нового в 0.6.0
+## Посмотри на интерфейс
 
-- **SAMBU Quality Gate:** проверяет согласованность доказательств до расчёта readiness.
-- **Строгие границы доступа:** неизвестный origin и неизвестные операции закрываются по умолчанию.
-- **Точные backup-счётчики:** частично проверенная коллекция не выдаётся за полностью валидную.
-- **Объяснимый confidence:** отчёт показывает качество входных данных и битовые флаги предупреждений.
-- **Актуализированный Duck Design:** правила доступности, приватности, контрастности, версионирования и правдивых UI-превью.
-- **Усиленный CI:** Windows + Linux + macOS, отдельный sanitizer job, SHA-pinned GitHub Actions и Dependabot для обновления Actions.
+Ниже — обновлённые превью экранов ToolzNG 0.6.1. Они собраны по актуальной Win32/GDI-разметке и показывают новые состояния Quality Gate. **Это статические UI-превью с демонстрационными значениями, а не фотографии работающего приложения и не результаты реального сканирования.**
 
-## ✨ Возможности
+<p align="center">
+  <img src="assets/screenshots/overview.svg" alt="ToolzNG 0.6.1 overview — Duck Readiness and SAMBU Quality Gate, sample data" width="100%" />
+  <strong>01 · Центр управления</strong><br />
+  Duck Readiness, USB Pulse, Backup Sentinel и состояние качества диагностических сигналов.
+</p>
 
-| Модуль | Реальная функция | Важное ограничение |
-|---|---|---|
-| **USB Diagnostics** | Перечисляет присутствующие Windows PnP-устройства и ищет Apple Vendor ID <code>05AC</code>; проверяет Apple Mobile Device Service. | Видимый USB-интерфейс не доказывает полноценный pairing iOS. |
-| **Duck Readiness** | Объяснимая оценка готовности Windows-side подключения от 0 до 100. | Не является тестом скорости или аппаратного здоровья iPhone. |
-| **SAMBU Quality Gate** | Выявляет неполное сканирование, противоречивые backup-счётчики, неполный набор backup-маркеров и неподтверждённое окно USB-стабильности. | Предупреждения уменьшают confidence; они не устанавливают аппаратную первопричину. |
-| **USB Pulse** | Отслеживает Windows device notifications для Apple USB и считает события в ограниченном окне. | Не измеряет электрические характеристики и скорость USB. |
-| **Recurrence Radar** | Классифицирует single / recurrent / persistent finding-события в 10-минутном окне. | Не считает повторную перерисовку окна новым событием; ledger ограничен 32 кодами. |
-| **Backup Sentinel** | Read-only проверяет Info.plist и Manifest.db / Manifest.plist. | Не открывает payload и не доказывает целостность или восстановимость копии. |
-| **Backup Freshness** | Смотрит время изменения самого свежего Info.plist. | Это свежесть маркера, а не всех данных backup. |
-| **DuckFix** | Даёт следующий безопасный шаг по приоритетному диагностическому finding. | Только рекомендации; автоматического ремонта нет. |
-| **LinkDNA** | Сравнивает локальный FNV-1a отпечаток набора видимых PnP-сигналов и состояния службы. | Не является серийным номером или криптографической идентичностью. |
-| **PulseVault** | Хранит ограниченный JSONL-журнал USB-событий локально с ротацией. | Не сохраняет серийные номера и содержимое устройства. |
-| **Privacy Shield** | Приватный отчёт скрывает Hardware ID и полный путь backup. | Перед отправкой файл всё равно нужно проверить вручную. |
-| **Evidence Seal** | Создаёт SHA-256 sidecar для сохранённого TXT. | Подтверждает неизменность файла после создания, но не истинность исходных данных. |
-| **Reports & Offline Help** | До 32 локальных отчётов, предпросмотр, копирование, экспорт TXT и справка F1. | PDF/XLSX и облачная синхронизация не реализованы. |
-| **Duck UI** | Win32/GDI, High Contrast, Per-Monitor DPI v2 и zoom 80–160%. | Полный UI Automation provider и всеобъемлющая keyboard navigation пока в roadmap. |
+<p align="center">
+  <img src="assets/screenshots/usb-devices.svg" alt="ToolzNG 0.6.1 USB devices — Apple PnP and backup marker coverage, sample data" width="100%" />
+  <strong>02 · USB-устройства Apple</strong><br />
+  Windows PnP discovery, состояние службы Apple, Quality Gate и покрытие backup-маркеров.
+</p>
 
-## 🧮 Duck Readiness
+<p align="center">
+  <img src="assets/screenshots/reports.svg" alt="ToolzNG 0.6.1 reports — local diagnostic report preview, sample data" width="100%" />
+  <strong>03 · Локальные отчёты</strong><br />
+  Предпросмотр диагностического отчёта с readiness, evidence mask, quality flags и версией SAMBU.
+</p>
 
-Оценка — сумма независимых, объяснимых Windows-side сигналов:
+## Почему это полезно
 
-| Сигнал | Баллы |
+**Не просто «устройство найдено».** ToolzNG показывает отдельные уровни проверки: видит ли Windows Apple USB, доступна ли служба, что произошло с соединением за последние десять минут и какие маркеры найдены в локальных backup-каталогах.
+
+**Не прячет сомнительные данные за красивым баллом.** SAMBU Quality Gate проверяет целостность входных сигналов. Если три папки резервных копий обнаружены, а маркеры подтверждены только в одной, программа не выдаёт частичную проверку за полную.
+
+**Не забирает контроль у пользователя.** Приложение не исправляет систему тайком, не удаляет файлы и не загружает отчёты в облако. Оно объясняет состояние и предлагает следующий безопасный шаг.
+
+## Duck Readiness — оценка с понятной математикой
+
+Текущая модель использует следующие веса:
+
+| Подтверждённый сигнал | Баллы |
 |---|---:|
-| Сканирование завершено, Apple USB-интерфейс виден | +40 |
+| Сканирование завершено и Apple USB-интерфейс виден | +40 |
 | Apple Mobile Device Service запущена | +25 |
-| Локальный backup-каталог найден | +10 |
-| Все найденные каталоги backup содержат ожидаемые маркеры | +15 |
-| USB watcher активен, окно наблюдения завершено, отключений нет и устройство подтверждено | +10 |
+| Локальный каталог backup найден | +10 |
+| Все обнаруженные папки прошли проверку ожидаемых маркеров | +15 |
+| Устройство подтверждено, watcher активен, окно наблюдения завершено и отключений нет | +10 |
 | **Максимум** | **100** |
 
-**Маркерная проверка — all-or-nothing.** Если найдено три каталога, но маркеры подтверждены только в одном, приложение не начисляет +15 за полную валидность. Оно показывает неполную структуру, снижает confidence и предлагает повторную проверку.
+### SAMBU Quality Gate
 
-Confidence описывает полноту и согласованность локальных проверок, а не вероятность аппаратной исправности:
+- Устройство не засчитывается без завершённого сканирования.
+- Валидных backup-каталогов не может быть больше, чем просмотренных.
+- Полный бонус за маркеры выдаётся только тогда, когда проверены все обнаруженные каталоги.
+- Окно стабильности не считается доказательством, если USB watcher не был активен.
+- Противоречия и неполные сигналы формируют integrity flags и снижают confidence.
 
-| Состояние проверки | Confidence |
-|---|---:|
-| Полная проверка сканирования и активный watcher, противоречий нет | 100% |
-| Сканирование завершено, watcher недоступен до истечения окна наблюдения, integrity warnings нет | 85% |
-| Сканирование не завершено, противоречий нет | 40% |
-| Любой integrity warning от Quality Gate | 25% |
-
-### Quality flags
-
-| Flag | Что означает |
+| Integrity flag | Значение |
 |---|---|
-| <code>DEVICE_WITHOUT_SCAN</code> | Сигнал устройства присутствует без завершённого сканирования. |
-| <code>BACKUP_COUNTS_INCONSISTENT</code> | Счётчики каталога и валидных маркеров противоречат друг другу. |
-| <code>BACKUP_SET_INCOMPLETE</code> | Не все обнаруженные папки прошли проверку маркеров. |
-| <code>STABILITY_WITHOUT_WATCH</code> | Временное окно истекло, но USB watcher не был активен. |
+| <code>DEVICE_WITHOUT_SCAN</code> | Сигнал устройства есть, завершённого сканирования нет. |
+| <code>BACKUP_COUNTS_INCONSISTENT</code> | Счётчики backup противоречат друг другу. |
+| <code>BACKUP_SET_INCOMPLETE</code> | Не все найденные папки прошли проверку маркеров. |
+| <code>STABILITY_WITHOUT_WATCH</code> | Окно наблюдения прошло без активного USB watcher. |
 
-## 🛡️ Privacy and safety
+Confidence описывает полноту и согласованность локальной диагностики. Это не вероятность аппаратной исправности iPhone и не benchmark производительности.
 
-- Локальное чтение и сканирование разрешены.
-- Запись приватного отчёта, экспорт и буфер обмена требуют явного пользовательского действия.
-- Изменение устройства и отправка данных по сети запрещены политикой SAMBU.
-- ToolzNG не удаляет резервные копии, фото, документы, приложения или кэш.
-- Не обходятся пароль, Activation Lock, pairing и другие механизмы защиты Apple.
-- Не выполняются jailbreak, прошивка, сброс или восстановление.
-- Приложение не читает переписки, контакты, фотографии и payload-файлы резервных копий.
-- Данные хранятся в <code>%LOCALAPPDATA%\ToolzNG</code>; USB-журнал ограничен ротацией, история отчётов — 32 файла.
-- Экспорт остаётся локальным и инициируется пользователем после просмотра.
+## Быстрые клавиши
 
-## 🎨 Duck Design System
-
-| Токен | Цвет | Роль |
-|---|---|---|
-| Graphite | <code>#0D0D0D</code> | Фон приложения |
-| Surface | <code>#141414</code> | Шапка и sidebar |
-| Panel | <code>#1A1A1A</code> | Карточки и рабочие области |
-| Duck Yellow | <code>#FFD600</code> | Главные действия и фокус |
-| Deep Gold | <code>#BFA100</code> | Вторичный акцент |
-| Primary Text | <code>#E6E6E6</code> | Основной текст |
-| Muted Text | <code>#999999</code> | Вспомогательный текст |
-
-На фоне <code>#0D0D0D</code> контраст составляет приблизительно **15.6:1** для основного текста, **13.8:1** для жёлтого и **6.8:1** для вторичного текста. Статус не кодируется одним цветом: используются также текстовые подписи. Windows High Contrast и Per-Monitor DPI v2 учитываются текущим UI.
-
-Полный норматив: **[docs/DUCK_DESIGN_RULES.md](docs/DUCK_DESIGN_RULES.md)**.
-
-## 🖼️ UI previews
-
-SVG ниже — **статические макеты, а не фотографии работающего приложения**. Значения и состояния демонстрационные и отмечены SAMPLE DATA.
-
-<p align="center">
-  <img src="assets/screenshots/overview.svg" alt="ToolzNG overview UI preview — sample data" width="100%" />
-  <em>Обзор: readiness, статус USB и основные действия.</em>
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/usb-devices.svg" alt="ToolzNG Apple USB devices UI preview — sample data" width="100%" />
-  <em>USB: видимые PnP-интерфейсы и состояние службы Apple.</em>
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/reports.svg" alt="ToolzNG reports UI preview — sample data" width="100%" />
-  <em>Отчёты: локальная история, предпросмотр и экспорт.</em>
-</p>
-
-## 🧬 SAMBU architecture
-
-ToolzNG использует переносимое ядро SAMBU на C17. Это не встраивание Python-интерпретатора SAMBU.
-
-| Закон | Реализация |
+| Клавиша | Действие |
 |---|---|
-| **S — Safety** | Fail-closed capabilities: неизвестные операции и origin запрещены. |
+| <kbd>F5</kbd> | Повторить USB-сканирование |
+| <kbd>Ctrl</kbd> + <kbd>R</kbd> | Создать локальный диагностический отчёт |
+| <kbd>F1</kbd> | Открыть встроенную справку |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>−</kbd> | Увеличить или уменьшить масштаб |
+| <kbd>Ctrl</kbd> + <kbd>0</kbd> | Вернуть масштаб 100% |
+| <kbd>A−</kbd> / <kbd>A+</kbd> | Изменить масштаб кнопками панели |
+
+## Приватность и безопасность
+
+ToolzNG проектируется по принципу local-first:
+
+- локальное чтение и USB-сканирование доступны приложению;
+- создание отчёта, экспорт и копирование требуют явного действия пользователя;
+- изменение устройства и сетовая отправка данных запрещены политикой SAMBU;
+- Backup Sentinel проверяет имена и атрибуты маркерных файлов, не читая payload резервной копии;
+- приватный отчёт скрывает Hardware ID и полный путь backup;
+- USB-журнал ограничен ротацией, история отчётов — 32 файла;
+- LinkDNA хранит хэш-профиль, а не исходный Hardware ID;
+- обычная работа не требует прав администратора.
+
+**Честные границы:** видимый VID_05AC не доказывает pairing iOS; маркерные файлы не доказывают восстановимость backup; SHA-256 sidecar не доказывает правдивость самого отчёта.
+
+ToolzNG не выполняет jailbreak, не обходит пароль или Activation Lock, не прошивает и не сбрасывает устройство, не читает личные данные и не разгоняет CPU/GPU iPhone.
+
+## Нативная архитектура
+
+| Слой | Технология |
+|---|---|
+| Desktop UI | C17 · Win32 API · GDI |
+| Device discovery | Windows SetupAPI / PnP |
+| Apple service check | Windows Service Control Manager |
+| Device events | Windows device notifications |
+| Diagnostic core | SAMBU Engine 1.2.0 · portable C17 |
+| Reports | Local TXT · SHA-256 sidecar |
+| Build | CMake 3.20+ |
+
+### SAMBU Engine
+
+| Закон | Применение |
+|---|---|
+| **S — Safety** | Fail-closed permissions; неизвестные operation и origin запрещены. |
 | **A — Adaptive** | Детерминированная оценка по наблюдаемым сигналам. |
-| **M — Managed** | Bounded ledger с ограниченными счётчиками и монотонными timestamp. |
-| **B — Branchable** | Ядро отделено от Win32 UI, platform adapter и экспорта. |
-| **U — Unforced** | Стабильные finding IDs, версионированная схема отчёта, локальный контроль пользователя. |
+| **M — Managed** | Ограниченный finding ledger и десятиминутное окно повторяемости. |
+| **B — Branchable** | Переносимое ядро отделено от Win32 UI и platform adapter. |
+| **U — Unforced** | Стабильные finding IDs, локальный экспорт и контроль пользователя. |
 
-Дополнительные семейства SAMBU структурируют архитектуру, поток выполнения, значения, память, безопасность, измерения, доказательства, координацию, преобразование и язык представления.
+Подробности: [SAMBU Integration](docs/SAMBU_INTEGRATION.md) · [Duck Design Rules](docs/DUCK_DESIGN_RULES.md).
 
-Подробности и формальные контракты: [docs/SAMBU_INTEGRATION.md](docs/SAMBU_INTEGRATION.md).
+## Установка и сборка
 
-## 🏗️ Project layout
+### Windows x64
 
-~~~text
-ToolNG/
-├── src/
-│   ├── main.c                  # Win32/GDI application
-│   ├── sambu_engine.c          # portable C17 policy and assessment
-│   ├── sambu_engine.h          # stable engine contract
-│   ├── toolzng.rc
-│   └── toolzng.manifest
-├── tests/
-│   └── sambu_engine_tests.c
-├── docs/
-│   ├── DUCK_DESIGN_RULES.md
-│   └── SAMBU_INTEGRATION.md
-├── assets/
-│   ├── screenshots/            # static SVG previews
-│   └── readme-hero.svg
-├── scripts/
-│   ├── build-windows.ps1
-│   └── verify_docs.py
-└── .github/
-    ├── workflows/windows-ci.yml
-    └── dependabot.yml
-~~~
+**Требования:** Windows 10/11 x64, Visual Studio 2022 или Build Tools с workload Desktop development with C++, CMake 3.20+.
 
-## ⚡ Build
-
-### Windows x64 GUI
-
-**Requirements:** Windows 10/11 x64, Visual Studio 2022 / Build Tools with Desktop development with C++, CMake 3.20+.
+Открой PowerShell в корне репозитория:
 
 ~~~powershell
 .\scripts\build-windows.ps1
 ~~~
 
-Manual build and test:
+Или вручную:
 
 ~~~powershell
 cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
@@ -198,15 +174,17 @@ cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ~~~
 
-Executable:
+Готовая программа:
 
 ~~~text
 build\Release\ToolzNG.exe
 ~~~
 
-The program runs as the current user (<code>asInvoker</code>). Administrator rights are not required for normal USB inspection and local report creation.
+Приложение запускается с правами текущего пользователя (<code>asInvoker</code>).
 
-### Portable SAMBU C17 core
+### Переносимое ядро SAMBU
+
+Ядро и его тесты можно собирать на Windows, Linux и macOS:
 
 ~~~bash
 cmake -S . -B build -DBUILD_TESTING=ON
@@ -215,66 +193,53 @@ ctest --test-dir build --output-on-failure
 python3 scripts/verify_docs.py
 ~~~
 
-Linux and macOS build the portable core and tests. The native Win32 GUI is Windows-only.
+Графический интерфейс Win32 остаётся Windows-only.
 
-## 🧪 Continuous integration
+## Проверки проекта
 
-The workflow includes:
-- C17 core build and CTest on Linux and macOS;
-- Windows x64 GUI build and CTest;
-- AddressSanitizer + UndefinedBehaviorSanitizer for the portable core;
-- README local-link and SVG preview validation;
-- SHA-pinned GitHub Actions and weekly Dependabot update checks.
+GitHub Actions выполняет:
+- C17 build + CTest на Linux и macOS;
+- Windows x64 GUI build + CTest;
+- AddressSanitizer и UndefinedBehaviorSanitizer для переносимого ядра;
+- проверку локальных ссылок README и SVG-превью;
+- workflow с минимальными permissions и SHA-pinned GitHub Actions.
 
-CI runs on pushes, pull requests and manual dispatch. The workflow has minimum <code>contents: read</code> permissions and cancels superseded runs for the same ref.
+[Открыть GitHub Actions](https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml).
 
-## 🧭 Roadmap and explicit non-goals
+## Что пока не реализовано
 
-**Not implemented in 0.6.0:**
-- iPhone model and iOS version discovery through pairing APIs;
-- electrical cable, power, USB throughput or port hardware tests;
-- live iOS battery, temperature, network or internal-storage telemetry;
-- automatic Apple driver repair or service restart;
-- backup creation, modification, deletion or restore;
-- cloud reporting, telemetry, auto-update, signed installer;
-- PDF/XLSX exports;
-- complete UI Automation provider and full keyboard navigation for every custom-drawn element.
+Мы предпочитаем честный roadmap красивым обещаниям.
 
-**Next engineering milestones:**
-1. Optional Windows adapter around a supported libimobiledevice build, gated by an explicit pairing capability check.
-2. Model and iOS version display only after a successful, supported API response.
-3. Better Apple driver and port diagnostics without silent system mutation.
-4. RU/EN localization and full keyboard navigation.
-5. UI Automation names, roles, state, focus and accessibility smoke tests across DPI and High Contrast.
-6. Signed installer and reproducible release packaging.
+- Получение модели iPhone и версии iOS через pairing API.
+- Электрические тесты кабеля, порта и пропускной способности USB.
+- Чтение температуры, состояния батареи, внутреннего хранилища или сети iOS.
+- Автоматическое исправление Apple-драйверов и перезапуск служб.
+- Создание, изменение, удаление или восстановление backup.
+- PDF/XLSX, облачные отчёты, телеметрия и автообновление.
+- Полный UI Automation provider для каждого саморисуемого элемента и законченная клавиатурная навигация.
 
-A roadmap item is not an implemented feature until code, tests, documentation and CI all agree.
+### Куда движется проект
 
-## 📚 References
+1. Опциональный Windows adapter для поддерживаемой сборки <code>libimobiledevice</code> с явной проверкой pairing capability.
+2. Модель и версия iOS — только после подтверждённого ответа поддерживаемого API.
+3. Более глубокая диагностика Apple USB-драйверов без скрытой модификации системы.
+4. RU/EN локализация, доступность и полноценная клавиатурная навигация.
+5. Подписанный установщик, воспроизводимая упаковка и аппаратные smoke-тесты.
 
-- [Duck Design Rules](docs/DUCK_DESIGN_RULES.md)
-- [SAMBU Integration](docs/SAMBU_INTEGRATION.md)
-- [Microsoft — Win32 accessibility best practices](https://learn.microsoft.com/en-us/windows/win32/winauto/accessibility-best-practices)
-- [Microsoft — Accessible text and contrast requirements](https://learn.microsoft.com/en-us/windows/apps/design/accessibility/accessible-text-requirements)
-- [Microsoft — UI Automation for Win32](https://learn.microsoft.com/en-us/windows/desktop/winauto/entry-uiauto-win32)
-- [Microsoft — High DPI desktop development](https://learn.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows)
-- [GitHub — Secure use of Actions](https://docs.github.com/en/actions/reference/security/secure-use)
-- [Apple — Если iPhone или iPad работает медленно](https://support.apple.com/ru-ru/102598)
-- [Apple — Резервные копии iPhone и iPad](https://support.apple.com/ru-ru/108809)
-- [Apple Devices for Windows](https://support.apple.com/guide/devices-windows/install-the-apple-devices-app-mchl5ded2763/windows)
+## Участие в проекте
 
-## 🤝 Contributing
+Баг-репорты и небольшие проверяемые pull request приветствуются. Для ошибки укажи версию ToolzNG, Windows, шаги воспроизведения, ожидаемый и фактический результат. Не прикладывай личные данные и содержимое резервных копий.
 
-Небольшие проверяемые pull request, воспроизводимые bug reports и уточнения документации приветствуются.
+Перед отправкой изменений запускай CMake build, CTest и валидатор документации. Новые диагностические функции должны иметь источник сигнала, описанные ограничения и позитивные, негативные и граничные тесты.
 
-Для ошибки укажи версию ToolzNG, версию Windows, точные шаги, ожидаемое и фактическое поведение и релевантный диагностический вывод без личных данных. Для изменений SAMBU добавляй positive, negative и boundary tests. Для новых диагностических сигналов документируй источник, предусловия, confidence и ограничения измерения.
+## Лицензия
 
-Перед отправкой изменений запускай CMake build, CTest и документационный валидатор. UI-изменения должны пройти проверки High Contrast, DPI, keyboard focus и читаемости.
-
-## 📄 License
-
-MIT. См. [LICENSE](LICENSE).
+MIT — см. [LICENSE](LICENSE).
 
 <div align="center">
-  Нехай у кожному дні знаходиться місце для любові — тихої, щирої та сміливої. Нехай поруч будуть люди, з якими тепло мовчати й радісно мріяти; нехай слова підтримки знаходяться вчасно, а маленькі вчинки стають великими доказами турботи. Бережіть тих, хто робить світ світлішим, даруйте любов без страху й приймайте її без сумнівів. Хай добра у вашому житті буде більше — щодня. 🦆💛
+
+  **ToolzNG — меньше догадок, больше понятных сигналов.** 🦆
+
+  Нехай у кожному дні знаходиться місце для любові — тихої, щирої та сміливої. Нехай поруч будуть люди, з якими тепло мовчати й радісно мріяти; нехай слова підтримки знаходяться вчасно, а маленькі вчинки стають великими доказами турботи. Бережіть тих, хто робить світ світлішим, даруйте любов без страху й приймайте її без сумнівів. Хай добра у вашому житті буде більше — щодня. 💛
+
 </div>
