@@ -46,7 +46,7 @@ WDEP does not flash, repair, reset, or alter device state; does not inspect priv
 
 ## Technical identity
 
-**WDEP** is the canonical name of the Windows utility. Historical source-file names and internal symbols remain where changing them would require a breaking migration; the application display identity and manifest now use WDEP.
+**WDEP** is the canonical name of the Windows utility. The policy/workflow core now uses `Wdep*` types, `wdep_*` functions, and `WDEP_*` constants; canonical CMake targets are `WDEP` and `WDEP.PolicyCore`. Historical source/resource paths (`sambu_engine.*`, `sambu_workflow.*`, `toolzng.*`) and former CMake target names remain only as compatibility paths for existing scripts and integrations.
 
 ## License
 
