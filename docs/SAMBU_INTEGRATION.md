@@ -2,7 +2,7 @@
 
 **Integration baseline:** ToolzNG 0.6.1, C17 / Win32  
 **Core revision:** 1.1.0 + workflow runtime 1.1.0  
-**Integration baseline:** ToolzNG 0.5.x, C17 / Win32  
+**Integration baseline:** ToolzNG 0.6.1, C17 / Win32  
 **Core revision:** 1.2.0  
 **Report contract:** `toolzng.diagnostic.v1`
 
