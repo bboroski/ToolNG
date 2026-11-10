@@ -230,6 +230,8 @@ static int test_finding_priority(void)
 
     evidence.backup_found = 1;
     evidence.backup_marker_valid = 1;
+    evidence.backup_folders_seen = 1u;
+    evidence.backup_folders_valid = 1u;
     evidence.usb_watch_registered = 0;
     evidence.stability_window_elapsed = 0;
     result = sambu_assess(&evidence);
