@@ -63,7 +63,7 @@ Confidence is 40% when device scanning is unavailable, 85% when the scan complet
 
 ## Memory, privacy and compatibility
 
-The ledger retains only numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes; repeated finding transitions increment a lifetime counter and a 10-minute rolling episode counter. Repeated UI refreshes of an unchanged finding do not create new episodes. Patterns are labelled single (1), recurrent (2–3), or persistent (4+). The ledger is in-memory only and resets when the application exits, matching SAMBU's explicit-export memory model.
+The ledger retains only numeric finding codes, occurrence counters and monotonic timestamps. It is bounded to 32 distinct codes; repeated finding transitions increment a lifetime counter and a active 10-minute episode window. Repeated UI refreshes of an unchanged finding do not create new episodes. Patterns are labelled single (1), recurrent (2–3), or persistent (4+). The ledger is in-memory only and resets when the application exits, matching SAMBU's explicit-export memory model.
 
 The report schema is additive and versioned. Consumers should rely on stable finding codes and schema version, not on Russian display strings. The SHA-256 sidecar detects later file changes; it does not prove that the observations themselves are true.
 
