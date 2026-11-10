@@ -1,9 +1,9 @@
-# Building ToolzNG
+# Building ToolNG
 
-ToolzNG has two build surfaces:
+ToolNG has two build surfaces:
 
-- **SAMBU Engine and tests:** portable C17; can be configured on Windows, Linux, or macOS.
-- **ToolzNG desktop application:** native Win32/GDI; requires Windows.
+- **SAMBU tooling and tests:** portable C17; can be configured on Windows, Linux, or macOS.
+- **ToolNG desktop application:** native Win32/GDI; requires Windows.
 
 ## Requirements
 
@@ -38,7 +38,7 @@ Or invoke CMake directly:
     cmake --build build --config Release --parallel
     ctest --test-dir build -C Release --output-on-failure
 
-The executable is written to `build\Release\ToolzNG.exe`.
+The executable is written to `build\Release\ToolNG.exe`.
 
 The application manifest requests the current user's privileges (`asInvoker`); ordinary USB inspection does not require elevation.
 
@@ -61,7 +61,7 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-On non-Windows hosts CMake builds and tests the portable core, then omits the desktop target. On Windows, the same core is linked into the native ToolzNG executable:
+On non-Windows hosts CMake builds and tests the portable core, then omits the desktop target. On Windows, the same core is linked into the native ToolNG executable:
 
 ```powershell
 cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
@@ -70,10 +70,10 @@ ctest --test-dir build -C Release --output-on-failure
 ```
 
 The workflow test suite covers source spans, action allowlisting, duplicate names, manifest requirements, source/step budgets, preflight denial, incremental one-step dispatch and stop-on-first-failure behavior.
-- PulseVault: `%LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl`, with a rotated `.old` file after 256 KiB.
-- LinkDNA baseline: `%LOCALAPPDATA%\ToolzNG\link-profile.ini`.
-- Display preferences: `%LOCALAPPDATA%\ToolzNG\settings.ini`.
-- TXT reports and optional SHA-256 sidecars: `%LOCALAPPDATA%\ToolzNG\Reports\\`.
+- PulseVault: `%LOCALAPPDATA%\ToolNG\usb-pulse.jsonl`, with a rotated `.old` file after 256 KiB.
+- LinkDNA baseline: `%LOCALAPPDATA%\ToolNG\link-profile.ini`.
+- Display preferences: `%LOCALAPPDATA%\ToolNG\settings.ini`.
+- TXT reports and optional SHA-256 sidecars: `%LOCALAPPDATA%\ToolNG\Reports\\`.
 
 The data remains under the current Windows account and is not committed to the source repository.
 
