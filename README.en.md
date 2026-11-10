@@ -186,7 +186,6 @@ The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation 
 ## Engineering standards
 
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — evidence, privacy, bounded behavior and visual standards.
-- [Core integration contract](docs/SAMBU_INTEGRATION.md) — assessment model and restricted workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — tests, resilience and release criteria.
 
 For material UI changes, provide real application captures or label preview images explicitly as illustrative.
