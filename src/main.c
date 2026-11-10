@@ -13,6 +13,10 @@
 #include <commctrl.h>
 #include <dbt.h>
 #include <usbiodef.h>
+
+/* Local GUID definition avoids a uuid.lib dependency for this interface class. */
+const GUID GUID_DEVINTERFACE_USB_DEVICE =
+    { 0xA5DCBF10L, 0x6530, 0x11D2, { 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED } };
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
