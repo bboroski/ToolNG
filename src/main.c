@@ -28,7 +28,7 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include "toolng_engine.h"
 #include "toolng_workflow.h"
 
-#define APP_TITLE           L"WDEP | Device Evidence"
+#define APP_TITLE           L"ToolNG | Device Evidence"
 #define MAX_APPLE_DEVICES   32
 #define DEVICE_NAME_CHARS   256
 #define DEVICE_HWID_CHARS   512
@@ -440,13 +440,13 @@ static void append_path(WCHAR *destination, size_t capacity,
 }
 
 
-/* WDEP 0.6 local-only intelligence store. No device serials or backup payloads are written. */
+/* ToolNG 0.6 local-only intelligence store. No device serials or backup payloads are written. */
 static void initialize_local_store(void)
 {
     WCHAR base[MAX_PATH * 2] = {0};
     DWORD n = GetEnvironmentVariableW(L"LOCALAPPDATA", base, ARRAYSIZE(base));
     if (!n || n >= ARRAYSIZE(base)) return;
-    append_path(g_app.local_store, ARRAYSIZE(g_app.local_store), base, L"WDEP");
+    append_path(g_app.local_store, ARRAYSIZE(g_app.local_store), base, L"ToolNG");
     (void)CreateDirectoryW(g_app.local_store, NULL);
     append_path(g_app.pulse_journal, ARRAYSIZE(g_app.pulse_journal),
                 g_app.local_store, L"usb-pulse.jsonl");
@@ -479,7 +479,7 @@ static void migrate_legacy_reports(void)
     if (GetPrivateProfileIntW(L"Migration", L"legacy_reports_v1", 0,
                               g_app.settings_file) != 0) return;
     if (SUCCEEDED(SHGetKnownFolderPath(&FOLDERID_Documents, 0, NULL, &documents))) {
-        append_path(pattern, ARRAYSIZE(pattern), documents, L"WDEP-report-*.txt");
+        append_path(pattern, ARRAYSIZE(pattern), documents, L"ToolNG-report-*.txt");
         find = FindFirstFileW(pattern, &data);
         if (find != INVALID_HANDLE_VALUE) {
             do {
@@ -877,13 +877,13 @@ static void compute_readiness_and_coach(void)
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: результат сканирования недоступен");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                      L"Windows не завершила перечисление устройств. Повтори проверку; отсутствие устройства пока нельзя считать подтверждённым. WDEP не меняет параметры iPhone и не выполняет ремонт автоматически.");
+                      L"Windows не завершила перечисление устройств. Повтори проверку; отсутствие устройства пока нельзя считать подтверждённым. ToolNG не меняет параметры iPhone и не выполняет ремонт автоматически.");
             break;
         case TOOLNG_FINDING_NO_DEVICE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: начни с физического подключения");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                      L"Используй кабель с передачей данных, разблокируй iPhone и подтверди «Доверять этому компьютеру». Затем нажми «Сканировать USB». WDEP не может подтвердить доверие iOS напрямую.");
+                      L"Используй кабель с передачей данных, разблокируй iPhone и подтверди «Доверять этому компьютеру». Затем нажми «Сканировать USB». ToolNG не может подтвердить доверие iOS напрямую.");
             break;
         case TOOLNG_FINDING_SERVICE_UNAVAILABLE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
@@ -913,19 +913,19 @@ static void compute_readiness_and_coach(void)
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: создай резервную копию");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                      L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. WDEP не создаёт и не изменяет backup самостоятельно.");
+                      L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. ToolNG не создаёт и не изменяет backup самостоятельно.");
             break;
         case TOOLNG_FINDING_SERVICE_UNKNOWN:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: статус службы Apple не подтверждён");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                      L"Windows не смогла получить доступ к Service Control Manager или прочитать состояние службы. Это не означает, что служба остановлена или отсутствует. Проверь доступность системной службы и повтори диагностику; WDEP не меняет её состояние автоматически.");
+                      L"Windows не смогла получить доступ к Service Control Manager или прочитать состояние службы. Это не означает, что служба остановлена или отсутствует. Проверь доступность системной службы и повтори диагностику; ToolNG не меняет её состояние автоматически.");
             break;
         case TOOLNG_FINDING_BACKUP_UNKNOWN:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: проверка резервной копии неполная");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                      L"WDEP не смог полностью перечислить стандартный каталог backup. Это не доказывает, что копии нет или что её маркеры повреждены. Проверь доступ к папке и повтори сканирование; содержимое резервной копии не открывается.");
+                      L"ToolNG не смог полностью перечислить стандартный каталог backup. Это не доказывает, что копии нет или что её маркеры повреждены. Проверь доступ к папке и повтори сканирование; содержимое резервной копии не открывается.");
             break;
         case TOOLNG_FINDING_STABILITY_UNCONFIRMED:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
@@ -1025,7 +1025,7 @@ static bool toolng_workflow_action(ToolNGWorkflowAction action,
         default:
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
-                    "Rejected: action is outside the WDEP diagnostic host.");
+                    "Rejected: action is outside the ToolNG diagnostic host.");
             return false;
     }
 }
@@ -1070,8 +1070,8 @@ static void open_backup_folder(void)
     if (!g_app.backup_found) {
         (void)MessageBoxW(g_app.hwnd,
             L"Стандартная папка локальных резервных копий не найдена.\n\n"
-            L"Создай резервную копию через приложение Apple Devices или iTunes — после этого WDEP сможет открыть её расположение.\n\n"
-            L"WDEP ничего не удаляет из резервных копий.",
+            L"Создай резервную копию через приложение Apple Devices или iTunes — после этого ToolNG сможет открыть её расположение.\n\n"
+            L"ToolNG ничего не удаляет из резервных копий.",
             APP_TITLE, MB_OK | MB_ICONINFORMATION);
         return;
     }
@@ -1202,7 +1202,7 @@ static void save_duckfix_route(void)
         now.wSecond, now.wMilliseconds);
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
-        L"WDEP — маршрут DuckFix\r\n================================\r\n"
+        L"ToolNG — маршрут DuckFix\r\n================================\r\n"
         L"Diagnostic engine: %ls · diagnostic schema: %ls\r\n"
         L"Finding: %u (%ls)\r\n"
         L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
@@ -1215,9 +1215,9 @@ static void save_duckfix_route(void)
         L"1. Проверь кабель передачи данных, USB-порт, разблокировку и запрос доверия.\r\n"
         L"2. Проверь Apple Devices и состояние Apple Mobile Device Service.\r\n"
         L"3. Если backup нужен, создай свежую копию штатным приложением Apple.\r\n"
-        L"4. Повтори сканирование WDEP и сравни показатели.\r\n"
+        L"4. Повтори сканирование ToolNG и сравни показатели.\r\n"
         L"5. Не удаляй папки backup и не прошивай устройство ради ошибки подключения.\r\n\r\n"
-        L"Это план действий, а не автоматический ремонт. WDEP не меняет iOS,\r\n"
+        L"Это план действий, а не автоматический ремонт. ToolNG не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
         engine_version, report_schema,
         (unsigned)g_app.toolng_assessment.finding, finding_key,
@@ -1298,7 +1298,7 @@ static void refresh_report_history(void)
     g_app.report_list_scroll = 0;
     if (!g_app.reports_dir[0]) return;
     append_path(pattern, ARRAYSIZE(pattern), g_app.reports_dir,
-                L"WDEP-report-*.txt");
+                L"ToolNG-report-*.txt");
     find = FindFirstFileW(pattern, &data);
     if (find != INVALID_HANDLE_VALUE) {
         do {
@@ -1360,7 +1360,7 @@ static BOOL copy_report_to_clipboard(void)
 static void export_report_copy(void)
 {
     OPENFILENAMEW dialog;
-    WCHAR target[MAX_PATH * 2] = L"WDEP-report.txt";
+    WCHAR target[MAX_PATH * 2] = L"ToolNG-report.txt";
     if (!toolng_authorize(TOOLNG_OP_EXPORT, TOOLNG_ORIGIN_USER)) {
         set_status(L"Экспорт доступен только по явному запросу пользователя.");
         return;
@@ -1429,16 +1429,16 @@ static void save_report(void)
     }
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
-        L"WDEP-report-%04u%02u%02u-%02u%02u%02u-%03u.txt",
+        L"ToolNG-report-%04u%02u%02u-%02u%02u%02u-%03u.txt",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
         now.wSecond, now.wMilliseconds);
     append_path(report_path, ARRAYSIZE(report_path), g_app.reports_dir, filename);
 
     count = swprintf_s(report, ARRAYSIZE(report),
-        L"WDEP — приватный диагностический отчёт\r\n"
+        L"ToolNG — приватный диагностический отчёт\r\n"
         L"==========================================\r\n"
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
-        L"Автор: WDEP (локальная генерация)\r\n"
+        L"Автор: ToolNG (локальная генерация)\r\n"
         L"Платформа: Windows\r\n"
         L"Diagnostic engine: %ls\r\n"
         L"Diagnostic schema: %ls\r\n"
@@ -1576,7 +1576,7 @@ static void save_report(void)
     (void)write_sha256_seal(report_path);
     refresh_report_history();
     g_app.page = PAGE_REPORTS;
-    set_status(L"Отчёт создан и сохранён внутри WDEP. Предпросмотр открыт.");
+    set_status(L"Отчёт создан и сохранён внутри ToolNG. Предпросмотр открыт.");
     InvalidateRect(g_app.hwnd, NULL, FALSE);
 }
 
@@ -1594,7 +1594,7 @@ static void draw_header(HDC dc, int width)
     draw_round_rect(dc, logo, COL_ACCENT_DARK, COL_ACCENT, 11);
     draw_text(dc, L"T", logo, g_app.font_brand, COL_TEXT,
               DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"WDEP", (RECT){ 80, 20, 260, 55 },
+    draw_text(dc, L"ToolNG", (RECT){ 80, 20, 260, 55 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"APPLE DEVICE DIAGNOSTICS  ·  v0.6.1", (RECT){ 82, 54, 390, 74 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
@@ -1897,7 +1897,7 @@ static void draw_care(HDC dc)
     int right = g_app.client_width - 28;
     RECT panel = { x, 188, right, 700 };
 
-    draw_page_heading(dc, L"Безопасная оптимизация", L"WDEP не обещает программно разогнать iOS — здесь только реальные и безопасные проверки.");
+    draw_page_heading(dc, L"Безопасная оптимизация", L"ToolNG не обещает программно разогнать iOS — здесь только реальные и безопасные проверки.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
 
     draw_bullet(dc, 210, L"1. Свободное место",
@@ -2007,17 +2007,17 @@ static void draw_help(HDC dc)
 {
     int x = 250, right = g_app.client_width - 28;
     RECT panel = { x, 188, right, g_app.client_height - 24 };
-    draw_page_heading(dc, L"Справка WDEP",
+    draw_page_heading(dc, L"Справка ToolNG",
         L"Локальное руководство — доступно без браузера и подключения к сети.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
     draw_bullet(dc, 210, L"Горячие клавиши и масштаб",
         L"F5 запускает повторное USB-сканирование, Ctrl + R создаёт локальный отчёт, F1 открывает эту справку. Кнопки A− / A+ и Ctrl + плюс / минус меняют масштаб; Ctrl + 0 возвращает 100%.");
     draw_bullet(dc, 282, L"Отчёты и история",
-        L"Создай отчёт на главном экране. Приватная версия автоматически сохранится в %LOCALAPPDATA%\\\\WDEP\\\\Reports и откроется во вкладке «Отчёты». История сохраняет последние 32 файла.");
+        L"Создай отчёт на главном экране. Приватная версия автоматически сохранится в %LOCALAPPDATA%\\\\ToolNG\\\\Reports и откроется во вкладке «Отчёты». История сохраняет последние 32 файла.");
     draw_bullet(dc, 354, L"Предпросмотр и копирование",
         L"Выбери отчёт слева. Прокручивай содержимое колесом мыши или Page Up / Page Down. Кнопка «Копировать» помещает текст в буфер обмена; экспорт в файл остаётся необязательным.");
     draw_bullet(dc, 426, L"Навигация без браузера",
-        L"Разделы «Справка», «Отчёты» и «О программе» встроены в окно. WDEP не запускает внешний браузер для ежедневной работы. Открытие папки backup по-прежнему использует Проводник Windows.");
+        L"Разделы «Справка», «Отчёты» и «О программе» встроены в окно. ToolNG не запускает внешний браузер для ежедневной работы. Открытие папки backup по-прежнему использует Проводник Windows.");
     draw_bullet(dc, 498, L"Приватность и хранилище",
         L"Настройки масштаба, история USB и отчёты остаются в локальном профиле Windows. Приватный отчёт скрывает Hardware ID и точный путь резервной копии. Удаление отчётов вручную не затрагивает настройки или данные устройства.");
     draw_bullet(dc, 570, L"Границы диагностики",
@@ -2030,9 +2030,9 @@ static void draw_about(HDC dc)
     int right = g_app.client_width - 28;
     RECT panel = { x, 188, right, 612 };
 
-    draw_page_heading(dc, L"О WDEP", L"Нативная Windows-утилита на C17 и Win32 API.");
+    draw_page_heading(dc, L"О ToolNG", L"Нативная Windows-утилита на C17 и Win32 API.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_text(dc, L"WDEP  0.6.1", (RECT){ x + 24, 216, right - 24, 254 },
+    draw_text(dc, L"ToolNG  0.6.1", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Diagnostic Engine 1.2.0 · evidence coverage · Recurrence Radar 10 min · ledger 32",
               (RECT){ x + 24, 258, right - 24, 276 },
@@ -2482,7 +2482,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
     wc.hIcon = LoadIconW(NULL, IDI_APPLICATION);
     wc.hbrBackground = NULL;
-    wc.lpszClassName = L"WDEP.MainWindow";
+    wc.lpszClassName = L"ToolNG.MainWindow";
 
     if (!RegisterClassExW(&wc)) {
         MessageBoxW(NULL, L"Не удалось зарегистрировать класс окна.",
