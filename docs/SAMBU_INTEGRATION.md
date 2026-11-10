@@ -1,7 +1,7 @@
 # SAMBU engineering core in ToolzNG
 
 **Integration baseline:** ToolzNG 0.5.x, C17 / Win32  
-**Core revision:** 1.1.0  
+**Core revision:** 1.2.0  
 **Report contract:** `toolzng.diagnostic.v1`
 
 This integration ports engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's runtime, or claim that ToolzNG can control private iOS functions.
@@ -47,19 +47,21 @@ The four grammatical endings are treated as API design rules: `-va` names an ope
 
 ## Assessment contract
 
-The engine uses the established, explainable readiness weights:
+The engine retains the original signal weights but now distinguishes **verified negative** from **not measured**. The weights are not silently treated as zero when Windows could not complete a check.
 
-| Signal | Contribution |
-|---|---:|
-| Apple USB interface visible after a completed scan | 40 |
-| Apple Mobile Device Service running | 25 |
-| Local backup directory found | 10 |
-| Expected backup marker files present | 15 |
-| USB watch registered, warm-up complete and no recent removals | 10 |
+| Signal | Maximum contribution | When it is measurable |
+|---|---:|---|
+| Apple USB interface visible | 40 | Windows PnP enumeration completed |
+| Apple Mobile Device Service running | 25 | Service Control Manager query and service status call completed, or service absence was explicitly confirmed |
+| Local backup directory found | 10 | Backup directory enumeration completed |
+| Expected backup marker files present | 15 | Backup directory enumeration completed |
+| USB connection stable | 10 | Device visible, USB watcher registered, and the warm-up window elapsed without removals |
 
-A scan failure is classified as **unknown**, not as proof that no device exists. The finding priority is deterministic: scan unavailable → device not visible → Apple service unavailable → unstable USB → invalid backup markers → stale backup marker → backup not verified → Windows-side checks passed.
+The score is normalized over the measured weights: `earned points / measurable points × 100`. **Evidence coverage** is the sum of measurable weights, expressed as a percentage of the full 100-point model. If coverage is below 100%, the score is marked provisional. A perfect score with 40% coverage therefore means only that the measured portion passed; it is not a complete all-checks result.
 
-Confidence is 40% when device scanning is unavailable, 85% when the scan completes but the USB watcher is unavailable, and 100% when both are available. This confidence is a completeness indicator for these local checks, not a probability that the iPhone is healthy.
+The existing `confidence_percent` field remains as a compatibility alias for coverage. It is explicitly **not** a probability or a statistical confidence estimate.
+
+The finding priority keeps uncertainty explicit: scan unavailable → device not visible → Apple service status unknown → service confirmed unavailable → unstable USB → backup scan incomplete → invalid backup markers → stale backup marker → backup not verified → USB stability unconfirmed → Windows-side checks passed.
 
 ## Memory, privacy and compatibility
 
@@ -71,7 +73,8 @@ The report schema is additive and versioned. Consumers should rely on stable fin
 
 The CTest target checks:
 - fail-closed capability rules;
-- incomplete-scan handling and score calculation;
+- incomplete-scan handling, evidence coverage and normalized score contributions;
+- distinction between unknown service/backup/stability states and verified negative findings;
 - finding priority for stale backups and unstable USB;
 - bounded/deduplicated ledger behavior;
 - recurrence windows and single/recurrent/persistent pattern classification;
