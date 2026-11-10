@@ -83,3 +83,8 @@ MIT — див. [LICENSE](LICENSE).
 - [Контракт и правила использования](docs/BIOLOGY_DOMAIN_PACK.md)
 
 Справочный офлайн-набор для обучения и метаданных; он не управляет системами, устройствами и диагностикой.
+
+
+## Verified AI-assisted engineering
+
+This repository's model-assisted review boundary and acceptance rules are documented in [AI-assisted diagnostics](docs/AI_ASSISTED_DIAGNOSTICS.md). AI output remains advisory until independently validated.
