@@ -476,7 +476,9 @@ int sambu_trace_record(SambuTrace *trace, SambuTraceStage stage,
                        uint64_t monotonic_ms)
 {
     SambuTraceEvent *event;
-    if (trace == NULL || !sambu_trace_stage_valid(stage) ||
+    if (trace == NULL || trace->head >= SAMBU_TRACE_CAPACITY ||
+        trace->count > SAMBU_TRACE_CAPACITY ||
+        !sambu_trace_stage_valid(stage) ||
         !sambu_trace_outcome_valid(outcome) ||
         trace->next_sequence == UINT64_MAX)
         return 0;
@@ -505,7 +507,9 @@ size_t sambu_trace_snapshot(const SambuTrace *trace, SambuTraceEvent *out,
     size_t count;
     size_t oldest;
     size_t i;
-    if (trace == NULL || out == NULL || capacity == 0u) return 0u;
+    if (trace == NULL || out == NULL || capacity == 0u ||
+        trace->head >= SAMBU_TRACE_CAPACITY ||
+        trace->count > SAMBU_TRACE_CAPACITY) return 0u;
 
     count = trace->count < capacity ? trace->count : capacity;
     oldest = (trace->head + SAMBU_TRACE_CAPACITY - trace->count) %
