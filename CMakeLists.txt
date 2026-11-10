@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(ToolzNG VERSION 0.6.0 LANGUAGES C)
+project(ToolzNG VERSION 0.5.0 LANGUAGES C)
 
 if(NOT WIN32)
     message(FATAL_ERROR "ToolzNG is a native Windows application. Build it on Windows with MSVC or MinGW-w64.")
@@ -19,8 +19,6 @@ add_executable(ToolzNG WIN32
 )
 
 target_include_directories(ToolzNG PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-
-# Windows feature macros are declared once in src/main.c for the native C build.
 
 target_link_libraries(ToolzNG PRIVATE
     setupapi
@@ -43,18 +41,17 @@ set_target_properties(ToolzNG PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-
 include(CTest)
 if(BUILD_TESTING)
-    add_executable(ToolzNG.SambuTests
+    add_executable(sambu_engine_tests
         tests/sambu_engine_tests.c
         src/sambu_engine.c
     )
-    target_include_directories(ToolzNG.SambuTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_include_directories(sambu_engine_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
     if(MSVC)
-        target_compile_options(ToolzNG.SambuTests PRIVATE /W4 /utf-8 /permissive-)
+        target_compile_options(sambu_engine_tests PRIVATE /W4 /utf-8 /permissive-)
     else()
-        target_compile_options(ToolzNG.SambuTests PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(sambu_engine_tests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
-    add_test(NAME sambu_engine_tests COMMAND ToolzNG.SambuTests)
+    add_test(NAME sambu_engine_tests COMMAND sambu_engine_tests)
 endif()
