@@ -1,5 +1,6 @@
 #include "sambu_engine.h"
 
+#include <math.h>
 #include <string.h>
 
 typedef struct SambuLayer {
@@ -31,7 +32,6 @@ static const SambuLayer g_layers[] = {
 
 int sambu_authorize(SambuOperation operation, SambuOrigin origin)
 {
-    /* Reject unknown callers before evaluating any capability. */
     if (origin != SAMBU_ORIGIN_INTERNAL && origin != SAMBU_ORIGIN_USER)
         return 0;
 
@@ -39,15 +39,12 @@ int sambu_authorize(SambuOperation operation, SambuOrigin origin)
         case SAMBU_OP_READ_LOCAL:
         case SAMBU_OP_SCAN:
             return 1;
-
         case SAMBU_OP_RECORD_LOCAL_PROFILE:
             return origin == SAMBU_ORIGIN_INTERNAL;
-
         case SAMBU_OP_WRITE_PRIVATE_REPORT:
         case SAMBU_OP_EXPORT:
         case SAMBU_OP_CLIPBOARD:
             return origin == SAMBU_ORIGIN_USER;
-
         case SAMBU_OP_MUTATE_DEVICE:
         case SAMBU_OP_UPLOAD_DATA:
         default:
@@ -66,13 +63,14 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
         ((e->backup_folders_valid > 0u) == (e->backup_marker_valid != 0)) &&
         (e->backup_found ||
          (e->backup_folders_seen == 0u && e->backup_folders_valid == 0u));
-    const int backup_set_complete = e->backup_found &&
-        e->backup_folders_seen > 0u && backup_counts_consistent &&
-        e->backup_folders_valid > 0u &&
+    const int backup_set_complete =
+        e->backup_found && e->backup_folders_seen > 0u &&
+        backup_counts_consistent && e->backup_folders_valid > 0u &&
         e->backup_folders_valid == e->backup_folders_seen;
     const int stable_window_verified =
-        e->usb_watch_registered && e->stability_window_elapsed;
-    int score = 0;
+        device_verified && e->usb_watch_registered && e->stability_window_elapsed;
+    int earned = 0;
+    int possible = 0;
 
     memset(&result, 0, sizeof(result));
     result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
@@ -87,51 +85,44 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     if (e->stability_window_elapsed && !e->usb_watch_registered)
         result.quality_flags |= SAMBU_QUALITY_STABILITY_WITHOUT_WATCH;
 
-    result.confidence_percent = result.quality_flags != 0u ? 25u :
-        (e->scan_complete ? (e->usb_watch_registered ? 100u : 85u) : 40u);
-
+    /* Coverage is based on completed checks. A measured positive value may
+       still contribute to the legacy score, but is not presented as verified
+       evidence until its corresponding check has completed. */
     if (e->scan_complete) {
+        possible += 40;
         result.evidence_mask |= SAMBU_EVIDENCE_SCAN_COMPLETE;
         if (device_verified) {
-    int possible = 0;
-    int earned = 0;
-
-    memset(&result, 0, sizeof(result));
-    result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
-
-    if (e->scan_complete) {
-        result.evidence_mask |= SAMBU_EVIDENCE_SCAN_COMPLETE;
-        possible += 40;
-        if (e->device_found) {
-            result.evidence_mask |= SAMBU_EVIDENCE_DEVICE_VISIBLE;
             result.device_points = 40;
-            earned += result.device_points;
+            result.evidence_mask |= SAMBU_EVIDENCE_DEVICE_VISIBLE;
         }
     }
 
     if (e->service_query_complete) {
-        result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_CHECKED;
         possible += 25;
-        if (e->service_running) {
+        result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_CHECKED;
+        if (e->service_running)
             result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_RUNNING;
-            result.service_points = 25;
-            earned += result.service_points;
-        }
+    }
+    if (e->service_running) {
+        result.service_points = 25;
+        earned += result.service_points;
     }
 
     if (e->backup_scan_complete) {
-        result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_CHECKED;
         possible += 25;
-        if (e->backup_found) {
+        result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_CHECKED;
+        if (e->backup_found)
             result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_FOUND;
-            result.backup_points = 10;
-            earned += result.backup_points;
-        }
-        if (e->backup_marker_valid) {
+        if (backup_set_complete)
             result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_MARKERS;
-            result.marker_points = 15;
-            earned += result.marker_points;
-        }
+    }
+    if (e->backup_found) {
+        result.backup_points = 10;
+        earned += result.backup_points;
+    }
+    if (backup_set_complete) {
+        result.marker_points = 15;
+        earned += result.marker_points;
     }
 
     if (e->usb_watch_registered)
@@ -141,26 +132,28 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     if (stable_window_verified)
         result.evidence_mask |= SAMBU_EVIDENCE_STABILITY_WINDOW;
 
-    /* A stable-connection score is meaningful only after a device was found
-       and the registered observer completed its full warm-up window. */
-    if (e->scan_complete && e->device_found &&
-        e->usb_watch_registered && e->stability_window_elapsed) {
+    /* The final ten points require a verified device and an elapsed,
+       registered observation window. Missing prerequisites remain unknown. */
+    if (device_verified && e->usb_watch_registered &&
+        e->stability_window_elapsed) {
         possible += 10;
-        if (e->recent_usb_removals == 0) {
+        if (e->recent_usb_removals == 0u) {
             result.stability_points = 10;
             earned += result.stability_points;
         }
+    } else if (stable_window_verified && (e->service_query_complete ||
+                                           e->backup_scan_complete)) {
+        possible += 10;
     }
 
     if (possible > 100) possible = 100;
-    if (earned > possible) earned = possible;
+    if (earned > 100) earned = 100;
+    result.readiness_score = earned;
     result.score_coverage_percent = (unsigned)possible;
-    result.confidence_percent = (unsigned)possible; /* compatibility alias */
-    result.score_provisional = possible < 100;
-    result.readiness_score = possible > 0 ? (earned * 100) / possible : 0;
+    result.confidence_percent = result.quality_flags != 0u ? 25u : (unsigned)possible;
+    result.score_provisional = possible < 100 || result.quality_flags != 0u;
 
-    /* First matching item is the highest-priority actionable finding.
-       Unknown states are kept distinct from verified negative observations. */
+    /* Priority order distinguishes unknown checks from confirmed failures. */
     if (!e->scan_complete) {
         result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
     } else if (!device_verified) {
@@ -172,10 +165,12 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     } else if (e->recent_usb_removals > 0u) {
         result.finding = SAMBU_FINDING_USB_UNSTABLE;
     } else if (e->backup_found && e->backup_folders_seen > 0u &&
-               !backup_set_complete) {
+               e->backup_folders_valid > 0u &&
+               e->backup_folders_valid < e->backup_folders_seen) {
+        result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
     } else if (!e->backup_scan_complete) {
         result.finding = SAMBU_FINDING_BACKUP_UNKNOWN;
-    } else if (e->backup_folders_seen > 0 && !e->backup_marker_valid) {
+    } else if (e->backup_folders_seen > 0u && !e->backup_marker_valid) {
         result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
     } else if (backup_set_complete && e->backup_age_known &&
                e->backup_age_days > 30u) {
@@ -190,6 +185,7 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
 
     return result;
 }
+
 void sambu_ledger_init(SambuLedger *ledger)
 {
     if (ledger) memset(ledger, 0, sizeof(*ledger));
@@ -317,10 +313,69 @@ uint32_t sambu_ledger_unique_count(const SambuLedger *ledger)
     return (uint32_t)ledger->count;
 }
 
+int sambu_relaxation_update(SambuRelaxationState *state, double observation,
+                            uint64_t monotonic_ms, double tau_ms,
+                            SambuRelaxationResult *result)
+{
+    double alpha;
+    double residual;
+    double variance_scale;
+
+    if (!state || !result || !isfinite(observation) ||
+        !isfinite(tau_ms) || tau_ms <= 0.0)
+        return 0;
+
+    if (!state->initialized || monotonic_ms < state->last_update_ms) {
+        state->mean = observation;
+        state->variance = 0.0;
+        state->last_update_ms = monotonic_ms;
+        state->samples = 1u;
+        state->initialized = 1;
+        result->mean = state->mean;
+        result->variance = state->variance;
+        result->residual = 0.0;
+        result->z_score = 0.0;
+        result->alpha = 1.0;
+        result->samples = state->samples;
+        result->warm = 0;
+        return 1;
+    }
+
+    residual = observation - state->mean;
+    if (!isfinite(residual))
+        return 0;
+
+    if (monotonic_ms == state->last_update_ms) {
+        alpha = 0.0;
+    } else {
+        const double elapsed = (double)(monotonic_ms - state->last_update_ms);
+        const double ratio = elapsed / tau_ms;
+        alpha = ratio >= 50.0 ? 1.0 : 1.0 - exp(-ratio);
+    }
+
+    state->mean += alpha * residual;
+    variance_scale = (1.0 - alpha) *
+        (state->variance + alpha * residual * residual);
+    state->variance = variance_scale < 0.0 ? 0.0 : variance_scale;
+    state->last_update_ms = monotonic_ms;
+    if (state->samples < UINT32_MAX) ++state->samples;
+
+    result->mean = state->mean;
+    result->variance = state->variance;
+    result->residual = residual;
+    result->z_score = state->variance > 1e-24
+        ? residual / sqrt(state->variance) : 0.0;
+    result->alpha = alpha;
+    result->samples = state->samples;
+    result->warm = state->samples >= SAMBU_RELAXATION_WARMUP_SAMPLES;
+    return 1;
+}
+
 int sambu_architecture_validate(void)
 {
     const size_t layer_count = sizeof(g_layers) / sizeof(g_layers[0]);
-    const uint32_t all_layers = (1u << (sizeof(g_layers) / sizeof(g_layers[0]))) - 1u;
+    const uint32_t all_layers =
+        (1u << (sizeof(g_layers) / sizeof(g_layers[0]))) - 1u;
     uint32_t available = 0u;
     uint32_t completed = 0u;
     size_t pass;
