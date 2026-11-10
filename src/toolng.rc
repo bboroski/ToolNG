@@ -1,0 +1,4 @@
+#include <windows.h>
+
+/* The native GDI duck is drawn by src/main.c. */
+1 RT_MANIFEST "toolng.manifest"
