@@ -1,5 +1,6 @@
 #include "sambu_engine.h"
 
+#include <math.h>
 #include <string.h>
 
 typedef struct SambuLayer {
@@ -310,6 +311,81 @@ uint32_t sambu_ledger_unique_count(const SambuLedger *ledger)
 {
     if (!ledger) return 0u;
     return (uint32_t)ledger->count;
+}
+
+int sambu_relaxation_update(SambuRelaxationState *state, double observation,
+                            uint64_t monotonic_ms, double tau_ms,
+                            SambuRelaxationResult *result)
+{
+    double alpha;
+    double residual;
+    double next_mean;
+    double next_variance;
+    double z_score;
+
+    if (!state || !result || !isfinite(observation) ||
+        !isfinite(tau_ms) || tau_ms <= 0.0)
+        return 0;
+
+    if (!state->initialized || monotonic_ms < state->last_update_ms) {
+        state->mean = observation;
+        state->variance = 0.0;
+        state->last_update_ms = monotonic_ms;
+        state->samples = 1u;
+        state->initialized = 1;
+        result->mean = state->mean;
+        result->variance = 0.0;
+        result->residual = 0.0;
+        result->z_score = 0.0;
+        result->alpha = 1.0;
+        result->samples = 1u;
+        result->warm = 0;
+        return 1;
+    }
+
+    if (!isfinite(state->mean) || !isfinite(state->variance) ||
+        state->variance < 0.0)
+        return 0;
+
+    residual = observation - state->mean;
+    if (!isfinite(residual))
+        return 0;
+
+    if (monotonic_ms == state->last_update_ms) {
+        alpha = 0.0;
+    } else {
+        const double elapsed = (double)(monotonic_ms - state->last_update_ms);
+        const double ratio = elapsed / tau_ms;
+        alpha = ratio >= 50.0 ? 1.0 : 1.0 - exp(-ratio);
+    }
+
+    next_mean = state->mean + alpha * residual;
+    next_variance = (1.0 - alpha) *
+        (state->variance + alpha * residual * residual);
+    if (!isfinite(next_mean) || !isfinite(next_variance))
+        return 0;
+    if (next_variance < 0.0)
+        next_variance = 0.0;
+
+    z_score = next_variance > 1e-24
+        ? residual / sqrt(next_variance) : 0.0;
+    if (!isfinite(z_score))
+        return 0;
+
+    /* Commit only after every derived value has passed validation. */
+    state->mean = next_mean;
+    state->variance = next_variance;
+    state->last_update_ms = monotonic_ms;
+    if (state->samples < UINT32_MAX) ++state->samples;
+
+    result->mean = state->mean;
+    result->variance = state->variance;
+    result->residual = residual;
+    result->z_score = z_score;
+    result->alpha = alpha;
+    result->samples = state->samples;
+    result->warm = state->samples >= SAMBU_RELAXATION_WARMUP_SAMPLES;
+    return 1;
 }
 
 int sambu_architecture_validate(void)
