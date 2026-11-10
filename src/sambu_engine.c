@@ -453,3 +453,64 @@ const char *sambu_report_schema(void)
 {
     return SAMBU_REPORT_SCHEMA;
 }
+
+
+void sambu_trace_init(SambuTrace *trace)
+{
+    if (trace != NULL) memset(trace, 0, sizeof(*trace));
+}
+
+static int sambu_trace_stage_valid(SambuTraceStage stage)
+{
+    return stage >= SAMBU_TRACE_SOURCE && stage <= SAMBU_TRACE_REPORT;
+}
+
+static int sambu_trace_outcome_valid(SambuTraceOutcome outcome)
+{
+    return outcome >= SAMBU_TRACE_OBSERVED && outcome <= SAMBU_TRACE_DEGRADED;
+}
+
+int sambu_trace_record(SambuTrace *trace, SambuTraceStage stage,
+                       SambuTraceOutcome outcome, uint32_t event_code,
+                       uint32_t evidence_mask, uint32_t quality_flags,
+                       uint64_t monotonic_ms)
+{
+    SambuTraceEvent *event;
+    if (trace == NULL || !sambu_trace_stage_valid(stage) ||
+        !sambu_trace_outcome_valid(outcome) ||
+        trace->next_sequence == UINT64_MAX)
+        return 0;
+
+    event = &trace->events[trace->head];
+    event->sequence = ++trace->next_sequence;
+    event->monotonic_ms = monotonic_ms;
+    event->event_code = event_code;
+    event->evidence_mask = evidence_mask;
+    event->quality_flags = quality_flags;
+    event->stage = stage;
+    event->outcome = outcome;
+
+    trace->head = (trace->head + 1u) % SAMBU_TRACE_CAPACITY;
+    if (trace->count < SAMBU_TRACE_CAPACITY) {
+        ++trace->count;
+    } else if (trace->dropped < UINT32_MAX) {
+        ++trace->dropped;
+    }
+    return 1;
+}
+
+size_t sambu_trace_snapshot(const SambuTrace *trace, SambuTraceEvent *out,
+                            size_t capacity)
+{
+    size_t count;
+    size_t oldest;
+    size_t i;
+    if (trace == NULL || out == NULL || capacity == 0u) return 0u;
+
+    count = trace->count < capacity ? trace->count : capacity;
+    oldest = (trace->head + SAMBU_TRACE_CAPACITY - trace->count) %
+             SAMBU_TRACE_CAPACITY;
+    for (i = 0u; i < count; ++i)
+        out[i] = trace->events[(oldest + i) % SAMBU_TRACE_CAPACITY];
+    return count;
+}
