@@ -16,7 +16,7 @@ function(wdep_enable_warnings target)
     endif()
 endfunction()
 
-# Portable SAMBU core: policy, evidence assessment and bounded workflow manifests.
+# WDEP policy core: evidence assessment and bounded workflow manifests.
 add_library(WDEP.PolicyCore STATIC
     src/sambu_engine.c
     src/sambu_workflow.c
@@ -36,24 +36,24 @@ if(BUILD_TESTING)
     add_executable(ToolzNG.SambuTests ALIAS WDEP.PolicyTests)
     target_link_libraries(WDEP.PolicyTests PRIVATE WDEP.PolicyCore)
     wdep_enable_warnings(WDEP.PolicyTests)
-    add_test(NAME sambu_engine_tests COMMAND WDEP.PolicyTests)
+    add_test(NAME wdep_engine_tests COMMAND WDEP.PolicyTests)
 
     add_executable(WDEP.WorkflowTests tests/sambu_workflow_tests.c)
     add_executable(ToolzNG.SambuWorkflowTests ALIAS WDEP.WorkflowTests)
     target_link_libraries(WDEP.WorkflowTests PRIVATE WDEP.PolicyCore)
     wdep_enable_warnings(WDEP.WorkflowTests)
-    add_test(NAME sambu_workflow_tests COMMAND WDEP.WorkflowTests)
+    add_test(NAME wdep_workflow_tests COMMAND WDEP.WorkflowTests)
 
     add_executable(WDEP.RelaxationTests tests/sambu_relaxation_tests.c)
     add_executable(ToolzNG.SambuRelaxationTests ALIAS WDEP.RelaxationTests)
     target_link_libraries(WDEP.RelaxationTests PRIVATE WDEP.PolicyCore)
     wdep_enable_warnings(WDEP.RelaxationTests)
-    add_test(NAME sambu_relaxation_tests COMMAND WDEP.RelaxationTests)
+    add_test(NAME wdep_relaxation_tests COMMAND WDEP.RelaxationTests)
 endif()
 
 # The desktop shell is platform-specific; the policy/workflow core remains testable.
 if(NOT WIN32)
-    message(STATUS "WDEP desktop target is Win32-only; portable SAMBU core and tests are enabled.")
+    message(STATUS "WDEP desktop target is Win32-only; portable policy core and tests are enabled.")
     return()
 endif()
 
@@ -74,10 +74,10 @@ target_link_libraries(WDEP PRIVATE
     uuid
     comdlg32
 )
-wdep_enable_warnings(ToolzNG)
+wdep_enable_warnings(WDEP)
 
 if(MSVC)
-    target_link_options(ToolzNG PRIVATE
+    target_link_options(WDEP PRIVATE
         /DYNAMICBASE
         /NXCOMPAT
         /HIGHENTROPYVA
