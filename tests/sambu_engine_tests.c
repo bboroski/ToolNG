@@ -255,11 +255,56 @@ static int test_ledger(void)
     for (i = 1u; i <= SAMBU_LEDGER_CAPACITY + 8u; ++i)
         sambu_ledger_record(&ledger, 100u + i, 300u + i);
     CHECK(sambu_ledger_unique_count(&ledger) == SAMBU_LEDGER_CAPACITY);
+    CHECK(sambu_ledger_validate(&ledger));
     CHECK(sambu_ledger_occurrences(&ledger, 108u) == 0u);
     CHECK(sambu_ledger_occurrences(&ledger, 7u) == 0u);
     CHECK(sambu_ledger_unique_count(NULL) == 0u);
     CHECK(sambu_ledger_occurrences(NULL, 7u) == 0u);
     sambu_ledger_record(NULL, 1u, 1u);
+    return 0;
+}
+
+static int test_ledger_validation(void)
+{
+    SambuLedger ledger;
+    SambuLedger malformed;
+
+    sambu_ledger_init(&ledger);
+    CHECK(sambu_ledger_validate(&ledger));
+
+    sambu_ledger_record(&ledger, 7u, 100u);
+    sambu_ledger_record(&ledger, 8u, 110u);
+    sambu_ledger_record(&ledger, 7u, 120u);
+    CHECK(sambu_ledger_validate(&ledger));
+    CHECK(sambu_ledger_occurrences(&ledger, 7u) == 2u);
+
+    malformed = ledger;
+    malformed.count = SAMBU_LEDGER_CAPACITY + 1u;
+    CHECK(!sambu_ledger_validate(&malformed));
+    CHECK(sambu_ledger_unique_count(&malformed) == 0u);
+    sambu_ledger_record(&malformed, 9u, 130u);
+    CHECK(malformed.count == SAMBU_LEDGER_CAPACITY + 1u);
+
+    malformed = ledger;
+    malformed.next = SAMBU_LEDGER_CAPACITY;
+    CHECK(!sambu_ledger_validate(&malformed));
+    CHECK(sambu_ledger_occurrences(&malformed, 7u) == 0u);
+    sambu_ledger_record(&malformed, 9u, 130u);
+    CHECK(malformed.next == SAMBU_LEDGER_CAPACITY);
+
+    malformed = ledger;
+    malformed.entries[1].finding_code = malformed.entries[0].finding_code;
+    CHECK(!sambu_ledger_validate(&malformed));
+
+    malformed = ledger;
+    malformed.entries[0].window_occurrences =
+        malformed.entries[0].occurrences + 1u;
+    CHECK(!sambu_ledger_validate(&malformed));
+
+    malformed = ledger;
+    malformed.entries[0].last_seen_ms = 99u;
+    CHECK(!sambu_ledger_validate(&malformed));
+
     return 0;
 }
 
@@ -366,10 +411,11 @@ int main(void)
     CHECK(test_unknown_states_are_not_negative_findings() == 0);
     CHECK(test_finding_priority() == 0);
     CHECK(test_ledger() == 0);
+    CHECK(test_ledger_validation() == 0);
     CHECK(test_recurrence_pattern() == 0);
     CHECK(test_quality_gate() == 0);
     CHECK(sambu_architecture_validate());
-    CHECK(strcmp(sambu_engine_version(), "1.3.0") == 0);
+    CHECK(strcmp(sambu_engine_version(), "1.4.0") == 0);
     CHECK(strcmp(sambu_report_schema(), "toolzng.diagnostic.v1") == 0);
     CHECK(strcmp(sambu_finding_key(SAMBU_FINDING_SERVICE_UNKNOWN),
                  "apple_service_status_unknown") == 0);
