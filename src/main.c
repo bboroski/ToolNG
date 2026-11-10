@@ -150,8 +150,9 @@ typedef struct AppState {
     int readiness_score;
     SambuAssessment sambu_assessment;
     SambuLedger sambu_ledger;
+    SambuFinding last_ledger_finding;
     WCHAR coach_title[180];
-    WCHAR coach_body[420];
+    WCHAR coach_body[640];
     HFONT font_brand;
     HFONT font_title;
     HFONT font_heading;
@@ -804,8 +805,12 @@ static void compute_readiness_and_coach(void)
 
     g_app.sambu_assessment = sambu_assess(&evidence);
     g_app.readiness_score = g_app.sambu_assessment.readiness_score;
-    sambu_ledger_record(&g_app.sambu_ledger,
-        (uint32_t)g_app.sambu_assessment.finding, GetTickCount64());
+    if (g_app.sambu_assessment.finding != SAMBU_FINDING_NONE &&
+        g_app.sambu_assessment.finding != g_app.last_ledger_finding) {
+        sambu_ledger_record(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding, GetTickCount64());
+    }
+    g_app.last_ledger_finding = g_app.sambu_assessment.finding;
 
     switch (g_app.sambu_assessment.finding) {
         case SAMBU_FINDING_SCAN_UNAVAILABLE:
@@ -863,6 +868,23 @@ static void compute_readiness_and_coach(void)
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Повтори диагностику, чтобы получить проверяемые сигналы.");
             break;
+    }
+
+    if (g_app.sambu_assessment.finding != SAMBU_FINDING_NONE &&
+        g_app.sambu_assessment.finding != SAMBU_FINDING_HEALTHY) {
+        const uint32_t repeats = sambu_ledger_recent_occurrences(
+            &g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding,
+            GetTickCount64());
+        if (repeats >= 2u) {
+            WCHAR note[144];
+            if (swprintf_s(note, ARRAYSIZE(note),
+                    L"\r\nПовторяемость: %u случаев за 10 минут. Проверь первопричину.",
+                    (unsigned)repeats) > 0) {
+                (void)wcscat_s(g_app.coach_body,
+                               ARRAYSIZE(g_app.coach_body), note);
+            }
+        }
     }
 }
 
@@ -1185,6 +1207,7 @@ static void save_report(void)
     WCHAR finding_key[64];
     WCHAR engine_version[32];
     WCHAR report_schema[64];
+    WCHAR pattern_key[32];
     WCHAR report[REPORT_CHARS];
     SYSTEMTIME now;
     int count;
@@ -1206,6 +1229,9 @@ static void save_report(void)
                        sambu_finding_key(g_app.sambu_assessment.finding));
     copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), sambu_engine_version());
     copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), sambu_report_schema());
+    copy_ascii_to_wide(pattern_key, ARRAYSIZE(pattern_key),
+        sambu_pattern_key(sambu_ledger_pattern(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding, GetTickCount64())));
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
         L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
@@ -1224,7 +1250,8 @@ static void save_report(void)
         L"SAMBU finding key: %ls\r\n"
         L"SAMBU confidence: %u%%\r\n"
         L"SAMBU evidence mask: 0x%08lX\r\n"
-        L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n\r\n"
+        L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n"
+        L"SAMBU recurrence (10 min): %u; pattern: %ls\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
         now.wSecond, engine_version, report_schema,
@@ -1234,6 +1261,9 @@ static void save_report(void)
         (unsigned)sambu_ledger_unique_count(&g_app.sambu_ledger),
         (unsigned)sambu_ledger_occurrences(&g_app.sambu_ledger,
             (uint32_t)g_app.sambu_assessment.finding),
+        (unsigned)sambu_ledger_recent_occurrences(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding, GetTickCount64()),
+        pattern_key,
         g_app.device_count);
     if (count < 0) {
         set_status(L"Не удалось сформировать отчёт: ошибка форматирования.");
