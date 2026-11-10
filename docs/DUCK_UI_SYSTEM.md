@@ -1,4 +1,4 @@
-# Duck UI system — ToolNG
+# Amber–Obsidian UI system — ToolNG
 
 **Status:** visual contract adopted for the Windows C17 diagnostic product. The repository already contains vector UI previews in `assets/screenshots/`; these remain illustrative SAMPLE DATA and are not live device scans.
 
@@ -8,9 +8,9 @@ ToolNG is a cautious Windows diagnostics workspace. Use the duck identity as a c
 
 ## Color tokens
 
-The canonical palette lives in [`design/duck-ui.tokens.json`](../design/duck-ui.tokens.json): canvas `#0D0D0D`, surfaces `#1A1A1A` / `#141414`, yellow `#FFD600`, muted yellow `#BFA100`, selected state `#332B00`, text `#E6E6E6`, secondary text `#999999`, border `#262626`, success `#4CAF50`, warning `#FFD600`, error `#FF4444`.
+The canonical palette lives in [`design/duck-ui.tokens.json`](../design/duck-ui.tokens.json): canvas `#0B0B0D`, surfaces `#1C1C1E` / `#141416`, amber `#FFB020`, muted amber `#C47B13`, selected state `#3A2408`, text `#F5F3EE`, secondary text `#A6A3AB`, border `#34343A`, success `#64C787`, warning `#FFB020`, error `#F16D65`.
 
-Yellow is reserved for primary scan actions, current navigation, focus and progress. Readiness and diagnostic states must include an icon or label in addition to color.
+amber is reserved for primary scan actions, current navigation, focus and progress. Readiness and diagnostic states must include an icon or label in addition to color.
 
 ## Windows UI component rules
 
@@ -23,8 +23,13 @@ Yellow is reserved for primary scan actions, current navigation, focus and progr
 
 ## Native implementation boundary
 
-The existing C17 / Win32 GDI desktop shell already uses the black/yellow palette, Per-Monitor DPI handling and persisted application zoom. The refreshed `assets/screenshots/` SVG files are scalable 1920 × 1354 canvas previews containing synthetic data, not captures from a running executable. Do not replace or overstate that evidence. The C17 / Win32 core must remain independent of presentation-only state. Put visual tokens in a UI resource/header layer; never inject color, animation or windowing dependencies into device-discovery, evidence scoring or report serialization. If a native UI control is not yet implemented, label the corresponding image as a preview.
+The existing C17 / Win32 GDI desktop shell already uses the obsidian / amber palette, Per-Monitor DPI handling and persisted application zoom. The refreshed `assets/screenshots/` SVG files are scalable 1920 × 1354 canvas previews containing synthetic data, not captures from a running executable. Do not replace or overstate that evidence. The C17 / Win32 core must remain independent of presentation-only state. Put visual tokens in a UI resource/header layer; never inject color, animation or windowing dependencies into device-discovery, evidence scoring or report serialization. If a native UI control is not yet implemented, label the corresponding image as a preview.
 
 ## Vector UI previews
 
 The existing assets in `assets/screenshots/` are scalable SVG previews and explicitly use synthetic SAMPLE DATA. Treat them as design references, not proof of a live scan. New runtime screenshots should be captured from a real Windows build at 1920×1080 and 1366×768, with device identifiers and paths anonymised.
+
+
+## Amber–Obsidian v2 alignment
+
+This legacy design contract is aligned with the repository-specific palette and visual system v2. See [the current interface specification](INTERFACE_DESIGN.md) and the machine-readable [design tokens](../design/duck-ui.tokens.json). The project accent is #FFB020; secondary data signal is #79C8FF. The embedded target/library core must remain presentation-free where the product boundary requires it.
