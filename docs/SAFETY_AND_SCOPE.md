@@ -56,3 +56,13 @@ The baseline is initialized only after at least one Apple USB interface is visib
 - The report engine currently creates TXT only. PDF/XLSX generation, report templates, content indexing/search, threaded cancellation, and server-side features are not supported in this version.
 - Local Help, Reports, and About pages use native GDI. The Apple backup folder action opens Windows Explorer; routine documentation navigation does not launch a browser.
 - SHA-256 sidecars detect later modifications to a report file but do not provide a trusted digital signature or authenticate the observations.
+
+## ToolzNG 0.6.1 — bounded SAMBU workflow
+
+The native C17 host now compiles a restricted local workflow into a fixed-size AST and dispatches only five allowlisted diagnostic actions. Source size is limited to 3072 bytes and a workflow may contain at most eight steps; the shipped Apple audit manifest caps its run at five.
+
+Workflow preflight checks the task manifest, autonomy class, step budget and action registry. Local LinkDNA profile recording additionally passes the SAMBU capability gate. This does not constitute an HSM-backed verifier or authorize device changes. The dispatcher performs at most one action per Win32 timer tick, on the UI thread, and stops when an action fails.
+
+Workflow evidence is bounded and contains step identifiers, source coordinates and short findings. It does not retain workflow source text or raw hardware identifiers. A user-requested TXT report can include partial evidence from a failed run.
+
+The workflow engine is not a full SAMBU language runtime. General functions, scopes, loops, conditionals, OOP, actors, channels, Python scheduler APIs, scientific/voxel libraries, Magento inspection, game helpers and scaffold generation are not shipped as ToolzNG capabilities. Native compilation, self-hosting, ownership/effect analysis, fibers, multicore execution, IDE/LSP and web-framework features remain outside this desktop product.
