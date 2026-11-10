@@ -54,7 +54,7 @@ More than one flag maps to multiple_integrity_warnings. A zero flag set maps to 
 | Condition | Confidence |
 |---|---:|
 | Completed scan, active watcher, no integrity warnings | 100% |
-| Completed scan, watcher unavailable, no integrity warnings | 85% |
+| Completed scan, watcher unavailable before the observation window expires, no integrity warnings | 85% |
 | Scan incomplete, no integrity warnings | 40% |
 | Any Quality Gate integrity warning | 25% |
 
