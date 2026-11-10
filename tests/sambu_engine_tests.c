@@ -369,7 +369,7 @@ int main(void)
     CHECK(test_recurrence_pattern() == 0);
     CHECK(test_quality_gate() == 0);
     CHECK(sambu_architecture_validate());
-    CHECK(strcmp(sambu_engine_version(), "1.2.0") == 0);
+    CHECK(strcmp(sambu_engine_version(), "1.3.0") == 0);
     CHECK(strcmp(sambu_report_schema(), "toolzng.diagnostic.v1") == 0);
     CHECK(strcmp(sambu_finding_key(SAMBU_FINDING_SERVICE_UNKNOWN),
                  "apple_service_status_unknown") == 0);

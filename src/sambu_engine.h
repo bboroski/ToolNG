@@ -4,10 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.2.0"
+#define SAMBU_ENGINE_VERSION "1.3.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
+#define SAMBU_RELAXATION_WARMUP_SAMPLES 4u
 
 typedef enum SambuOperation {
     SAMBU_OP_READ_LOCAL = 1,
@@ -115,6 +116,25 @@ typedef struct SambuLedger {
     size_t next;
 } SambuLedger;
 
+/* Bounded exponential relaxation for noisy diagnostic time series. */
+typedef struct SambuRelaxationState {
+    double mean;
+    double variance;
+    uint64_t last_update_ms;
+    uint32_t samples;
+    int initialized;
+} SambuRelaxationState;
+
+typedef struct SambuRelaxationResult {
+    double mean;
+    double variance;
+    double residual;
+    double z_score;
+    double alpha;
+    uint32_t samples;
+    int warm;
+} SambuRelaxationResult;
+
 /* S — fail-closed action policy. Device mutation and network upload are never granted. */
 int sambu_authorize(SambuOperation operation, SambuOrigin origin);
 
@@ -136,6 +156,12 @@ SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
 const char *sambu_pattern_key(SambuPattern pattern);
 const char *sambu_quality_key(uint32_t quality_flags);
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger);
+
+/* Time-aware exponential relaxation. A backward clock jump restarts the window.
+   Invalid inputs are rejected without committing partial state. */
+int sambu_relaxation_update(SambuRelaxationState *state, double observation,
+                            uint64_t monotonic_ms, double tau_ms,
+                            SambuRelaxationResult *result);
 
 /* B — validate the dependency graph before the application starts. */
 int sambu_architecture_validate(void);

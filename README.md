@@ -64,6 +64,7 @@ It is a **Windows-side diagnostic assistant**, not an iPhone repair suite, backu
 | **Duck Readiness** | Explainable 0–100 score from measurable Windows-side signals, with evidence coverage shown separately. |
 | **SAMBU Quality Gate** | Flags incomplete scans, inconsistent backup counts and unsupported stability claims. |
 | **USB Pulse** | Observes Apple USB arrival/removal notifications and retains a bounded recent event window. |
+| **USB Pulse relaxation** | Adds a 30-second EWMA trend, variance and residual to the bounded local event journal; advisory only. |
 | **Recurrence Radar** | Classifies isolated, repeated or persistent state transitions over a 10-minute window. |
 | **Backup Sentinel** | Read-only check for expected <code>Info.plist</code> and <code>Manifest.db</code> / <code>Manifest.plist</code> markers. |
 | **Backup Freshness** | Shows the modification age of the newest <code>Info.plist</code> marker. |
@@ -174,6 +175,7 @@ The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation 
 - [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — assessment model and restricted workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — tests, resilience and release criteria.
 - [GUI Design and Visual Evidence](docs/GUI_DESIGN.md) — current Win32/GDI navigation model and preview/screenshot rules.
+- [Relaxation Signal Model](docs/RELAXATION_SIGNAL_MODEL.md) — smoothed USB trends, model assumptions and non-diagnostic interpretation.
 
 For material UI changes, provide real application captures or label previews explicitly as illustrative.
 
