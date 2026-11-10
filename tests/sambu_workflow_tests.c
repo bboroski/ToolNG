@@ -1,5 +1,8 @@
 #include "sambu_workflow.h"
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,6 +44,7 @@ static void test_compile_and_incremental_run(void)
     assert(program.step_count == 3u);
     assert(program.steps[0].source.line == 3u);
     assert(program.steps[0].source.column == 3u);
+    assert(program.steps[0].source.length > 4u);
     assert(program.autonomy == SAMBU_WF_LOCAL_RECORD);
     host.handler = test_host;
     host.context = &state;
@@ -104,6 +108,31 @@ static void test_missing_manifest_field_and_source_limit(void)
     assert(diagnostic.code == SAMBU_WF_SOURCE_LIMIT);
 }
 
+
+static void test_observe_only_cannot_record(void)
+{
+    static const char source[] =
+        "workflow restricted { manifest { purpose \"observe only\"; max_steps 1; autonomy observe_only; } "
+        "step profile = record.link_profile; }";
+    SambuWorkflow program;
+    SambuWorkflowDiagnostic diagnostic;
+    SambuWorkflowPolicy policy = { 8u, true, true };
+    assert(sambu_workflow_compile(source, sizeof(source) - 1u, &program, &diagnostic));
+    assert(!sambu_workflow_preflight(&program, &policy, &diagnostic));
+    assert(diagnostic.code == SAMBU_WF_POLICY);
+}
+
+static void test_rejects_unbounded_numeric_manifest(void)
+{
+    static const char source[] =
+        "workflow bad { manifest { purpose \"x\"; max_steps 999999999999999999999999; "
+        "autonomy observe_only; } step usb = observe.apple_usb; }";
+    SambuWorkflow program;
+    SambuWorkflowDiagnostic diagnostic;
+    assert(!sambu_workflow_compile(source, sizeof(source) - 1u, &program, &diagnostic));
+    assert(diagnostic.code == SAMBU_WF_BUDGET);
+}
+
 static void test_fail_fast(void)
 {
     SambuWorkflow program;
@@ -131,6 +160,8 @@ int main(void)
     test_unknown_action_and_duplicate();
     test_policy_and_budget();
     test_missing_manifest_field_and_source_limit();
+    test_observe_only_cannot_record();
+    test_rejects_unbounded_numeric_manifest();
     test_fail_fast();
     puts("SAMBU workflow tests passed.");
     return 0;
