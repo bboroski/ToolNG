@@ -432,7 +432,7 @@ static void update_linkdna_profile(void)
     ULONGLONG hash = 14695981039346656037ULL;
     WCHAR stored[40] = {0}, current[40] = {0};
     UINT i;
-    if (!g_app.link_profile_file[0]) return;
+    if (!g_app.link_profile_file[0] || g_app.device_count == 0) return;
     hash ^= g_app.device_count;
     hash *= 1099511628211ULL;
     for (i = 0; i < g_app.device_count; ++i) {
@@ -1324,7 +1324,7 @@ static void draw_about(HDC dc)
 
     draw_page_heading(dc, L"О ToolzNG", L"Нативная Windows-утилита на C17 и Win32 API.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_text(dc, L"ToolzNG  0.1.0", (RECT){ x + 24, 216, right - 24, 254 },
+    draw_text(dc, L"ToolzNG  0.4.0", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },
               g_app.font_button, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
@@ -1333,12 +1333,11 @@ static void draw_about(HDC dc)
               g_app.font_body, COL_TEXT, DT_LEFT | DT_VCENTER | DT_WORDBREAK);
     draw_text(dc, L"Что программа делает", (RECT){ x + 24, 374, right - 24, 402 },
               g_app.font_button, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"• Находит видимые Windows PnP-устройства Apple по VID_05AC.\n"
-                  L"• Считает прозрачный Duck Readiness Score по сигналам Windows.\n"
-                  L"• USB Pulse замечает подключения/отключения Apple USB в реальном времени.\n"
-                  L"• Backup Sentinel проверяет маркерные файлы резервных копий без чтения данных.\n"
-                  L"• DuckFix строит следующий безопасный шаг по результатам проверки.\n"
-                  L"• Privacy Shield предварительно показывает отчёт и скрывает детали по умолчанию.",
+    draw_text(dc, L"• Duck Readiness: объяснимый балл готовности Windows-side подключения.\n"
+                  L"• USB Pulse + PulseVault: события в реальном времени и локальная JSONL-история.\n"
+                  L"• LinkDNA: локальное сравнение профиля Apple USB/службы без хранения серийных номеров.\n"
+                  L"• Backup Sentinel + Freshness Radar: маркеры структуры и возраст Info.plist.\n"
+                  L"• DuckFix Route: персональный план действий; Privacy Shield + Evidence Seal защищают экспорт.",
               (RECT){ x + 24, 408, right - 24, 500 },
               g_app.font_body, COL_TEXT, DT_LEFT | DT_TOP | DT_WORDBREAK);
     draw_text(dc, L"Границы и безопасность", (RECT){ x + 24, 516, right - 24, 544 },
