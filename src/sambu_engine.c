@@ -200,6 +200,7 @@ int sambu_architecture_validate(void)
             progressed = 1;
         }
 
+        if (completed == all_layers) return 1;
         if (!progressed) return 0;
     }
 
