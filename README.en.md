@@ -119,7 +119,7 @@ Per-Monitor DPI v2 and 80–160% zoom are supported. Full UI Automation support 
 ## Engineering standards
 
 - [Design Rules](docs/WDEC_DESIGN_RULES.md) — evidence, privacy, and limits.
-- [Core Integration](docs/SAMBU_INTEGRATION.md) — assessment and bounded workflow.
+- [Core Integration](docs/WDEC_CORE_INTEGRATION.md) — assessment and bounded workflow.
 - [Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — tests and release criteria.
 - [Build](docs/BUILDING.md) · [Safety Model](docs/SAFETY_AND_SCOPE.md).
 
