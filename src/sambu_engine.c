@@ -85,14 +85,15 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     if (e->stability_window_elapsed && !e->usb_watch_registered)
         result.quality_flags |= SAMBU_QUALITY_STABILITY_WITHOUT_WATCH;
 
-    /* Coverage is based on completed checks. A measured positive value may
-       still contribute to the legacy score, but is not presented as verified
-       evidence until its corresponding check has completed. */
+    /* Coverage is based on completed checks. A positive raw observation may
+       still contribute to the weighted score, but is not verified evidence
+       until its corresponding check has completed. */
     if (e->scan_complete) {
         possible += 40;
         result.evidence_mask |= SAMBU_EVIDENCE_SCAN_COMPLETE;
         if (device_verified) {
             result.device_points = 40;
+            earned += result.device_points;
             result.evidence_mask |= SAMBU_EVIDENCE_DEVICE_VISIBLE;
         }
     }
@@ -132,18 +133,16 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     if (stable_window_verified)
         result.evidence_mask |= SAMBU_EVIDENCE_STABILITY_WINDOW;
 
-    /* The final ten points require a verified device and an elapsed,
-       registered observation window. Missing prerequisites remain unknown. */
-    if (device_verified && e->usb_watch_registered &&
-        e->stability_window_elapsed) {
-        possible += 10;
+    /* Stability points require a live observer and a complete observation
+       window. Coverage includes this dimension only when another subsystem
+       has also completed a check, so an uncorroborated watch cannot inflate it. */
+    if (stable_window_verified) {
         if (e->recent_usb_removals == 0u) {
             result.stability_points = 10;
             earned += result.stability_points;
         }
-    } else if (stable_window_verified && (e->service_query_complete ||
-                                           e->backup_scan_complete)) {
-        possible += 10;
+        if (e->service_query_complete || e->backup_scan_complete)
+            possible += 10;
     }
 
     if (possible > 100) possible = 100;
@@ -153,23 +152,23 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     result.confidence_percent = result.quality_flags != 0u ? 25u : (unsigned)possible;
     result.score_provisional = possible < 100 || result.quality_flags != 0u;
 
-    /* Priority order distinguishes unknown checks from confirmed failures. */
+    /* A positive observation can be useful before its complete scan. Unknown
+       is reserved for cases with no confirmed positive or negative signal. */
     if (!e->scan_complete) {
         result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
     } else if (!device_verified) {
         result.finding = SAMBU_FINDING_NO_DEVICE;
-    } else if (!e->service_query_complete) {
+    } else if (!e->service_query_complete && !e->service_running) {
         result.finding = SAMBU_FINDING_SERVICE_UNKNOWN;
     } else if (!e->service_running) {
         result.finding = SAMBU_FINDING_SERVICE_UNAVAILABLE;
     } else if (e->recent_usb_removals > 0u) {
         result.finding = SAMBU_FINDING_USB_UNSTABLE;
-    } else if (e->backup_found && e->backup_folders_seen > 0u &&
-               e->backup_folders_valid > 0u &&
-               e->backup_folders_valid < e->backup_folders_seen) {
-        result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
-    } else if (!e->backup_scan_complete) {
+    } else if (!e->backup_scan_complete && !e->backup_marker_valid) {
         result.finding = SAMBU_FINDING_BACKUP_UNKNOWN;
+    } else if (e->backup_found && e->backup_folders_seen > 0u &&
+               !backup_set_complete) {
+        result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
     } else if (e->backup_folders_seen > 0u && !e->backup_marker_valid) {
         result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
     } else if (backup_set_complete && e->backup_age_known &&
