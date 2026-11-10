@@ -36,6 +36,9 @@ int sambu_authorize(SambuOperation operation, SambuOrigin origin)
         case SAMBU_OP_SCAN:
             return 1;
 
+        case SAMBU_OP_RECORD_LOCAL_PROFILE:
+            return origin == SAMBU_ORIGIN_INTERNAL;
+
         case SAMBU_OP_WRITE_PRIVATE_REPORT:
         case SAMBU_OP_EXPORT:
         case SAMBU_OP_CLIPBOARD:
