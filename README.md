@@ -88,7 +88,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 Полная карта переноса, ограничения и критерии проверки: [docs/SAMBU_INTEGRATION.md](docs/SAMBU_INTEGRATION.md).
 
-SAMBU Recurrence Radar повышает приоритет повторяющихся состояний, не выдавая повторную проверку за новый сбой. Пороговые уровни: один эпизод — single, 2–3 — recurrent, 4 и более — persistent в пределах 10-минутного окна. Подробности: [REAPER_CYCLE_CASE_STUDY.md](docs/REAPER_CYCLE_CASE_STUDY.md).
+SAMBU Recurrence Radar выделяет повторяющиеся состояния, не выдавая повторную проверку за новый сбой. Пороговые уровни: один эпизод — single, 2–3 — recurrent, 4 и более — persistent в пределах 10-минутного окна. Подробности: [REAPER_CYCLE_CASE_STUDY.md](docs/REAPER_CYCLE_CASE_STUDY.md).
 
 ## 🧪 Границы измерений
 
