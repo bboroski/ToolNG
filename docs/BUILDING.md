@@ -36,7 +36,7 @@ No third-party runtime is required for the current feature set.
 
 - PulseVault: %LOCALAPPDATA%\ToolzNG\usb-pulse.jsonl with .old rotation at 256 KiB.
 - LinkDNA baseline: %LOCALAPPDATA%\ToolzNG\link-profile.ini.
-- Diagnostic export: Documents\ToolzNG-report-*.txt plus *.sha256.
+- Diagnostic reports: %LOCALAPPDATA%\ToolzNG\Reports\ToolzNG-report-*.txt plus *.sha256. Legacy Documents reports are copied into the app archive at first launch; originals are kept.
 - DuckFix export: Documents\ToolzNG-DuckFix-*.txt.
 
 The journal and baseline remain local to the Windows account. They are not added to the Git repository.
@@ -44,8 +44,8 @@ The journal and baseline remain local to the Windows account. They are not added
 
 ## 0.5 desktop experience
 
-- Per-monitor DPI awareness: v2 manifest, WM_DPICHANGED, logical GDI layout, and user zoom 80–160%.
-- Zoom preferences: %LOCALAPPDATA%\ToolzNG\settings.ini; existing 0.4 profile files are retained.
+- Per-monitor DPI awareness: v2 manifest, WM_DPICHANGED, logical GDI layout, user zoom 80–160%, and Windows High Contrast palette switching.
+- Zoom preferences: %LOCALAPPDATA%\ToolzNG\settings.ini; existing 0.4 LinkDNA and PulseVault profile files are retained. Old reports under Documents are copied once; source files are not deleted.
 - Diagnostic report archive: %LOCALAPPDATA%\ToolzNG\Reports\ToolzNG-report-*.txt with optional SHA-256 sidecar. New reports are private by default and preview in the Reports page.
 - Report actions: in-app history (up to 32 entries), scrolling preview, copy to clipboard, optional Save As TXT export.
 - DuckFix route exports are stored in the same local Reports directory.
