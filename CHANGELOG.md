@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 — Duck Intelligence Plus
+
+- Added LinkDNA local baseline signature to detect changes in the Windows-visible Apple USB/service profile. The FNV-1a digest is a change detector, not a security identity.
+- Added PulseVault JSONL persistence with bounded 256 KiB rotation.
+- Added Backup Freshness Radar based on the newest backup Info.plist last-write timestamp.
+- Added exportable DuckFix Route checklist.
+- Added SHA-256 sidecar for generated diagnostic reports (Evidence Seal).
+- Expanded privacy and measurement-boundary documentation.
+
 ## 0.3.0 — Duck Intelligence Edition
 
 - Added transparent Duck Readiness Score based only on observable Windows-side connection signals.
