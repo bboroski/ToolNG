@@ -1,6 +1,6 @@
 # ToolzNG Engineering Quality and Visual Evidence Gates
 
-**Baseline:** ToolzNG 0.5.x, portable C17 engine and Windows-only Win32 desktop UI.  
+**Baseline:** ToolzNG 0.6.1, portable C17 engine/workflow and Windows-only Win32 desktop UI.  
 **Purpose:** translate the SAMBU/ToolNG improvement brief into release gates that match the actual product boundary.
 
 ToolzNG is a local Windows-side Apple-device connection and backup-marker diagnostic utility. It is not a creative-text processor, an NLP service, an iOS repair tool or an automatic device-management system. The Python creative ontology belongs in SAMBU; ToolzNG adopts only the engineering principles that are relevant to a native diagnostic application.
@@ -137,7 +137,19 @@ A 5% regression threshold may be used as a review trigger after a stable baselin
 - [ ] Benchmarks are reproducible and no unsupported speed/quality claim is introduced.
 - [ ] User-visible data collection, export or device actions are documented.
 
-## 9. Roadmap derived from the improvement brief
+## 9. UI modularization sequence
+
+The desktop host currently concentrates dashboard drawing, page state, Win32 event routing and report composition in \`src/main.c\`. Treat the requested single-responsibility refactor as staged work rather than claiming it is already complete.
+
+1. **Freeze contracts:** identify the shared application state and introduce a small, versioned UI/platform interface without moving diagnostic policy into view code.
+2. **Extract read-only presentation:** move dashboard, devices, backups, reports and care rendering into view modules. View functions receive immutable snapshots and do not call Windows device APIs directly.
+3. **Extract report composition:** keep report schema fields and privacy filtering in one module; maintain byte-for-byte or explicitly versioned compatibility tests.
+4. **Extract event/navigation routing:** centralize hit-testing, keyboard shortcuts and page transitions; keep platform callbacks thin.
+5. **Verify each step:** portable core tests, Windows x64 build/CTest, documentation preview validation, accessibility review and real sanitized screenshots.
+
+Do not introduce a UI framework, GPU animation system or asynchronous worker pool merely to satisfy a design phrase. Choose a dependency or concurrency primitive only when a measured need and lifecycle tests justify it.
+
+## 10. Roadmap derived from the improvement brief
 
 **Foundation:** validate the existing portable core, document its evidence model, standardize GUI captures and keep README claims synchronized with code.
 
