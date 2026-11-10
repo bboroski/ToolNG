@@ -24,7 +24,7 @@
     <path d="M154 366q-25 17-48 13 12-24 41-24M249 366q-14 18-39 17 6-23 29-28" fill="#BFA100" stroke="#BFA100" stroke-width="6"/>
   </g>
   <g font-family="Segoe UI,Arial,sans-serif">
-    <text x="430" y="130" fill="#f5f2e9" font-size="66" font-weight="800">Toolz<tspan fill="#FFD600">NG</tspan></text>
+    <text x="430" y="130" fill="#E6E6E6" font-size="66" font-weight="800">Toolz<tspan fill="#FFD600">NG</tspan></text>
     <text x="435" y="177" fill="#FFD600" font-size="20" font-weight="700" letter-spacing="2">NATIVE APPLE DEVICE DIAGNOSTICS</text>
     <text x="435" y="222" fill="#E6E6E6" font-size="20">USB-проверки и аудит backup-маркеров</text>
     <text x="435" y="252" fill="#E6E6E6" font-size="20">Приватные отчёты. Всё локально.</text>
