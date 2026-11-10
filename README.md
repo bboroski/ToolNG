@@ -119,7 +119,7 @@ WDEC не виконує jailbreak, не обходить пароль чи Acti
 ## Інженерні стандарти
 
 - [Design Rules](docs/WDEC_DESIGN_RULES.md) — докази, приватність та обмеження.
-- [Core Integration](docs/SAMBU_INTEGRATION.md) — оцінювання й обмежений workflow.
+- [Core Integration](docs/WDEC_CORE_INTEGRATION.md) — оцінювання й обмежений workflow.
 - [Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — тести та критерії релізу.
 - [Збірка](docs/BUILDING.md) · [Модель безпеки](docs/SAFETY_AND_SCOPE.md).
 
