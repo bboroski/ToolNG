@@ -33,6 +33,7 @@ static void set_complete_healthy_evidence(SambuEvidence *evidence)
     evidence->backup_found = 1;
     evidence->backup_marker_valid = 1;
     evidence->backup_folders_seen = 1;
+    evidence->backup_folders_valid = 1;
     evidence->usb_watch_registered = 1;
     evidence->stability_window_elapsed = 1;
 }
