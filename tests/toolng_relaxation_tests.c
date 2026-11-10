@@ -1,4 +1,4 @@
-#include "sambu_engine.h"
+#include "toolng_engine.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -71,6 +71,6 @@ int main(void)
     CHECK(!toolng_relaxation_update(NULL, 1.0, 1u, 1.0, &result));
     CHECK(!toolng_relaxation_update(&state, 1.0, 1u, 1.0, NULL));
 
-    puts("SAMBU relaxation tests passed.");
+    puts("ToolNG relaxation tests passed.");
     return 0;
 }
