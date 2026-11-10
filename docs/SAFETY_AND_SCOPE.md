@@ -42,3 +42,8 @@ ToolzNG provides evidence and cautious guidance. It does not claim to overclock 
 - Backup Freshness Radar reads only the last-write timestamp of Info.plist; it does not open backup payloads or prove backup completeness.
 - Evidence Seal writes a SHA-256 sidecar for the exported report. This detects later file changes but does not authenticate the source observations.
 - DuckFix Route Export writes a checklist. It does not make repairs or execute commands.
+
+
+### LinkDNA baseline reset
+
+The baseline is initialized only after at least one Apple USB interface is visible. To reset the local baseline, close ToolzNG and delete `%LOCALAPPDATA%/ToolzNG/link-profile.ini`. The next scan with an Apple USB interface present will create a new local profile. The file contains only the digest, not the original hardware IDs.
