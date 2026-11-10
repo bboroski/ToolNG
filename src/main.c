@@ -25,6 +25,8 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include <string.h>
 #include <wchar.h>
 
+#include "sambu_engine.h"
+
 #define APP_TITLE           L"ToolzNG"
 #define MAX_APPLE_DEVICES   32
 #define DEVICE_NAME_CHARS   256
@@ -146,6 +148,8 @@ typedef struct AppState {
     RECT zoom_plus_button;
     RECT playbook_button;
     int readiness_score;
+    SambuAssessment sambu_assessment;
+    SambuLedger sambu_ledger;
     WCHAR coach_title[180];
     WCHAR coach_body[420];
     HFONT font_brand;
@@ -173,6 +177,14 @@ static void copy_text(WCHAR *dst, size_t dst_count, const WCHAR *src)
     if (!dst || dst_count == 0) return;
     if (!src) src = L"";
     wcsncpy_s(dst, dst_count, src, _TRUNCATE);
+}
+
+static void copy_ascii_to_wide(WCHAR *dst, size_t dst_count, const char *src)
+{
+    if (!dst || dst_count == 0) return;
+    dst[0] = L'\0';
+    if (!src) return;
+    (void)MultiByteToWideChar(CP_UTF8, 0, src, -1, dst, (int)dst_count);
 }
 
 static void draw_text(HDC dc, const WCHAR *text, RECT rect, HFONT font,
@@ -523,7 +535,7 @@ static void append_pulse_vault(const UsbPulseEvent *event)
     }
     GetLocalTime(&st);
     swprintf_s(line, ARRAYSIZE(line),
-        L"{\"time\":\"%04u-%02u-%02uT%02u:%02u:%02u\","
+        L"{\"schema\":1,\"time\":\"%04u-%02u-%02uT%02u:%02u:%02u\","
         L"\"event\":\"%ls\",\"devices\":%u}\r\n",
         st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond,
         event->arrival ? L"arrival" : L"removal", g_app.device_count);
@@ -770,57 +782,87 @@ static void register_usb_watch(HWND hwnd)
 
 static void compute_readiness_and_coach(void)
 {
+    SambuEvidence evidence;
     UINT removals = 0;
     ULONGLONG elapsed = GetTickCount64() - g_app.app_started_at;
-    int score = 0;
+
+    ZeroMemory(&evidence, sizeof(evidence));
     get_recent_usb_counts(NULL, &removals);
 
-    /* Explainable score: only measurable Windows-side signals contribute. */
-    if (g_app.device_count > 0) score += 40;
-    if (g_app.apple_service_running) score += 25;
-    if (g_app.backup_found) score += 10;
-    if (g_app.backup_valid_count > 0) score += 15;
-    if (g_app.usb_watch_registered && g_app.device_count > 0 &&
-        elapsed >= USB_STABILITY_WARMUP_MS && removals == 0) score += 10;
-    if (score > 100) score = 100;
-    g_app.readiness_score = score;
+    evidence.scan_complete = g_app.scan_complete != FALSE;
+    evidence.device_found = g_app.device_count > 0;
+    evidence.service_running = g_app.apple_service_running != FALSE;
+    evidence.backup_found = g_app.backup_found != FALSE;
+    evidence.backup_marker_valid = g_app.backup_valid_count > 0;
+    evidence.backup_folders_seen = (int)g_app.backup_folder_count;
+    evidence.backup_age_known = g_app.backup_age_days != ~(ULONGLONG)0;
+    evidence.backup_age_days = evidence.backup_age_known
+        ? (uint32_t)g_app.backup_age_days : 0u;
+    evidence.recent_usb_removals = removals;
+    evidence.usb_watch_registered = g_app.usb_watch_registered != FALSE;
+    evidence.stability_window_elapsed = elapsed >= USB_STABILITY_WARMUP_MS;
 
-    if (g_app.device_count == 0) {
-        copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
-                  L"DuckFix: начни с физического подключения");
-        copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                  L"Используй кабель с передачей данных, разблокируй iPhone и подтверди «Доверять этому компьютеру». Затем нажми «Сканировать USB». ToolzNG не может подтвердить доверие iOS напрямую.");
-    } else if (!g_app.apple_service_running) {
-        copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
-                  L"DuckFix: проверь компонент Apple для Windows");
-        copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                  L"Windows видит USB-интерфейс, но служба Apple не подтверждена как запущенная. Установи или обнови Apple Devices; если служба установлена, проверь её состояние в приложении «Службы».");
-    } else if (removals > 0) {
-        copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
-                  L"DuckFix: проверь стабильность USB-линии");
-        copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                  L"USB Pulse зарегистрировал отключения Apple-интерфейса за последние 10 минут. Попробуй другой порт без USB-хаба и исправный кабель передачи данных; наблюдай за счётчиком повторных отключений.");
-    } else if (g_app.backup_folder_count > 0 && g_app.backup_valid_count > 0 &&
-                   g_app.backup_age_days != ~(ULONGLONG)0 && g_app.backup_age_days > 30ULL) {
+    g_app.sambu_assessment = sambu_assess(&evidence);
+    g_app.readiness_score = g_app.sambu_assessment.readiness_score;
+    sambu_ledger_record(&g_app.sambu_ledger,
+        (uint32_t)g_app.sambu_assessment.finding, GetTickCount64());
+
+    switch (g_app.sambu_assessment.finding) {
+        case SAMBU_FINDING_SCAN_UNAVAILABLE:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: результат сканирования недоступен");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Windows не завершила перечисление устройств. Повтори проверку; отсутствие устройства пока нельзя считать подтверждённым. ToolzNG не меняет параметры iPhone и не выполняет ремонт автоматически.");
+            break;
+        case SAMBU_FINDING_NO_DEVICE:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: начни с физического подключения");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Используй кабель с передачей данных, разблокируй iPhone и подтверди «Доверять этому компьютеру». Затем нажми «Сканировать USB». ToolzNG не может подтвердить доверие iOS напрямую.");
+            break;
+        case SAMBU_FINDING_SERVICE_UNAVAILABLE:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: проверь компонент Apple для Windows");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Windows видит USB-интерфейс, но служба Apple не подтверждена как запущенная. Установи или обнови Apple Devices; если служба установлена, проверь её состояние в приложении «Службы».");
+            break;
+        case SAMBU_FINDING_USB_UNSTABLE:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: проверь стабильность USB-линии");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"USB Pulse зарегистрировал отключения Apple-интерфейса за последние 10 минут. Попробуй другой порт без USB-хаба и исправный кабель передачи данных; наблюдай за счётчиком повторных отключений.");
+            break;
+        case SAMBU_FINDING_BACKUP_STRUCTURE:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: проверь структуру локальной копии");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Backup Sentinel не нашёл ожидаемые маркеры Info.plist и Manifest.db/Manifest.plist. Не удаляй папки: создай новую копию через Apple Devices или iTunes и сравни результат.");
+            break;
+        case SAMBU_FINDING_BACKUP_STALE:
             copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
                       L"DuckFix: резервная копия давно не обновлялась");
             copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
                       L"Самая свежая Info.plist старше 30 дней. Если на устройстве появились новые данные, создай актуальную копию через Apple Devices/iTunes. Возраст маркера — ориентир, а не доказательство целостности backup.");
-        } else if (g_app.backup_folder_count > 0 && g_app.backup_valid_count == 0) {
-        copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
-                  L"DuckFix: проверь структуру локальной копии");
-        copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                  L"Backup Sentinel не нашёл ожидаемые маркеры Info.plist и Manifest.db/Manifest.plist. Не удаляй папки: создай новую копию через Apple Devices или iTunes и сравни результат.");
-    } else if (!g_app.backup_found || g_app.backup_valid_count == 0) {
-        copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
-                  L"DuckFix: создай резервную копию");
-        copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                  L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. ToolzNG не создаёт и не изменяет backup самостоятельно.");
-    } else {
-        copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
-                  L"DuckFix: базовые проверки пройдены");
-        copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
-                  L"Windows видит Apple USB, служба доступна, а структура резервной копии выглядит ожидаемой. Это не тест скорости iOS и не проверка содержимого backup; продолжай пользоваться штатными средствами Apple.");
+            break;
+        case SAMBU_FINDING_BACKUP_MISSING:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: создай резервную копию");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Подключение Apple обнаружено. Для защиты данных создай локальную резервную копию штатным приложением Apple Devices или iTunes. ToolzNG не создаёт и не изменяет backup самостоятельно.");
+            break;
+        case SAMBU_FINDING_HEALTHY:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: базовые проверки пройдены");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Windows видит Apple USB, служба доступна, а структура резервной копии выглядит ожидаемой. Это не тест скорости iOS и не проверка содержимого backup; продолжай пользоваться штатными средствами Apple.");
+            break;
+        case SAMBU_FINDING_NONE:
+        default:
+            copy_text(g_app.coach_title, ARRAYSIZE(g_app.coach_title),
+                      L"DuckFix: недостаточно данных");
+            copy_text(g_app.coach_body, ARRAYSIZE(g_app.coach_body),
+                      L"Повтори диагностику, чтобы получить проверяемые сигналы.");
+            break;
     }
 }
 
@@ -950,6 +992,10 @@ static void save_duckfix_route(void)
 {
     SYSTEMTIME now;
     WCHAR path[MAX_PATH * 2], filename[160], contents[5000];
+    if (!sambu_authorize(SAMBU_OP_WRITE_PRIVATE_REPORT, SAMBU_ORIGIN_USER)) {
+        set_status(L"Сохранение маршрута требует явного действия пользователя.");
+        return;
+    }
     if (!g_app.reports_dir[0]) {
         set_status(L"Локальное хранилище отчётов недоступно.");
         return;
@@ -961,6 +1007,8 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
+        L"SAMBU engine: 1.0.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU finding code: %u · confidence: %u%%\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
@@ -973,6 +1021,8 @@ static void save_duckfix_route(void)
         L"5. Не удаляй папки backup и не прошивай устройство ради ошибки подключения.\r\n\r\n"
         L"Это план действий, а не автоматический ремонт. ToolzNG не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
+        (unsigned)g_app.sambu_assessment.finding,
+        g_app.sambu_assessment.confidence_percent,
         g_app.status, g_app.readiness_score, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1081,7 +1131,9 @@ static BOOL copy_report_to_clipboard(void)
     SIZE_T bytes;
     HGLOBAL memory;
     WCHAR *target;
-    size_t chars = wcslen(g_app.report_content) + 1;
+    size_t chars;
+    if (!sambu_authorize(SAMBU_OP_CLIPBOARD, SAMBU_ORIGIN_USER)) return FALSE;
+    chars = wcslen(g_app.report_content) + 1;
     bytes = chars * sizeof(WCHAR);
     if (!OpenClipboard(g_app.hwnd)) return FALSE;
     if (!EmptyClipboard()) { CloseClipboard(); return FALSE; }
@@ -1104,6 +1156,10 @@ static void export_report_copy(void)
 {
     OPENFILENAMEW dialog;
     WCHAR target[MAX_PATH * 2] = L"ToolzNG-report.txt";
+    if (!sambu_authorize(SAMBU_OP_EXPORT, SAMBU_ORIGIN_USER)) {
+        set_status(L"Экспорт доступен только по явному запросу пользователя.");
+        return;
+    }
     ZeroMemory(&dialog, sizeof(dialog));
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = g_app.hwnd;
@@ -1126,6 +1182,7 @@ static void save_report(void)
 {
     WCHAR report_path[MAX_PATH * 2];
     WCHAR filename[160];
+    WCHAR finding_key[64];
     WCHAR report[REPORT_CHARS];
     SYSTEMTIME now;
     int count;
@@ -1133,12 +1190,18 @@ static void save_report(void)
     size_t used = 0;
     UINT recent_arrivals = 0, recent_removals = 0;
 
+    if (!sambu_authorize(SAMBU_OP_WRITE_PRIVATE_REPORT, SAMBU_ORIGIN_USER)) {
+        set_status(L"Создание отчёта требует явного действия пользователя.");
+        return;
+    }
     if (!g_app.scan_complete) refresh_diagnostics();
     if (!g_app.reports_dir[0]) {
         set_status(L"Не удалось открыть локальную папку отчётов.");
         return;
     }
     get_recent_usb_counts(&recent_arrivals, &recent_removals);
+    copy_ascii_to_wide(finding_key, ARRAYSIZE(finding_key),
+                       sambu_finding_key(g_app.sambu_assessment.finding));
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
         L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
@@ -1150,10 +1213,24 @@ static void save_report(void)
         L"==========================================\r\n"
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
         L"Автор: ToolzNG (локальная генерация)\r\n"
-        L"Платформа: Windows\r\n\r\n"
+        L"Платформа: Windows\r\n"
+        L"SAMBU engine: 1.0.0\r\n"
+        L"Diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU finding code: %u\r\n"
+        L"SAMBU finding key: %ls\r\n"
+        L"SAMBU confidence: %u%%\r\n"
+        L"SAMBU evidence mask: 0x%08lX\r\n"
+        L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
-        now.wSecond, g_app.device_count);
+        now.wSecond,
+        (unsigned)g_app.sambu_assessment.finding, finding_key,
+        g_app.sambu_assessment.confidence_percent,
+        (unsigned long)g_app.sambu_assessment.evidence_mask,
+        (unsigned)sambu_ledger_unique_count(&g_app.sambu_ledger),
+        (unsigned)sambu_ledger_occurrences(&g_app.sambu_ledger,
+            (uint32_t)g_app.sambu_assessment.finding),
+        g_app.device_count);
     if (count < 0) {
         set_status(L"Не удалось сформировать отчёт: ошибка форматирования.");
         return;
@@ -1703,6 +1780,10 @@ static void handle_action(int action)
 {
     switch (action) {
         case ACTION_SCAN:
+            if (!sambu_authorize(SAMBU_OP_SCAN, SAMBU_ORIGIN_USER)) {
+                set_status(L"Сканирование отклонено политикой безопасности.");
+                break;
+            }
             set_status(L"Выполняется проверка устройств Windows...");
             refresh_diagnostics();
             break;
@@ -1818,6 +1899,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
     switch (message) {
         case WM_CREATE:
             g_app.hwnd = hwnd;
+            sambu_ledger_init(&g_app.sambu_ledger);
             g_app.page = PAGE_OVERVIEW;
             g_app.scan_complete = FALSE;
             g_app.app_started_at = GetTickCount64();
@@ -2002,6 +2084,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     (void)command_line;
 
     ZeroMemory(&g_app, sizeof(g_app));
+    if (!sambu_architecture_validate()) {
+        MessageBoxW(NULL, L"Проверка архитектуры SAMBU не пройдена. Запуск остановлен.",
+                    APP_TITLE, MB_OK | MB_ICONERROR);
+        return 2;
+    }
     (void)SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     g_app.dpi = GetDpiForSystem();
     if (!g_app.dpi) g_app.dpi = 96;
