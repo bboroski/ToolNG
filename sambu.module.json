@@ -1,0 +1,49 @@
+{
+  "module_id": "toolng-diagnostics",
+  "repository": "bboroski/ToolNG",
+  "display_name": "ToolNG",
+  "version": "0.6.1",
+  "role": "windows-native-apple-device-diagnostics-application",
+  "runtime": [
+    "C17",
+    "Win32 API",
+    "Windows 10/11"
+  ],
+  "maturity": "native-desktop",
+  "provides": [
+    "apple-usb-pnp-observation",
+    "local-diagnostic-reports",
+    "evidence-quality-gate",
+    "bounded-local-event-history",
+    "read-only-backup-marker-inspection"
+  ],
+  "consumes": [
+    "windows-pnp-and-service-signals",
+    "user-approved-local-paths",
+    "native-c17-policy-workflow-port"
+  ],
+  "dependencies": [
+    {
+      "module_id": "sambu-core",
+      "relation": "policy-port",
+      "status": "implemented",
+      "scope": "Selected SAMBU engineering rules are ported into native C behavior; ToolNG does not embed or execute the Python interpreter or .sambu programs."
+    }
+  ],
+  "boundaries": [
+    "No silent device mutation, network upload, jailbreak, activation-lock bypass, or private iOS API claim.",
+    "Backup inspection is read-only and marker-based; it does not verify backup contents or restore ability.",
+    "Demo interface previews are not live device evidence."
+  ],
+  "verification": {
+    "host_tests": "Windows CMake/CTest CI is documented; run the Win32 build and tests.",
+    "target_validation": "Real Apple-device, driver, pairing, and backup scenarios require separate Windows/device testing.",
+    "evidence": [
+      "README.md",
+      "docs/SAMBU_INTEGRATION.md",
+      "docs/ENGINEERING_QUALITY_GATES.md"
+    ]
+  },
+  "schema_version": 1,
+  "ecosystem": "SAMBU"
+}
