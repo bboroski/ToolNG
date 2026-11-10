@@ -1,5 +1,5 @@
-#ifndef TOOLZNG_WDEC_WORKFLOW_H
-#define TOOLZNG_WDEC_WORKFLOW_H
+#ifndef WDEC_WORKFLOW_H
+#define WDEC_WORKFLOW_H
 
 #include "wdec_engine.h"
 #include <stdbool.h>
