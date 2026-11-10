@@ -176,7 +176,6 @@ ctest --test-dir build -C Release --output-on-failure
 ## Інженерні стандарти
 
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — докази, приватність, обмеження та дизайн.
-- [Core integration contract](docs/SAMBU_INTEGRATION.md) — оцінювання й обмежений workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — тести, надійність і релізні критерії.
 
 Для суттєвих змін UI додавайте реальні знімки програми або явно позначайте прев’ю як демонстраційні.
