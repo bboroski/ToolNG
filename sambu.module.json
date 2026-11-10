@@ -1,7 +1,7 @@
 {
   "module_id": "toolng-diagnostics",
   "repository": "bboroski/ToolNG",
-  "display_name": "ToolNG",
+  "display_name": "WDEP — Windows Device Evidence Probe",
   "version": "0.6.1",
   "role": "windows-native-apple-device-diagnostics-application",
   "runtime": [
