@@ -40,3 +40,20 @@ No third-party runtime is required for the current feature set.
 - DuckFix export: Documents\ToolzNG-DuckFix-*.txt.
 
 The journal and baseline remain local to the Windows account. They are not added to the Git repository.
+
+
+## 0.5 desktop experience
+
+- Per-monitor DPI awareness: v2 manifest, WM_DPICHANGED, logical GDI layout, and user zoom 80–160%.
+- Zoom preferences: %LOCALAPPDATA%\ToolzNG\settings.ini; existing 0.4 profile files are retained.
+- Diagnostic report archive: %LOCALAPPDATA%\ToolzNG\Reports\ToolzNG-report-*.txt with optional SHA-256 sidecar. New reports are private by default and preview in the Reports page.
+- Report actions: in-app history (up to 32 entries), scrolling preview, copy to clipboard, optional Save As TXT export.
+- DuckFix route exports are stored in the same local Reports directory.
+- Help and product information are rendered by native GDI pages; routine use does not launch a browser.
+- The optional TXT export uses the Windows common file dialog (comdlg32). No external report viewer is required.
+
+The current native report engine intentionally produces TXT only. PDF and XLSX generation, background job cancellation, full-text query/filtering, template loops, server-side licensing, analytics, and automatic updates are not part of this release. Do not advertise those features as available until separate implementations and tests land.
+
+### DPI smoke-test matrix
+
+Run the Windows executable at 100%, 125%, 150%, and 200% on 1366×768, 1920×1080, 2560×1440, and 3840×2160 displays. Also test moving the window between monitors with different scaling values. Confirm zoom controls and Ctrl +/-/0, nav hit targets, report selection, and text clipping. GitHub CI compiles the binary but does not replace hardware/UI runtime tests.
