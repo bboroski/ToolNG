@@ -1,0 +1,36 @@
+{
+  "schema_version": "klipot.uncertainty.v1",
+  "repository": "bboroski/ToolNG",
+  "items": [
+    {
+      "id": "ToolNG.device-state",
+      "domain": "windows-diagnostics",
+      "statement": "No signal must be distinguished from unavailable probes, completed negative observations and incomplete evidence coverage.",
+      "feature": "Evidence normalization, unknown findings, quality flags and coverage-aware readiness assessment",
+      "resolution_mode": "probe",
+      "unknown_behavior": "Never translate a failed or incomplete probe into a confirmed absent device or healthy result.",
+      "verification": [
+        "Unavailable scans remain distinct from completed scans with no device.",
+        "Coverage is reported separately from readiness.",
+        "Contradictory evidence sets a quality flag and all denied operations stay denied."
+      ],
+      "implementation_status": "implemented",
+      "status": "open"
+    },
+    {
+      "id": "ToolNG.repair-actions",
+      "domain": "safety",
+      "statement": "A suggested remediation is not an authorization to mutate a device or upload local information.",
+      "feature": "Fail-closed operation authorization and explicit user-origin gates",
+      "resolution_mode": "fail-closed",
+      "unknown_behavior": "Device mutation and network upload remain denied unless a separately reviewed policy is introduced.",
+      "verification": [
+        "Unknown operation codes are rejected.",
+        "User-only export actions require user origin.",
+        "Device mutation and upload are denied by default."
+      ],
+      "implementation_status": "implemented",
+      "status": "open"
+    }
+  ]
+}
