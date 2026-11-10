@@ -1,8 +1,8 @@
-# WDEP — Windows Device Evidence Probe
+# ToolNG — Windows Device Evidence Probe
 
 **A local diagnostic probe for inspecting observable Windows device-connection signals.**
 
-WDEP is a native C17/Win32 application that separates checks for USB/PnP events, system-service state, local backup markers, and evidence quality. It explains what was actually checked and what remains unknown.
+ToolNG is a native C17/Win32 application that separates checks for USB/PnP events, system-service state, local backup markers, and evidence quality. It explains what was actually checked and what remains unknown.
 
 [Українська](README.md) · [English](README.en.md) · [Русский](README.ru.md) · [Source repository](https://github.com/bboroski/ToolNG)
 
@@ -36,17 +36,17 @@ The exact check set depends on the current workflow and Windows API availability
 
 ## Evidence model
 
-WDEP distinguishes a confirmed signal, a completed check with no finding, an unknown state, and a failed check. A high score with incomplete coverage is not reported as complete verification.
+ToolNG distinguishes a confirmed signal, a completed check with no finding, an unknown state, and a failed check. A high score with incomplete coverage is not reported as complete verification.
 
 Reports are stored locally. Hardware identifiers and long local paths can be redacted. A sidecar checksum can detect later report modification, but it is not a digital signature.
 
 ## Safety boundaries
 
-WDEP does not flash, repair, reset, or alter device state; does not inspect private backup contents; and does not upload diagnostic data to a cloud service. A UI recommendation is not an executed action.
+ToolNG does not flash, repair, reset, or alter device state; does not inspect private backup contents; and does not upload diagnostic data to a cloud service. A UI recommendation is not an executed action.
 
 ## Technical identity
 
-**WDEP** is the canonical name of the Windows utility. The policy/workflow core now uses `Wdep*` types, `wdep_*` functions, and `WDEP_*` constants; canonical CMake targets are `WDEP` and `WDEP.PolicyCore`. Historical source/resource paths (`sambu_engine.*`, `sambu_workflow.*`, `toolzng.*`) and former CMake target names remain only as compatibility paths for existing scripts and integrations.
+**ToolNG** is the canonical name of the Windows utility. The policy/workflow core now uses `ToolNG*` types, `toolng_*` functions, and `ToolNG_*` constants; canonical CMake targets are `ToolNG` and `ToolNG.PolicyCore`. Historical source/resource paths (`sambu_engine.*`, `sambu_workflow.*`, `toolzng.*`) and former CMake target names remain only as compatibility paths for existing scripts and integrations.
 
 ## License
 
