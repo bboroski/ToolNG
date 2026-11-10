@@ -14,7 +14,6 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 add_executable(ToolzNG WIN32
     src/main.c
-    src/toolzng.rc
 )
 
 target_include_directories(ToolzNG PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
