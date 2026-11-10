@@ -1,5 +1,5 @@
-#ifndef TOOLZNG_WDEC_ENGINE_H
-#define TOOLZNG_WDEC_ENGINE_H
+#ifndef WDEC_ENGINE_H
+#define WDEC_ENGINE_H
 
 #include <stddef.h>
 #include <stdint.h>
