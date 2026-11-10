@@ -95,12 +95,12 @@ Resource limits must be visible in tests. An application that is usually fast bu
 
 ## 6. Modular architecture target
 
-Preserve the portable-core boundary already represented by `ToolNG.SambuCore`. The Windows shell can evolve independently through these modules:
+Preserve the portable-core boundary already represented by `ToolNG.PolicyCore`. The Windows shell can evolve independently through these modules:
 
 | Module boundary | Responsibility | Must not own |
 |---|---|---|
-| `sambu_engine` | Authorization, evidence validation, assessment, stable IDs, bounded ledgers | HWND, GDI, SetupAPI calls |
-| `sambu_workflow` | Workflow lexer/parser, allowlist, preflight, bounded one-step dispatch | Arbitrary shell or dynamic plugin execution |
+| `toolng_engine` | Authorization, evidence validation, assessment, stable IDs, bounded ledgers | HWND, GDI, SetupAPI calls |
+| `toolng_workflow` | Workflow lexer/parser, allowlist, preflight, bounded one-step dispatch | Arbitrary shell or dynamic plugin execution |
 | `platform_apple` | SetupAPI, SCM, device notifications and OS observations | Readiness policy or report copy |
 | `ui_navigation` | Page state, enter/leave guards, focus and navigation | Device discovery and evidence mutation |
 | `ui_views` | Rendering and interaction layout | Policy decisions or persistent state |
