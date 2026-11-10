@@ -76,3 +76,10 @@ ToolNG does not flash, repair, reset, or change device state; does not read priv
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Academic biology glossary
+
+- [500 academic terms EN–RU](data/biology/academic_terms_500.tsv)
+- [Data contract and usage boundaries](docs/BIOLOGY_DOMAIN_PACK.md)
+
+An offline reference pack for education and metadata; it does not control systems, devices or diagnostics.
