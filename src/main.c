@@ -355,13 +355,13 @@ static BOOL find_backup_folder(WCHAR *result, size_t result_count)
     result[0] = L'\0';
     ZeroMemory(candidates, sizeof(candidates));
 
-    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &roaming))) {
+    if (SUCCEEDED(SHGetKnownFolderPath(&FOLDERID_RoamingAppData, 0, NULL, &roaming))) {
         append_path(candidates[count++], ARRAYSIZE(candidates[0]), roaming,
                     L"Apple Computer\\MobileSync\\Backup");
         append_path(candidates[count++], ARRAYSIZE(candidates[0]), roaming,
                     L"Apple\\MobileSync\\Backup");
     }
-    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &profile))) {
+    if (SUCCEEDED(SHGetKnownFolderPath(&FOLDERID_Profile, 0, NULL, &profile))) {
         append_path(candidates[count++], ARRAYSIZE(candidates[0]), profile,
                     L"Apple\\MobileSync\\Backup");
         append_path(candidates[count++], ARRAYSIZE(candidates[0]), profile,
@@ -626,7 +626,7 @@ static void save_report(void)
     if (detail_choice == IDCANCEL) return;
     include_technical_details = (detail_choice == IDYES);
 
-    if (FAILED(SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_CREATE,
+    if (FAILED(SHGetKnownFolderPath(&FOLDERID_Documents, KF_FLAG_CREATE,
                                     NULL, &documents))) {
         (void)MessageBoxW(g_app.hwnd,
             L"Не удалось определить папку Documents.", APP_TITLE,
