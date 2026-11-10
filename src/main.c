@@ -22,6 +22,7 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wchar.h>
 
 #define APP_TITLE           L"ToolzNG"
@@ -1570,7 +1571,7 @@ static void draw_about(HDC dc)
 
     draw_page_heading(dc, L"О ToolzNG", L"Нативная Windows-утилита на C17 и Win32 API.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_text(dc, L"ToolzNG  0.4.0", (RECT){ x + 24, 216, right - 24, 254 },
+    draw_text(dc, L"ToolzNG  0.5.0", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"Технологии", (RECT){ x + 24, 280, right - 24, 306 },
               g_app.font_button, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
@@ -1828,6 +1829,11 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             return DefWindowProcW(hwnd, message, wparam, lparam);
 
         case WM_KEYDOWN:
+            if (wparam == VK_F1) {
+                g_app.page = PAGE_HELP;
+                InvalidateRect(hwnd, NULL, FALSE);
+                return 0;
+            }
             if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
                 if (wparam == VK_OEM_PLUS || wparam == VK_ADD) { adjust_zoom(10); return 0; }
                 if (wparam == VK_OEM_MINUS || wparam == VK_SUBTRACT) { adjust_zoom(-10); return 0; }
@@ -1890,7 +1896,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             MINMAXINFO *info = (MINMAXINFO *)lparam;
             g_app.effective_dpi = effective_dpi();
             info->ptMinTrackSize.x = MulDiv(840, (int)g_app.effective_dpi, 96);
-            info->ptMinTrackSize.y = MulDiv(660, (int)g_app.effective_dpi, 96);
+            info->ptMinTrackSize.y = MulDiv(720, (int)g_app.effective_dpi, 96);
             return 0;
         }
 
