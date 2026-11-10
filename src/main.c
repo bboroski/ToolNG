@@ -47,10 +47,10 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define COL_BORDER          (g_app.high_contrast ? RGB(255, 255, 255) : RGB(38, 38, 38))
 #define COL_TEXT            (g_app.high_contrast ? RGB(255, 255, 255) : RGB(230, 230, 230))
 #define COL_MUTED           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(153, 153, 153))
-#define COL_ACCENT          RGB(255, 255, 0)
+#define COL_ACCENT          (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 214, 0))
 #define COL_ACCENT_DARK     (g_app.high_contrast ? RGB(255, 255, 0) : RGB(191, 161, 0))
 #define COL_GREEN           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(76, 175, 80))
-#define COL_AMBER           RGB(255, 255, 0)
+#define COL_AMBER           (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 214, 0))
 #define COL_ERROR           RGB(255, 68, 68)
 
 #define PAGE_OVERVIEW 0
