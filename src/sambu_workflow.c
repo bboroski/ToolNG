@@ -246,8 +246,15 @@ static bool parse_manifest(Parser *p, SambuWorkflow *out)
                 set_error(p, SAMBU_WF_SYNTAX, p->token.span, "max_steps must be an integer.");
                 return false;
             }
-            for (i = 0u; p->token.text[i]; ++i)
-                value = value * 10u + (unsigned long)(p->token.text[i] - '0');
+            for (i = 0u; p->token.text[i]; ++i) {
+                unsigned long digit = (unsigned long)(p->token.text[i] - '0');
+                if (value > (SAMBU_WORKFLOW_STEP_CAP - digit) / 10u) {
+                    set_error(p, SAMBU_WF_BUDGET, p->token.span,
+                              "max_steps is outside 1..8.");
+                    return false;
+                }
+                value = value * 10u + digit;
+            }
             if (value == 0u || value > SAMBU_WORKFLOW_STEP_CAP) {
                 set_error(p, SAMBU_WF_BUDGET, p->token.span, "max_steps is outside 1..8.");
                 return false;
@@ -276,7 +283,13 @@ static bool parse_manifest(Parser *p, SambuWorkflow *out)
         }
         if (!expect(p, TOK_SEMI, "Expected ';' after manifest field.")) return false;
     }
-    return expect(p, TOK_RBRACE, "Expected end of manifest.") && seen == 7u;
+    if (!expect(p, TOK_RBRACE, "Expected end of manifest.")) return false;
+    if (seen != 7u) {
+        set_error(p, SAMBU_WF_SYNTAX, p->token.span,
+                  "Manifest requires purpose, max_steps and autonomy.");
+        return false;
+    }
+    return true;
 }
 
 static bool parse_step(Parser *p, SambuWorkflow *out)
