@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-knob build, test and Windows desktop launcher for ToolNG."""
+"""One-knob build, test and Windows desktop launcher for WDEP."""
 from __future__ import annotations
 
 import argparse
@@ -22,7 +22,7 @@ def check() -> None:
     if not cmake:
         raise RuntimeError("CMake is required. Install CMake and a C17-capable compiler.")
     run("Configure portable core and native desktop target", [cmake, "-S", ".", "-B", "build", "-DBUILD_TESTING=ON"])
-    run("Build ToolNG and tests", [cmake, "--build", "build", "--config", "Release", "--parallel"])
+    run("Build WDEP and tests", [cmake, "--build", "build", "--config", "Release", "--parallel"])
     ctest = shutil.which("ctest") or "ctest"
     run("Run CTest suite", [ctest, "--test-dir", "build", "-C", "Release", "--output-on-failure"])
     verifier = ROOT / "scripts" / "verify_docs.py"
@@ -43,7 +43,7 @@ def launch() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="ToolNG one-knob build, test and launcher.")
+    parser = argparse.ArgumentParser(description="WDEP one-knob build, test and launcher.")
     parser.add_argument("command", nargs="?", choices=("check", "build", "run"), default="run")
     args = parser.parse_args()
     try:
@@ -58,7 +58,7 @@ def main() -> int:
             check()
             launch()
     except (subprocess.CalledProcessError, RuntimeError) as exc:
-        print(f"ToolNG one-knob failed: {exc}", file=sys.stderr)
+        print(f"WDEP one-knob failed: {exc}", file=sys.stderr)
         return 1
     return 0
 
