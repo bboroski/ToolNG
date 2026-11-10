@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1 — SAMBU Workflow Runtime
+
+- Added a bounded C17 workflow lexer/parser and source-aware AST with task manifests and explicit autonomy classes.
+- Restricted executable actions to five allowlisted Apple diagnostic host operations; arbitrary commands, network actions and device mutation are not expressible.
+- Added a dual preflight/capability gate for local LinkDNA profile recording.
+- Added one-action-per-Win32-timer cooperative dispatch and per-step evidence in local TXT reports.
+- Split the portable SAMBU core from the Win32 desktop target so CTest can run on non-Windows hosts.
+- Added parser/runtime tests and CI execution of the CTest suite.
+- Updated SAMBU integration, build and scope documentation to distinguish implemented, limited and planned capabilities.
+
 ## 0.5.0 — Duck Desktop Experience
 
 - Added per-monitor DPI-awareness v2 and retained user zoom (80–160%) with A−/A+ controls and Ctrl +/-/0 shortcuts.
