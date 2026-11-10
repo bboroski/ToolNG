@@ -186,7 +186,6 @@ GUI предназначен для Windows. Сборка переносимог
 ## Инженерные стандарты
 
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — доказательства, приватность, ограниченные ресурсы и визуальные правила.
-- [Core integration contract](docs/SAMBU_INTEGRATION.md) — модель оценки и ограниченный workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — тесты, надёжность и критерии релиза.
 
 Для существенных изменений UI добавляйте реальные снимки приложения или явно обозначайте изображения как демонстрационные макеты.
