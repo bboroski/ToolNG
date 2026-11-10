@@ -25,9 +25,9 @@
   </g>
   <g font-family="Segoe UI,Arial,sans-serif">
     <text x="430" y="130" fill="#f5f2e9" font-size="66" font-weight="800">Toolz<tspan fill="#ffc02e">NG</tspan></text>
-    <text x="435" y="177" fill="#ffc02e" font-size="20" font-weight="700" letter-spacing="2">DUCK-POWERED APPLE CARE</text>
-    <text x="435" y="222" fill="#ddd8ca" font-size="20">Диагностика и безопасное обслуживание</text>
-    <text x="435" y="252" fill="#ddd8ca" font-size="20">устройств Apple в Windows.</text>
+    <text x="435" y="177" fill="#ffc02e" font-size="20" font-weight="700" letter-spacing="2">NATIVE APPLE DEVICE DIAGNOSTICS</text>
+    <text x="435" y="222" fill="#ddd8ca" font-size="20">USB-проверки и аудит backup-маркеров</text>
+    <text x="435" y="252" fill="#ddd8ca" font-size="20">Приватные отчёты. Всё локально.</text>
     <rect x="435" y="282" width="258" height="42" rx="21" fill="#ffc02e"/>
     <text x="564" y="310" text-anchor="middle" fill="#211a0e" font-size="17" font-weight="800">C17 · WIN32 · WINDOWS x64</text>
   </g>
