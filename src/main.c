@@ -1525,7 +1525,6 @@ static void save_report(void)
     }
     used += (size_t)count;
     count = swprintf_s(report + used, ARRAYSIZE(report) - used,
-    count = swprintf_s(report + used, ARRAYSIZE(report) - used,
         L"\r\nUSB Pulse relaxation (30 s): %ls; mean %.3f; variance %.4f; z %.3f; samples %u; warm-up %ls.\r\n"
         L"Trend is advisory only; it does not modify Duck Readiness.\r\n",
         g_app.usb_pulse_signal_available
