@@ -1637,8 +1637,10 @@ static void format_quality_summary(WCHAR *buffer, size_t buffer_count)
         ? L"OK — сигналы согласованы"
         : L"ВНИМАНИЕ — см. DuckFix";
     swprintf_s(buffer, buffer_count,
-        L"SAMBU Quality Gate · %ls · confidence %u%%",
-        state, g_app.sambu_assessment.confidence_percent);
+        L"SAMBU Quality Gate · %ls · coverage %u%% · %ls",
+        state,
+        g_app.sambu_assessment.score_coverage_percent,
+        g_app.sambu_assessment.score_provisional ? L"partial" : L"complete");
 }
 
 static void draw_overview(HDC dc)
