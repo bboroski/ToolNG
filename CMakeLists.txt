@@ -31,7 +31,7 @@ target_link_libraries(ToolzNG PRIVATE
 
 if(MSVC)
     target_compile_options(ToolzNG PRIVATE /W4 /utf-8 /permissive-)
-    target_link_options(ToolzNG PRIVATE /DYNAMICBASE /NXCOMPAT /HIGHENTROPYVA)
+    target_link_options(ToolzNG PRIVATE /DYNAMICBASE /NXCOMPAT /HIGHENTROPYVA /MANIFEST:NO)
 else()
     target_compile_options(ToolzNG PRIVATE -Wall -Wextra -Wpedantic)
 endif()
