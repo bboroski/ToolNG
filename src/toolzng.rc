@@ -1,0 +1,4 @@
+#include <windows.h>
+
+101 ICON "toolzng.ico"
+1 RT_MANIFEST "toolzng.manifest"
