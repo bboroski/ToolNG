@@ -1,5 +1,14 @@
 # Changelog
 
+## SAMBU Core 1.4.0 — NUN State Reliability
+
+- Added an explicit validator for the bounded 32-entry finding ledger, including cursor, counter, timestamp and duplicate-code invariants.
+- Made malformed ledger reads return neutral results and malformed writes fail closed instead of risking out-of-bounds access.
+- Hardened the USB exponential-relaxation lifecycle against invalid initialization markers and initialized states with no samples.
+- Added regression coverage for malformed ledger metadata and invalid relaxation states.
+- Documented the NUN/Naunet metaphor as a practical model for bounded resources, evidence/context separation, temporal recurrence and controlled workflow transitions; no mythological or pseudoscientific behavior is implemented.
+- Preserved the diagnostic report schema, scoring weights, device-mutation prohibition and network-upload prohibition.
+
 ## 0.6.1 — SAMBU Workflow Runtime
 
 - Added a bounded C17 workflow lexer/parser and source-aware AST with task manifests and explicit autonomy classes.

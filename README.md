@@ -181,6 +181,7 @@ ctest --test-dir build -C Release --output-on-failure
 - [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — докази, приватність, обмеження та дизайн.
 - [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — оцінювання й обмежений workflow.
 - [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — тести, надійність і релізні критерії.
+- [NUN State Model](docs/NUN_STATE_MODEL.md) — обмежена пам’ять доказів, часовий життєвий цикл і fail-closed інваріанти стану.
 
 Для суттєвих змін UI додавайте реальні знімки програми або явно позначайте прев’ю як демонстраційні.
 

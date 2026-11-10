@@ -1,7 +1,7 @@
 # SAMBU engineering core in ToolzNG
 
 **Integration baseline:** ToolzNG 0.6.1, C17 / Win32  
-**Core revision:** 1.2.0  
+**Core revision:** 1.4.0  
 **Report contract:** `toolzng.diagnostic.v1`
 
 This integration ports selected engineering rules from SAMBU into ToolzNG as native C behavior. It does not embed the Python interpreter, copy SAMBU's host runtime, or claim that ToolzNG controls private iOS functions.
@@ -17,6 +17,12 @@ This integration ports selected engineering rules from SAMBU into ToolzNG as nat
 | U | Unforced interoperability and user sovereignty | Stable finding IDs, additive report evidence fields and local user-initiated export. No account or cloud service required. |
 
 The laws form a repeatable loop: S constrains the action → A evaluates evidence → M remembers a bounded result → B isolates the implementation → U preserves the user's ability to inspect and export it.
+
+## NUN-inspired bounded state model
+
+The supplied Nun/Naunet, primordial-water, recurring-cycle and solar-barque motifs are used only as a practical engineering metaphor: known-state initialization, separated evidence/context, bounded history, monotonic time windows and controlled workflow transitions. The metaphor does not introduce supernatural, quantum or physical-water claims into the product.
+
+Core revision 1.4.0 adds `sambu_ledger_validate()` and fail-closed guards for malformed ring state, plus stricter lifecycle validation for exponential relaxation. The report contract and readiness weights remain unchanged. See [NUN State Model](NUN_STATE_MODEL.md) for the concept mapping, invariants and test scope.
 
 ## SAMBU Quality Gate — revision 1.2.0
 
