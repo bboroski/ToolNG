@@ -10,6 +10,21 @@
     } \
 } while (0)
 
+static void set_complete_healthy_evidence(SambuEvidence *evidence)
+{
+    memset(evidence, 0, sizeof(*evidence));
+    evidence->scan_complete = 1;
+    evidence->device_found = 1;
+    evidence->service_query_complete = 1;
+    evidence->service_running = 1;
+    evidence->backup_scan_complete = 1;
+    evidence->backup_found = 1;
+    evidence->backup_marker_valid = 1;
+    evidence->backup_folders_seen = 1;
+    evidence->usb_watch_registered = 1;
+    evidence->stability_window_elapsed = 1;
+}
+
 static int test_policy(void)
 {
     CHECK(sambu_authorize(SAMBU_OP_SCAN, SAMBU_ORIGIN_INTERNAL));
@@ -26,7 +41,7 @@ static int test_policy(void)
     return 0;
 }
 
-static int test_assessment(void)
+static int test_assessment_and_coverage(void)
 {
     SambuEvidence evidence;
     SambuAssessment result;
@@ -35,26 +50,41 @@ static int test_assessment(void)
     result = sambu_assess(&evidence);
     CHECK(result.finding == SAMBU_FINDING_SCAN_UNAVAILABLE);
     CHECK(result.readiness_score == 0);
-    CHECK(result.confidence_percent == 40u);
+    CHECK(result.score_coverage_percent == 0u);
+    CHECK(result.confidence_percent == 0u);
+    CHECK(result.score_provisional == 1);
     CHECK(result.evidence_mask == 0u);
 
     evidence.scan_complete = 1;
     result = sambu_assess(&evidence);
     CHECK(result.finding == SAMBU_FINDING_NO_DEVICE);
-    CHECK(result.confidence_percent == 85u);
+    CHECK(result.score_coverage_percent == 40u);
+    CHECK(result.readiness_score == 0);
     CHECK((result.evidence_mask & SAMBU_EVIDENCE_SCAN_COMPLETE) != 0u);
 
+    /* A known positive signal can score 100 while remaining explicitly partial. */
     evidence.device_found = 1;
-    evidence.service_running = 1;
-    evidence.backup_found = 1;
-    evidence.backup_marker_valid = 1;
-    evidence.usb_watch_registered = 1;
-    evidence.stability_window_elapsed = 1;
+    result = sambu_assess(&evidence);
+    CHECK(result.readiness_score == 100);
+    CHECK(result.score_coverage_percent == 40u);
+    CHECK(result.score_provisional == 1);
+    CHECK(result.device_points == 40);
+
+    set_complete_healthy_evidence(&evidence);
     result = sambu_assess(&evidence);
     CHECK(result.finding == SAMBU_FINDING_HEALTHY);
     CHECK(result.readiness_score == 100);
+    CHECK(result.score_coverage_percent == 100u);
     CHECK(result.confidence_percent == 100u);
+    CHECK(result.score_provisional == 0);
+    CHECK(result.device_points == 40);
+    CHECK(result.service_points == 25);
+    CHECK(result.backup_points == 10);
+    CHECK(result.marker_points == 15);
+    CHECK(result.stability_points == 10);
     CHECK((result.evidence_mask & SAMBU_EVIDENCE_DEVICE_VISIBLE) != 0u);
+    CHECK((result.evidence_mask & SAMBU_EVIDENCE_SERVICE_CHECKED) != 0u);
+    CHECK((result.evidence_mask & SAMBU_EVIDENCE_BACKUP_CHECKED) != 0u);
     CHECK((result.evidence_mask & SAMBU_EVIDENCE_BACKUP_MARKERS) != 0u);
 
     evidence.backup_age_known = 1;
@@ -69,18 +99,46 @@ static int test_assessment(void)
     return 0;
 }
 
+static int test_unknown_states_are_not_negative_findings(void)
+{
+    SambuEvidence evidence;
+    SambuAssessment result;
+
+    set_complete_healthy_evidence(&evidence);
+    evidence.service_query_complete = 0;
+    evidence.service_running = 0;
+    result = sambu_assess(&evidence);
+    CHECK(result.finding == SAMBU_FINDING_SERVICE_UNKNOWN);
+    CHECK(result.service_points == 0);
+    CHECK(result.score_coverage_percent == 75u);
+
+    set_complete_healthy_evidence(&evidence);
+    evidence.backup_scan_complete = 0;
+    evidence.backup_found = 0;
+    evidence.backup_marker_valid = 0;
+    evidence.backup_folders_seen = 0;
+    result = sambu_assess(&evidence);
+    CHECK(result.finding == SAMBU_FINDING_BACKUP_UNKNOWN);
+    CHECK(result.backup_points == 0);
+    CHECK(result.marker_points == 0);
+    CHECK(result.score_coverage_percent == 75u);
+
+    set_complete_healthy_evidence(&evidence);
+    evidence.usb_watch_registered = 0;
+    evidence.stability_window_elapsed = 0;
+    result = sambu_assess(&evidence);
+    CHECK(result.finding == SAMBU_FINDING_STABILITY_UNCONFIRMED);
+    CHECK(result.stability_points == 0);
+    CHECK(result.score_coverage_percent == 90u);
+    return 0;
+}
+
 static int test_finding_priority(void)
 {
     SambuEvidence evidence;
     SambuAssessment result;
 
-    memset(&evidence, 0, sizeof(evidence));
-    evidence.device_found = 1;
-    evidence.service_running = 1;
-    evidence.backup_found = 1;
-    evidence.backup_marker_valid = 1;
-    evidence.usb_watch_registered = 1;
-    evidence.stability_window_elapsed = 1;
+    set_complete_healthy_evidence(&evidence);
 
     evidence.scan_complete = 0;
     result = sambu_assess(&evidence);
@@ -92,8 +150,13 @@ static int test_finding_priority(void)
     CHECK(result.finding == SAMBU_FINDING_NO_DEVICE);
 
     evidence.device_found = 1;
+    evidence.service_query_complete = 0;
     evidence.service_running = 0;
     evidence.recent_usb_removals = 1u;
+    result = sambu_assess(&evidence);
+    CHECK(result.finding == SAMBU_FINDING_SERVICE_UNKNOWN);
+
+    evidence.service_query_complete = 1;
     result = sambu_assess(&evidence);
     CHECK(result.finding == SAMBU_FINDING_SERVICE_UNAVAILABLE);
 
@@ -102,6 +165,11 @@ static int test_finding_priority(void)
     CHECK(result.finding == SAMBU_FINDING_USB_UNSTABLE);
 
     evidence.recent_usb_removals = 0u;
+    evidence.backup_scan_complete = 0;
+    result = sambu_assess(&evidence);
+    CHECK(result.finding == SAMBU_FINDING_BACKUP_UNKNOWN);
+
+    evidence.backup_scan_complete = 1;
     evidence.backup_folders_seen = 2;
     evidence.backup_marker_valid = 0;
     result = sambu_assess(&evidence);
@@ -122,6 +190,13 @@ static int test_finding_priority(void)
     evidence.backup_folders_seen = 0;
     result = sambu_assess(&evidence);
     CHECK(result.finding == SAMBU_FINDING_BACKUP_MISSING);
+
+    evidence.backup_found = 1;
+    evidence.backup_marker_valid = 1;
+    evidence.usb_watch_registered = 0;
+    evidence.stability_window_elapsed = 0;
+    result = sambu_assess(&evidence);
+    CHECK(result.finding == SAMBU_FINDING_STABILITY_UNCONFIRMED);
     return 0;
 }
 
@@ -184,13 +259,18 @@ static int test_recurrence_pattern(void)
 int main(void)
 {
     CHECK(test_policy() == 0);
-    CHECK(test_assessment() == 0);
+    CHECK(test_assessment_and_coverage() == 0);
+    CHECK(test_unknown_states_are_not_negative_findings() == 0);
     CHECK(test_finding_priority() == 0);
     CHECK(test_ledger() == 0);
     CHECK(test_recurrence_pattern() == 0);
     CHECK(sambu_architecture_validate());
-    CHECK(strcmp(sambu_engine_version(), "1.1.0") == 0);
+    CHECK(strcmp(sambu_engine_version(), "1.2.0") == 0);
     CHECK(strcmp(sambu_report_schema(), "toolzng.diagnostic.v1") == 0);
+    CHECK(strcmp(sambu_finding_key(SAMBU_FINDING_SERVICE_UNKNOWN),
+                 "apple_service_status_unknown") == 0);
+    CHECK(strcmp(sambu_finding_key(SAMBU_FINDING_BACKUP_UNKNOWN),
+                 "backup_scan_incomplete") == 0);
     puts("SAMBU engine tests passed.");
     return 0;
 }
