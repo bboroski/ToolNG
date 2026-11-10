@@ -31,6 +31,10 @@ static const SambuLayer g_layers[] = {
 
 int sambu_authorize(SambuOperation operation, SambuOrigin origin)
 {
+    /* Reject unknown callers before evaluating any capability. */
+    if (origin != SAMBU_ORIGIN_INTERNAL && origin != SAMBU_ORIGIN_USER)
+        return 0;
+
     switch (operation) {
         case SAMBU_OP_READ_LOCAL:
         case SAMBU_OP_SCAN:
@@ -53,16 +57,39 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     SambuAssessment result;
     const SambuEvidence empty = {0};
     const SambuEvidence *e = evidence ? evidence : &empty;
+    const int device_verified = e->scan_complete && e->device_found;
+    const int backup_counts_consistent =
+        e->backup_folders_valid <= e->backup_folders_seen &&
+        ((e->backup_folders_valid > 0u) == (e->backup_marker_valid != 0)) &&
+        (e->backup_found ||
+         (e->backup_folders_seen == 0u && e->backup_folders_valid == 0u));
+    const int backup_set_complete = e->backup_found &&
+        e->backup_folders_seen > 0u && backup_counts_consistent &&
+        e->backup_folders_valid > 0u &&
+        e->backup_folders_valid == e->backup_folders_seen;
+    const int stable_window_verified =
+        e->usb_watch_registered && e->stability_window_elapsed;
     int score = 0;
 
     memset(&result, 0, sizeof(result));
     result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
-    result.confidence_percent = e->scan_complete
-        ? (e->usb_watch_registered ? 100u : 85u) : 40u;
+
+    if (e->device_found && !e->scan_complete)
+        result.quality_flags |= SAMBU_QUALITY_DEVICE_WITHOUT_SCAN;
+    if (!backup_counts_consistent)
+        result.quality_flags |= SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT;
+    if (e->backup_found && e->backup_folders_seen > 0u &&
+        backup_counts_consistent && e->backup_folders_valid < e->backup_folders_seen)
+        result.quality_flags |= SAMBU_QUALITY_BACKUP_SET_INCOMPLETE;
+    if (e->stability_window_elapsed && !e->usb_watch_registered)
+        result.quality_flags |= SAMBU_QUALITY_STABILITY_WITHOUT_WATCH;
+
+    result.confidence_percent = result.quality_flags != 0u ? 25u :
+        (e->scan_complete ? (e->usb_watch_registered ? 100u : 85u) : 40u);
 
     if (e->scan_complete) {
         result.evidence_mask |= SAMBU_EVIDENCE_SCAN_COMPLETE;
-        if (e->device_found) {
+        if (device_verified) {
             result.evidence_mask |= SAMBU_EVIDENCE_DEVICE_VISIBLE;
             score += 40;
         }
@@ -75,19 +102,19 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
         result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_FOUND;
         score += 10;
     }
-    if (e->backup_marker_valid) {
+    if (backup_set_complete) {
         result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_MARKERS;
         score += 15;
     }
     if (e->usb_watch_registered)
         result.evidence_mask |= SAMBU_EVIDENCE_USB_WATCH;
-    if (e->recent_usb_removals > 0)
+    if (e->recent_usb_removals > 0u)
         result.evidence_mask |= SAMBU_EVIDENCE_USB_REMOVAL;
-    if (e->stability_window_elapsed)
+    if (stable_window_verified)
         result.evidence_mask |= SAMBU_EVIDENCE_STABILITY_WINDOW;
 
-    if (e->scan_complete && e->usb_watch_registered && e->device_found &&
-        e->stability_window_elapsed && e->recent_usb_removals == 0) {
+    if (device_verified && stable_window_verified &&
+        e->recent_usb_removals == 0u) {
         score += 10;
     }
 
@@ -97,18 +124,19 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     /* The first matching condition is the highest-priority actionable finding. */
     if (!e->scan_complete) {
         result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
-    } else if (!e->device_found) {
+    } else if (!device_verified) {
         result.finding = SAMBU_FINDING_NO_DEVICE;
     } else if (!e->service_running) {
         result.finding = SAMBU_FINDING_SERVICE_UNAVAILABLE;
-    } else if (e->recent_usb_removals > 0) {
+    } else if (e->recent_usb_removals > 0u) {
         result.finding = SAMBU_FINDING_USB_UNSTABLE;
-    } else if (e->backup_folders_seen > 0 && !e->backup_marker_valid) {
+    } else if (e->backup_found && e->backup_folders_seen > 0u &&
+               !backup_set_complete) {
         result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
-    } else if (e->backup_marker_valid && e->backup_age_known &&
+    } else if (backup_set_complete && e->backup_age_known &&
                e->backup_age_days > 30u) {
         result.finding = SAMBU_FINDING_BACKUP_STALE;
-    } else if (!e->backup_found || !e->backup_marker_valid) {
+    } else if (!e->backup_found || !backup_set_complete) {
         result.finding = SAMBU_FINDING_BACKUP_MISSING;
     } else {
         result.finding = SAMBU_FINDING_HEALTHY;
@@ -116,7 +144,6 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
 
     return result;
 }
-
 void sambu_ledger_init(SambuLedger *ledger)
 {
     if (ledger) memset(ledger, 0, sizeof(*ledger));
@@ -215,6 +242,26 @@ const char *sambu_pattern_key(SambuPattern pattern)
         case SAMBU_PATTERN_PERSISTENT: return "persistent";
         case SAMBU_PATTERN_NONE:
         default: return "none";
+    }
+}
+
+const char *sambu_quality_key(uint32_t quality_flags)
+{
+    if (quality_flags == 0u) return "clean";
+    if ((quality_flags & (quality_flags - 1u)) != 0u)
+        return "multiple_integrity_warnings";
+
+    switch (quality_flags) {
+        case SAMBU_QUALITY_DEVICE_WITHOUT_SCAN:
+            return "device_without_completed_scan";
+        case SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT:
+            return "backup_counts_inconsistent";
+        case SAMBU_QUALITY_BACKUP_SET_INCOMPLETE:
+            return "backup_set_incomplete";
+        case SAMBU_QUALITY_STABILITY_WITHOUT_WATCH:
+            return "stability_without_usb_watch";
+        default:
+            return "unknown_integrity_warning";
     }
 }
 
