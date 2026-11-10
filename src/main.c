@@ -388,7 +388,7 @@ static void append_pulse_vault(const UsbPulseEvent *event)
         size = n.QuadPart;
     }
     if (size > 262144ULL) {
-        cp(old_path, ARRAYSIZE(old_path), g_app.pulse_journal);
+        copy_text(old_path, ARRAYSIZE(old_path), g_app.pulse_journal);
         wcscat_s(old_path, ARRAYSIZE(old_path), L".old");
         (void)MoveFileExW(g_app.pulse_journal, old_path,
                           MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
@@ -807,7 +807,7 @@ static BOOL write_sha256_seal(const WCHAR *path)
     output[70] = L'l'; output[71] = L'z'; output[72] = L'N';
     output[73] = L'G'; output[74] = L'\r'; output[75] = L'\n';
     output[76] = L'\0';
-    cp(sidecar, ARRAYSIZE(sidecar), path);
+    copy_text(sidecar, ARRAYSIZE(sidecar), path);
     wcscat_s(sidecar, ARRAYSIZE(sidecar), L".sha256");
     ok = write_utf8_file(sidecar, output);
 
@@ -992,9 +992,7 @@ static void save_report(void)
     } else {
         WCHAR message[MAX_PATH * 2 + 120];
         swprintf_s(message, ARRAYSIZE(message),
-            L"Отчёт и SHA-256 подпись сохранены:
-%ls
-%ls.sha256",
+            L"Отчёт и SHA-256 подпись сохранены:\n%ls\n%ls.sha256",
             report_path, report_path);
         (void)MessageBoxW(g_app.hwnd, message,
                           L"ToolzNG Evidence Seal", MB_OK | MB_ICONINFORMATION);
