@@ -1,18 +1,18 @@
 # Systems Engineering Pattern Catalog
 
-**Scope:** ToolzNG C17 core, Win32 adapters, desktop UI, diagnostic workflows, reports and release pipeline  
+**Scope:** ToolNG C17 core, Win32 adapters, desktop UI, diagnostic workflows, reports and release pipeline  
 **Document type:** engineering policy and implementation map  
 **Status:** design requirements; implementation claims remain governed by source code and tests
 
 ## 1. Purpose
 
-This catalog translates high-level system-composition ideas into concrete software engineering patterns for ToolzNG. It does not introduce a dependency on SAMBU's Python runtime and does not weaken ToolzNG's local-first, read-only diagnostic boundary.
+This catalog translates high-level system-composition ideas into concrete software engineering patterns for ToolNG. It does not introduce a dependency on SAMBU's Python runtime and does not weaken ToolNG's local-first, read-only diagnostic boundary.
 
 The target is a diagnostic application whose components can evolve independently while preserving reliable evidence, predictable resource use, safe state transitions and clear user control.
 
 ## 2. Core engineering laws
 
-| ID | Law | ToolzNG interpretation | Acceptance evidence |
+| ID | Law | ToolNG interpretation | Acceptance evidence |
 |---|---|---|---|
 | TNG-01 | Layered composition | Separate portable C17 policy/core, Windows adapters, workflow dispatch, UI composition and reporting | Portable core builds without Win32 headers or implicit platform calls |
 | TNG-02 | Deterministic processing | Normalize observations before scoring, finding selection and report serialization | Identical evidence snapshots produce identical assessment keys and report fields |
@@ -95,7 +95,7 @@ Resource limits must be visible in tests. An application that is usually fast bu
 
 ## 6. Modular architecture target
 
-Preserve the portable-core boundary already represented by `ToolzNG.SambuCore`. The Windows shell can evolve independently through these modules:
+Preserve the portable-core boundary already represented by `ToolNG.SambuCore`. The Windows shell can evolve independently through these modules:
 
 | Module boundary | Responsibility | Must not own |
 |---|---|---|
