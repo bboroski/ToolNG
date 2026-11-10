@@ -40,7 +40,6 @@
 | 📚 Offline Help | Справка, раздел «О программе» и отчёты доступны в нативной навигации; F1 открывает локальное руководство. Рутинные действия не запускают браузер. |
 | 🎨 Yellow Graphite | Токены интерфейса: #0D0D0D, #FFD600, #BFA100, #E6E6E6 и #999999; жёлтый оставлен для приоритетных действий и состояния. |
 
-ToolzNG объединяет пять исходных функций Duck Intelligence и пять новых локальных модулей 0.5.0 и ядро SAMBU 1.1 в одном лёгком C/Win32-приложении. Их отличие — связанная последовательность: профиль связи → история событий → свежесть маркеров backup → объяснимый маршрут исправления → отчёт с контрольной суммой.
 ToolzNG связывает Windows PnP-инвентаризацию, запрос состояния Apple-службы, проверку маркеров backup, USB event journal, evidence-aware readiness, локальную память повторов и приватный TXT-отчёт в один диагностический маршрут. Переносимое ядро SAMBU Engine 1.2.0 отделено в C17-модуль; Win32/GDI остаётся платформенным UI-слоем.
 
 Мы не обещаем, что аналогов нигде не существует: у крупных iPhone-менеджеров уже есть диагностика, backup и журналы. Уникальность здесь — авторская композиция этих небольших локальных механизмов с приватностью по умолчанию, а не неподтверждённое заявление «первое в мире».
@@ -49,7 +48,7 @@ ToolzNG связывает Windows PnP-инвентаризацию, запро�
 
 ToolzNG uses a practical overview → detail → action flow: the dashboard stays concise, USB and backup pages reveal evidence, and reports/help provide deeper review. This is the implementation behind the project’s “Curtain Dynamics” metaphor; it is contextual navigation, not a claim of animated curtains, a workflow editor or terminal emulator. See [GUI Design and visual evidence](docs/GUI_DESIGN.md).
 
-## 🧬 SAMBU Core 1.1 — инженерная система пяти букв
+## 🧬 SAMBU Core 1.2 — инженерная система пяти букв
 
 В версии **0.6.1** в ToolzNG перенесены инженерные принципы репозитория [SAMBU](https://github.com/bboroski/SAMBU), адаптированные к нативному C17/Win32-приложению. Python-интерпретатор SAMBU не встраивается.
 В текущей ветке в ToolzNG перенесены инженерные принципы репозитория [SAMBU](https://github.com/bboroski/SAMBU), адаптированные к нативному C17/Win32-приложению. Python-интерпретатор SAMBU не встраивается.
