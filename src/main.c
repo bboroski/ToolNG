@@ -26,6 +26,7 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include <wchar.h>
 
 #include "sambu_engine.h"
+#include "sambu_workflow.h"
 
 #define APP_TITLE           L"ToolzNG"
 #define MAX_APPLE_DEVICES   32
@@ -38,6 +39,7 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define USB_STABILITY_WARMUP_MS 30000ULL
 #define TIMER_USB_REFRESH   42
 #define TIMER_READINESS      43
+#define TIMER_WORKFLOW       44
 
 /* Theme tokens: graphite base, controlled yellow accents, accessible status colors. */
 #define COL_BG              (g_app.high_contrast ? RGB(0, 0, 0) : RGB(13, 13, 13))
@@ -150,6 +152,8 @@ typedef struct AppState {
     int readiness_score;
     SambuAssessment sambu_assessment;
     SambuLedger sambu_ledger;
+    SambuWorkflow sambu_workflow;
+    SambuWorkflowSession sambu_workflow_session;
     WCHAR coach_title[180];
     WCHAR coach_body[420];
     HFONT font_brand;
@@ -169,6 +173,16 @@ typedef struct AppState {
 } AppState;
 
 static AppState g_app;
+
+static const char kAppleConnectionWorkflow[] =
+    "workflow apple_connection {\n"
+    "  manifest { purpose \"Windows-side Apple connection audit\"; max_steps 5; autonomy local_record; }\n"
+    "  step usb = observe.apple_usb;\n"
+    "  step service = observe.apple_service;\n"
+    "  step profile = record.link_profile;\n"
+    "  step backup = observe.backup_markers;\n"
+    "  step readiness = compute.readiness;\n"
+    "}\n";
 
 static void create_fonts(void);
 static void delete_fonts(void);
@@ -866,15 +880,90 @@ static void compute_readiness_and_coach(void)
     }
 }
 
+static bool toolzng_workflow_action(SambuWorkflowAction action,
+                                    void *context, char *finding,
+                                    size_t finding_capacity)
+{
+    (void)context;
+    if (finding && finding_capacity > 0u) finding[0] = '\0';
+    switch (action) {
+        case SAMBU_WF_SCAN_USB:
+            scan_apple_devices();
+            if (finding && finding_capacity > 0u)
+                (void)snprintf(finding, finding_capacity,
+                    "Windows PnP scan completed: %u Apple USB interface(s).",
+                    (unsigned)g_app.device_count);
+            return g_app.scan_complete != FALSE;
+        case SAMBU_WF_READ_SERVICE:
+            read_apple_service_status();
+            if (finding && finding_capacity > 0u)
+                (void)snprintf(finding, finding_capacity,
+                    "Apple service observed: %s.",
+                    g_app.apple_service_running ? "running" : "not confirmed running");
+            return true;
+        case SAMBU_WF_RECORD_PROFILE:
+            update_linkdna_profile();
+            if (finding && finding_capacity > 0u)
+                (void)snprintf(finding, finding_capacity,
+                    "Local LinkDNA profile compared or recorded; raw identifiers are not retained.");
+            return true;
+        case SAMBU_WF_AUDIT_BACKUP:
+            g_app.backup_found = find_backup_folder(g_app.backup_path,
+                                                     ARRAYSIZE(g_app.backup_path));
+            audit_backup_folder();
+            if (finding && finding_capacity > 0u)
+                (void)snprintf(finding, finding_capacity,
+                    "Backup marker audit: %lu valid folder(s) of %lu.",
+                    (unsigned long)g_app.backup_valid_count,
+                    (unsigned long)g_app.backup_folder_count);
+            return true;
+        case SAMBU_WF_ASSESS_READINESS:
+            compute_readiness_and_coach();
+            if (finding && finding_capacity > 0u)
+                (void)snprintf(finding, finding_capacity,
+                    "Windows-side readiness computed: %d/100.", g_app.readiness_score);
+            return true;
+        case SAMBU_WF_NONE:
+        default:
+            if (finding && finding_capacity > 0u)
+                (void)snprintf(finding, finding_capacity,
+                    "Rejected: action is outside the ToolzNG diagnostic host.");
+            return false;
+    }
+}
+
 static void refresh_diagnostics(void)
 {
-    scan_apple_devices();
-    read_apple_service_status();
-    update_linkdna_profile();
-    g_app.backup_found = find_backup_folder(g_app.backup_path,
-                                             ARRAYSIZE(g_app.backup_path));
-    audit_backup_folder();
-    compute_readiness_and_coach();
+    SambuWorkflowDiagnostic diagnostic;
+    SambuWorkflowPolicy policy = { 5u, true, true };
+    SambuWorkflowHost host = { toolzng_workflow_action, NULL };
+    WCHAR message[320];
+
+    if (g_app.hwnd) KillTimer(g_app.hwnd, TIMER_WORKFLOW);
+    ZeroMemory(&g_app.sambu_workflow_session, sizeof(g_app.sambu_workflow_session));
+    g_app.scan_complete = FALSE;
+    if (!sambu_workflow_compile(kAppleConnectionWorkflow,
+            sizeof(kAppleConnectionWorkflow) - 1u, &g_app.sambu_workflow, &diagnostic)) {
+        copy_ascii_to_wide(message, ARRAYSIZE(message), diagnostic.message);
+        swprintf_s(g_app.status, ARRAYSIZE(g_app.status),
+            L"SAMBU workflow compile error at %lu:%lu: %ls",
+            (unsigned long)diagnostic.source.line,
+            (unsigned long)diagnostic.source.column, message);
+        InvalidateRect(g_app.hwnd, NULL, FALSE);
+        return;
+    }
+    if (!sambu_workflow_begin(&g_app.sambu_workflow_session, &g_app.sambu_workflow,
+                              &policy, &host, &diagnostic)) {
+        copy_ascii_to_wide(message, ARRAYSIZE(message), diagnostic.message);
+        swprintf_s(g_app.status, ARRAYSIZE(g_app.status),
+            L"SAMBU workflow preflight denied at %lu:%lu: %ls",
+            (unsigned long)diagnostic.source.line,
+            (unsigned long)diagnostic.source.column, message);
+        InvalidateRect(g_app.hwnd, NULL, FALSE);
+        return;
+    }
+    set_status(L"SAMBU: проверка допущена; выполняется ограниченный диагностический сценарий...");
+    if (g_app.hwnd) SetTimer(g_app.hwnd, TIMER_WORKFLOW, 20u, NULL);
     InvalidateRect(g_app.hwnd, NULL, FALSE);
 }
 
@@ -996,6 +1085,11 @@ static void save_duckfix_route(void)
         set_status(L"Сохранение маршрута требует явного действия пользователя.");
         return;
     }
+    if (g_app.sambu_workflow_session.state == SAMBU_WF_RUNNING ||
+        g_app.sambu_workflow_session.state == SAMBU_WF_IDLE) {
+        set_status(L"Сначала заверши диагностический сценарий.");
+        return;
+    }
     if (!g_app.reports_dir[0]) {
         set_status(L"Локальное хранилище отчётов недоступно.");
         return;
@@ -1009,6 +1103,7 @@ static void save_duckfix_route(void)
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
         L"SAMBU engine: 1.0.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
         L"SAMBU finding code: %u · confidence: %u%%\r\n"
+        L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
@@ -1023,6 +1118,10 @@ static void save_duckfix_route(void)
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
         (unsigned)g_app.sambu_assessment.finding,
         g_app.sambu_assessment.confidence_percent,
+        sambu_workflow_state_name(g_app.sambu_workflow_session.state),
+        (unsigned)g_app.sambu_workflow_session.run.passed,
+        (unsigned)g_app.sambu_workflow.step_count,
+        (unsigned)g_app.sambu_workflow_session.run.failed,
         g_app.status, g_app.readiness_score, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
@@ -1194,7 +1293,11 @@ static void save_report(void)
         set_status(L"Создание отчёта требует явного действия пользователя.");
         return;
     }
-    if (!g_app.scan_complete) refresh_diagnostics();
+    if (g_app.sambu_workflow_session.state == SAMBU_WF_RUNNING ||
+        g_app.sambu_workflow_session.state == SAMBU_WF_IDLE) {
+        set_status(L"Диагностический сценарий ещё не завершён; отчёт пока недоступен.");
+        return;
+    }
     if (!g_app.reports_dir[0]) {
         set_status(L"Не удалось открыть локальную папку отчётов.");
         return;
@@ -1214,7 +1317,7 @@ static void save_report(void)
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
         L"Автор: ToolzNG (локальная генерация)\r\n"
         L"Платформа: Windows\r\n"
-        L"SAMBU engine: 1.0.0\r\n"
+        L"SAMBU engine: 1.1.0\r\n"
         L"Diagnostic schema: toolzng.diagnostic.v1\r\n"
         L"SAMBU finding code: %u\r\n"
         L"SAMBU finding key: %ls\r\n"
@@ -1272,6 +1375,36 @@ static void save_report(void)
     if (count < 0) {
         set_status(L"Не удалось завершить формирование отчёта.");
         return;
+    }
+    used += (size_t)count;
+    count = swprintf_s(report + used, ARRAYSIZE(report) - used,
+        L"\r\nSAMBU workflow: apple_connection (%ls)\r\n"
+        L"Workflow preflight: %ls; steps: attempted=%u, passed=%u, failed=%u\r\n",
+        L"local_record",
+        g_app.sambu_workflow_session.run.preflight_approved ? L"approved" : L"denied",
+        (unsigned)g_app.sambu_workflow_session.run.attempted,
+        (unsigned)g_app.sambu_workflow_session.run.passed,
+        (unsigned)g_app.sambu_workflow_session.run.failed);
+    if (count < 0) {
+        set_status(L"Не удалось добавить workflow ledger в отчёт.");
+        return;
+    }
+    used += (size_t)count;
+    for (i = 0; i < g_app.sambu_workflow_session.run.attempted &&
+                i < SAMBU_WORKFLOW_STEP_CAP && used < ARRAYSIZE(report) - 256u; ++i) {
+        WCHAR action_name[80];
+        WCHAR finding[SAMBU_WORKFLOW_TEXT_CAP];
+        const SambuWorkflowEvidence *entry = &g_app.sambu_workflow_session.run.evidence[i];
+        copy_ascii_to_wide(action_name, ARRAYSIZE(action_name),
+                           sambu_workflow_action_name(entry->action));
+        copy_ascii_to_wide(finding, ARRAYSIZE(finding), entry->finding);
+        count = swprintf_s(report + used, ARRAYSIZE(report) - used,
+            L"  [%u] %ls @ %lu:%lu — %ls\r\n",
+            (unsigned)entry->sequence, action_name,
+            (unsigned long)entry->source.line,
+            (unsigned long)entry->source.column, finding);
+        if (count < 0) break;
+        used += (size_t)count;
     }
     if (!write_utf8_file(report_path, report)) {
         set_status(L"Ошибка записи отчёта во внутреннее хранилище.");
@@ -2030,6 +2163,38 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             return TRUE;
 
         case WM_TIMER:
+            if (wparam == TIMER_WORKFLOW) {
+                SambuWorkflowState state = sambu_workflow_tick(&g_app.sambu_workflow_session);
+                if (state != SAMBU_WF_RUNNING) KillTimer(hwnd, TIMER_WORKFLOW);
+                if (state == SAMBU_WF_COMPLETED) {
+                    WCHAR status[180];
+                    swprintf_s(status, ARRAYSIZE(status),
+                        L"SAMBU: сценарий завершён — %u/%u шагов подтверждено.",
+                        (unsigned)g_app.sambu_workflow_session.run.passed,
+                        (unsigned)g_app.sambu_workflow.step_count);
+                    set_status(status);
+                } else if (state == SAMBU_WF_FAILED) {
+                    WCHAR detail[SAMBU_WORKFLOW_TEXT_CAP];
+                    WCHAR status[320];
+                    copy_ascii_to_wide(detail, ARRAYSIZE(detail),
+                        g_app.sambu_workflow_session.run.diagnostic.message);
+                    swprintf_s(status, ARRAYSIZE(status),
+                        L"SAMBU остановлен на %lu:%lu: %ls",
+                        (unsigned long)g_app.sambu_workflow_session.run.diagnostic.source.line,
+                        (unsigned long)g_app.sambu_workflow_session.run.diagnostic.source.column,
+                        detail);
+                    set_status(status);
+                } else {
+                    WCHAR status[180];
+                    swprintf_s(status, ARRAYSIZE(status),
+                        L"SAMBU: шаг %u из %u...",
+                        (unsigned)g_app.sambu_workflow_session.run.attempted + 1u,
+                        (unsigned)g_app.sambu_workflow.step_count);
+                    set_status(status);
+                }
+                InvalidateRect(hwnd, NULL, FALSE);
+                return 0;
+            }
             if (wparam == TIMER_USB_REFRESH) {
                 KillTimer(hwnd, TIMER_USB_REFRESH);
                 refresh_diagnostics();
