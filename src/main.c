@@ -1183,6 +1183,8 @@ static void save_report(void)
     WCHAR report_path[MAX_PATH * 2];
     WCHAR filename[160];
     WCHAR finding_key[64];
+    WCHAR engine_version[32];
+    WCHAR report_schema[64];
     WCHAR report[REPORT_CHARS];
     SYSTEMTIME now;
     int count;
@@ -1202,6 +1204,8 @@ static void save_report(void)
     get_recent_usb_counts(&recent_arrivals, &recent_removals);
     copy_ascii_to_wide(finding_key, ARRAYSIZE(finding_key),
                        sambu_finding_key(g_app.sambu_assessment.finding));
+    copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), sambu_engine_version());
+    copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), sambu_report_schema());
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
         L"ToolzNG-report-%04u%02u%02u-%02u%02u%02u.txt",
@@ -1214,8 +1218,8 @@ static void save_report(void)
         L"Дата: %04u-%02u-%02u %02u:%02u:%02u\r\n"
         L"Автор: ToolzNG (локальная генерация)\r\n"
         L"Платформа: Windows\r\n"
-        L"SAMBU engine: 1.0.0\r\n"
-        L"Diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU engine: %ls\r\n"
+        L"Diagnostic schema: %ls\r\n"
         L"SAMBU finding code: %u\r\n"
         L"SAMBU finding key: %ls\r\n"
         L"SAMBU confidence: %u%%\r\n"
@@ -1223,7 +1227,7 @@ static void save_report(void)
         L"SAMBU memory: %u unique findings; current state observed %u time(s)\r\n\r\n"
         L"USB-устройства Apple (VID_05AC): %u\r\n",
         now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
-        now.wSecond,
+        now.wSecond, engine_version, report_schema,
         (unsigned)g_app.sambu_assessment.finding, finding_key,
         g_app.sambu_assessment.confidence_percent,
         (unsigned long)g_app.sambu_assessment.evidence_mask,
