@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.2.0"
+#define SAMBU_ENGINE_VERSION "1.3.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
