@@ -15,7 +15,7 @@ add_library(ToolzNG.SambuCore STATIC
     src/sambu_workflow.c
 )
 target_include_directories(ToolzNG.SambuCore PUBLIC
-    "\${CMAKE_CURRENT_SOURCE_DIR}/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
 if(MSVC)
@@ -45,7 +45,7 @@ add_executable(ToolzNG WIN32
     src/main.c
     src/toolzng.rc
 )
-target_include_directories(ToolzNG PRIVATE "\${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(ToolzNG PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(ToolzNG PRIVATE
     ToolzNG.SambuCore
     setupapi
