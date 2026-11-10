@@ -89,3 +89,8 @@ MIT — див. [LICENSE](LICENSE).
 
 - [Project-specific architecture mapping](docs/REAPER_DOMAIN_INTEGRATION.md)
 - [Canonical 50-pattern catalogue in SAMBU](https://github.com/bboroski/SAMBU/blob/main/data/reaper/engineering_patterns_50.tsv)
+
+
+## Application UI preview
+
+Open `ui/index.html` for the ToolNG evidence desk concept. Its spatial evidence path separates observed PnP and service signals from unknown backup markers and incomplete coverage. Values are synthetic; the preview does not query Windows devices or execute repair actions.
