@@ -193,3 +193,7 @@ MIT — див. [LICENSE](LICENSE).
 **ToolzNG — менше здогадок, більше зрозумілих сигналів.** 🦆
 
 </div>
+
+## NUN Ecosystem integration
+
+ToolzNG remains local-first and evidence-driven; shared event and capability schemas do not grant new device permissions. See [NUN Ecosystem Interop](docs/NUN_ECOSYSTEM_INTEROP.md) and the [Klipot contract registry](https://github.com/bboroski/Klipot).
