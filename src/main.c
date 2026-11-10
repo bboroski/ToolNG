@@ -1101,7 +1101,7 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: 1.0.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
+        L"SAMBU engine: 1.1.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
         L"SAMBU finding code: %u · confidence: %u%%\r\n"
         L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
         L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
