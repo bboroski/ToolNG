@@ -133,5 +133,6 @@ bool sambu_workflow_begin(SambuWorkflowSession *session,
 SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session);
 const char *sambu_workflow_action_name(SambuWorkflowAction action);
 const char *sambu_workflow_error_name(SambuWorkflowError error);
+const char *sambu_workflow_state_name(SambuWorkflowState state);
 
 #endif
