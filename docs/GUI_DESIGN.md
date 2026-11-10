@@ -1,12 +1,12 @@
-# ToolzNG GUI design and visual evidence
+# ToolNG GUI design and visual evidence
 
-**Application:** ToolzNG 0.6.1  
+**Application:** ToolNG 0.6.1  
 **UI stack:** native Win32 + GDI, C17  
 **Design model:** progressive disclosure ("Curtain Dynamics")
 
 ## Implemented interaction model
 
-ToolzNG is a native Windows desktop application. It does not use Electron, Chromium, React, Radix UI, Tailwind CSS or Framer Motion.
+ToolNG is a native Windows desktop application. It does not use Electron, Chromium, React, Radix UI, Tailwind CSS or Framer Motion.
 
 The current interface reduces cognitive load by separating a diagnostic task into a small number of layers:
 
@@ -53,6 +53,6 @@ Do not upscale a vector mock-up and relabel it as a screenshot. The updated 1920
 
 ## Architecture boundary and roadmap
 
-The UI rendering and window-message handling currently live primarily in `src/main.c`. The portable assessment and workflow core is separated into `src/sambu_engine.c/.h` and `src/sambu_workflow.c/.h`.
+The UI rendering and window-message handling currently live primarily in `src/main.c`. The portable assessment and workflow core is separated into `src/toolng_engine.c/.h` and `src/toolng_workflow.c/.h`.
 
 Extracting individual page renderers, navigation state and report-preview controls into smaller modules is a future refactor, not a completed split. Any extraction should preserve DPI behavior, hit testing, keyboard shortcuts, report privacy and the current CMake targets, with regression tests added before the original implementation is removed.
