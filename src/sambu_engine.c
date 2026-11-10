@@ -134,6 +134,14 @@ void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
         entry = &ledger->entries[i];
         if (entry->finding_code == finding_code) {
             if (entry->occurrences < UINT32_MAX) ++entry->occurrences;
+            if (monotonic_ms < entry->last_seen_ms ||
+                monotonic_ms < entry->window_start_ms ||
+                monotonic_ms - entry->window_start_ms > SAMBU_LEDGER_WINDOW_MS) {
+                entry->window_start_ms = monotonic_ms;
+                entry->window_occurrences = 1u;
+            } else if (entry->window_occurrences < UINT32_MAX) {
+                ++entry->window_occurrences;
+            }
             entry->last_seen_ms = monotonic_ms;
             return;
         }
@@ -151,6 +159,8 @@ void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
     entry->occurrences = 1u;
     entry->first_seen_ms = monotonic_ms;
     entry->last_seen_ms = monotonic_ms;
+    entry->window_start_ms = monotonic_ms;
+    entry->window_occurrences = 1u;
 }
 
 uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
@@ -163,6 +173,49 @@ uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
             return ledger->entries[i].occurrences;
     }
     return 0u;
+}
+
+uint32_t sambu_ledger_recent_occurrences(const SambuLedger *ledger,
+                                         uint32_t finding_code,
+                                         uint64_t now_ms)
+{
+    size_t i;
+    if (!ledger || finding_code == 0u) return 0u;
+
+    for (i = 0; i < ledger->count; ++i) {
+        const SambuLedgerEntry *entry = &ledger->entries[i];
+        if (entry->finding_code != finding_code) continue;
+        if (now_ms < entry->last_seen_ms || now_ms < entry->window_start_ms)
+            return 0u;
+        if (now_ms - entry->last_seen_ms > SAMBU_LEDGER_WINDOW_MS ||
+            now_ms - entry->window_start_ms > SAMBU_LEDGER_WINDOW_MS)
+            return 0u;
+        return entry->window_occurrences;
+    }
+    return 0u;
+}
+
+SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
+                                  uint32_t finding_code,
+                                  uint64_t now_ms)
+{
+    const uint32_t recent = sambu_ledger_recent_occurrences(
+        ledger, finding_code, now_ms);
+    if (recent == 0u) return SAMBU_PATTERN_NONE;
+    if (recent == 1u) return SAMBU_PATTERN_SINGLE;
+    if (recent < 4u) return SAMBU_PATTERN_RECURRENT;
+    return SAMBU_PATTERN_PERSISTENT;
+}
+
+const char *sambu_pattern_key(SambuPattern pattern)
+{
+    switch (pattern) {
+        case SAMBU_PATTERN_SINGLE: return "single";
+        case SAMBU_PATTERN_RECURRENT: return "recurrent";
+        case SAMBU_PATTERN_PERSISTENT: return "persistent";
+        case SAMBU_PATTERN_NONE:
+        default: return "none";
+    }
 }
 
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger)
