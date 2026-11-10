@@ -905,7 +905,7 @@ static bool toolzng_workflow_action(SambuWorkflowAction action,
             update_linkdna_profile();
             if (finding && finding_capacity > 0u)
                 (void)snprintf(finding, finding_capacity,
-                    "Local LinkDNA profile compared or recorded; raw identifiers are not retained.");
+                    "LinkDNA update evaluated; a baseline is initialized only when an Apple USB interface is visible.");
             return true;
         case SAMBU_WF_AUDIT_BACKUP:
             g_app.backup_found = find_backup_folder(g_app.backup_path,
@@ -2175,6 +2175,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                     set_status(status);
                 } else if (state == SAMBU_WF_FAILED) {
                     WCHAR detail[SAMBU_WORKFLOW_TEXT_CAP];
+                    compute_readiness_and_coach();
                     WCHAR status[320];
                     copy_ascii_to_wide(detail, ARRAYSIZE(detail),
                         g_app.sambu_workflow_session.run.diagnostic.message);
