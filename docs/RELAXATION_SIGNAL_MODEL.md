@@ -1,6 +1,6 @@
-# ToolzNG relaxation-aware signal model
+# ToolNG relaxation-aware signal model
 
-ToolzNG's readiness score remains a deterministic assessment of completed Windows-side checks. The relaxation estimator is a separate advisory layer for timestamped USB arrival/removal observations.
+ToolNG's readiness score remains a deterministic assessment of completed Windows-side checks. The relaxation estimator is a separate advisory layer for timestamped USB arrival/removal observations.
 
 ## Update rule
 
