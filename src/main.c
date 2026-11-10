@@ -131,11 +131,13 @@ typedef struct AppState {
     WCHAR last_report_path[MAX_PATH * 2];
     WCHAR report_content[REPORT_CHARS];
     int report_scroll;
+    int report_list_scroll;
     int report_content_height;
     int report_count;
     int selected_report;
     ReportEntry reports[MAX_REPORTS];
     RECT report_rows[REPORT_ROWS];
+    int report_row_index[REPORT_ROWS];
     RECT report_copy_button;
     RECT report_export_button;
     RECT report_refresh_button;
@@ -996,6 +998,7 @@ static void refresh_report_history(void)
     HANDLE find;
     int i, j;
     g_app.report_count = 0;
+    g_app.report_list_scroll = 0;
     if (!g_app.reports_dir[0]) return;
     append_path(pattern, ARRAYSIZE(pattern), g_app.reports_dir,
                 L"ToolzNG-report-*.txt");
@@ -1488,18 +1491,21 @@ static void draw_reports(HDC dc)
                   g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
     for (i = 0; i < REPORT_ROWS; ++i) {
+        int index = i + g_app.report_list_scroll;
         int top = 260 + i * 48;
-        if (i < g_app.report_count) {
+        if (index < g_app.report_count) {
+            g_app.report_row_index[i] = index;
             g_app.report_rows[i] = (RECT){ x + 9, top, list_right - 9, top + 42 };
-            if (i == g_app.selected_report)
+            if (index == g_app.selected_report)
                 draw_round_rect(dc, g_app.report_rows[i], COL_CARD_HOVER, COL_ACCENT, 7);
             else
                 draw_round_rect(dc, g_app.report_rows[i], COL_CARD, COL_BORDER, 7);
-            draw_text(dc, g_app.reports[i].name,
+            draw_text(dc, g_app.reports[index].name,
                 (RECT){ x + 17, top + 3, list_right - 16, top + 39 },
-                g_app.font_small, i == g_app.selected_report ? COL_ACCENT : COL_TEXT,
+                g_app.font_small, index == g_app.selected_report ? COL_ACCENT : COL_TEXT,
                 DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
         } else {
+            g_app.report_row_index[i] = -1;
             g_app.report_rows[i] = (RECT){ 0, 0, 0, 0 };
         }
     }
@@ -1711,9 +1717,10 @@ static void handle_click(POINT point)
         else if (point_in_rect(point, g_app.playbook_button)) handle_action(ACTION_PLAYBOOK);
     } else if (g_app.page == PAGE_REPORTS) {
         int row;
-        for (row = 0; row < REPORT_ROWS && row < g_app.report_count; ++row) {
-            if (point_in_rect(point, g_app.report_rows[row])) {
-                (void)load_report_file(row);
+        for (row = 0; row < REPORT_ROWS; ++row) {
+            int selected_index = g_app.report_row_index[row];
+            if (selected_index >= 0 && point_in_rect(point, g_app.report_rows[row])) {
+                (void)load_report_file(selected_index);
                 InvalidateRect(g_app.hwnd, NULL, FALSE);
                 return;
             }
@@ -1818,11 +1825,24 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
 
         case WM_MOUSEWHEEL:
             if (g_app.page == PAGE_REPORTS) {
+                POINT cursor;
                 int direction = GET_WHEEL_DELTA_WPARAM(wparam);
-                g_app.report_scroll -= direction > 0 ? 96 : -96;
-                if (g_app.report_scroll < 0) g_app.report_scroll = 0;
-                if (g_app.report_scroll > g_app.report_content_height)
-                    g_app.report_scroll = g_app.report_content_height;
+                GetCursorPos(&cursor);
+                ScreenToClient(hwnd, &cursor);
+                cursor.x = MulDiv(cursor.x, 96, (int)effective_dpi());
+                cursor.y = MulDiv(cursor.y, 96, (int)effective_dpi());
+                if (cursor.x < 455) {
+                    g_app.report_list_scroll += direction < 0 ? 1 : -1;
+                    if (g_app.report_list_scroll < 0) g_app.report_list_scroll = 0;
+                    if (g_app.report_list_scroll > g_app.report_count - REPORT_ROWS)
+                        g_app.report_list_scroll = g_app.report_count > REPORT_ROWS
+                            ? g_app.report_count - REPORT_ROWS : 0;
+                } else {
+                    g_app.report_scroll -= direction > 0 ? 96 : -96;
+                    if (g_app.report_scroll < 0) g_app.report_scroll = 0;
+                    if (g_app.report_scroll > g_app.report_content_height)
+                        g_app.report_scroll = g_app.report_content_height;
+                }
                 InvalidateRect(hwnd, NULL, FALSE);
                 return 0;
             }
@@ -1847,10 +1867,18 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 }
             }
             if (g_app.page == PAGE_REPORTS && (wparam == VK_PRIOR || wparam == VK_NEXT)) {
-                g_app.report_scroll += wparam == VK_PRIOR ? -320 : 320;
-                if (g_app.report_scroll < 0) g_app.report_scroll = 0;
-                if (g_app.report_scroll > g_app.report_content_height)
-                    g_app.report_scroll = g_app.report_content_height;
+                if ((GetKeyState(VK_SHIFT) & 0x8000) != 0) {
+                    g_app.report_list_scroll += wparam == VK_PRIOR ? -REPORT_ROWS : REPORT_ROWS;
+                    if (g_app.report_list_scroll < 0) g_app.report_list_scroll = 0;
+                    if (g_app.report_list_scroll > g_app.report_count - REPORT_ROWS)
+                        g_app.report_list_scroll = g_app.report_count > REPORT_ROWS
+                            ? g_app.report_count - REPORT_ROWS : 0;
+                } else {
+                    g_app.report_scroll += wparam == VK_PRIOR ? -320 : 320;
+                    if (g_app.report_scroll < 0) g_app.report_scroll = 0;
+                    if (g_app.report_scroll > g_app.report_content_height)
+                        g_app.report_scroll = g_app.report_content_height;
+                }
                 InvalidateRect(hwnd, NULL, FALSE);
                 return 0;
             }
