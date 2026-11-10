@@ -51,3 +51,11 @@ WDEP does not flash, repair, reset, or alter device state; does not inspect priv
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+
+## One-knob launch
+
+- **Windows:** double-click `one.cmd` or run it from a terminal.
+- **Any OS:** `python one.py` runs this project's default workflow; `python one.py check` runs headless verification.
+- Desktop/IDE projects launch their application after checks; system and embedded modules build and test their host version.
+- Host tests do not replace qualification on the target board, device, or production fixture.
