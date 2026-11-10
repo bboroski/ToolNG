@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.3.0"
+#define SAMBU_ENGINE_VERSION "1.4.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
@@ -143,6 +143,8 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence);
 
 /* M — bounded failure/finding memory; stores codes and counters, never raw device data. */
 void sambu_ledger_init(SambuLedger *ledger);
+/* Reject malformed ring metadata, duplicate codes and impossible counters. */
+int sambu_ledger_validate(const SambuLedger *ledger);
 void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
                          uint64_t monotonic_ms);
 uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
