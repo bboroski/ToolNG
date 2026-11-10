@@ -3,11 +3,11 @@
 #include <math.h>
 #include <string.h>
 
-typedef struct SambuLayer {
+typedef struct WdecLayer {
     const char *name;
     uint32_t requires;
     uint32_t provides;
-} SambuLayer;
+} WdecLayer;
 
 enum {
     LAYER_CORE = 1u << 0,
@@ -19,7 +19,7 @@ enum {
     LAYER_EXPORT = 1u << 6
 };
 
-static const SambuLayer g_layers[] = {
+static const WdecLayer g_layers[] = {
     { "core", 0u, LAYER_CORE },
     { "policy", LAYER_CORE, LAYER_POLICY },
     { "evidence", LAYER_POLICY, LAYER_EVIDENCE },
@@ -30,37 +30,37 @@ static const SambuLayer g_layers[] = {
     { "export", LAYER_EVIDENCE | LAYER_MEMORY, LAYER_EXPORT }
 };
 
-int sambu_authorize(SambuOperation operation, SambuOrigin origin)
+int wdec_authorize(WdecOperation operation, WdecOrigin origin)
 {
     /* Reject unknown callers before evaluating any capability. */
-    if (origin != SAMBU_ORIGIN_INTERNAL && origin != SAMBU_ORIGIN_USER)
+    if (origin != WDEC_ORIGIN_INTERNAL && origin != WDEC_ORIGIN_USER)
         return 0;
 
     switch (operation) {
-        case SAMBU_OP_READ_LOCAL:
-        case SAMBU_OP_SCAN:
+        case WDEC_OP_READ_LOCAL:
+        case WDEC_OP_SCAN:
             return 1;
 
-        case SAMBU_OP_RECORD_LOCAL_PROFILE:
-            return origin == SAMBU_ORIGIN_INTERNAL;
+        case WDEC_OP_RECORD_LOCAL_PROFILE:
+            return origin == WDEC_ORIGIN_INTERNAL;
 
-        case SAMBU_OP_WRITE_PRIVATE_REPORT:
-        case SAMBU_OP_EXPORT:
-        case SAMBU_OP_CLIPBOARD:
-            return origin == SAMBU_ORIGIN_USER;
+        case WDEC_OP_WRITE_PRIVATE_REPORT:
+        case WDEC_OP_EXPORT:
+        case WDEC_OP_CLIPBOARD:
+            return origin == WDEC_ORIGIN_USER;
 
-        case SAMBU_OP_MUTATE_DEVICE:
-        case SAMBU_OP_UPLOAD_DATA:
+        case WDEC_OP_MUTATE_DEVICE:
+        case WDEC_OP_UPLOAD_DATA:
         default:
             return 0;
     }
 }
 
-SambuAssessment sambu_assess(const SambuEvidence *evidence)
+WdecAssessment wdec_assess(const WdecEvidence *evidence)
 {
-    SambuAssessment result;
-    const SambuEvidence empty = {0};
-    const SambuEvidence *e = evidence ? evidence : &empty;
+    WdecAssessment result;
+    const WdecEvidence empty = {0};
+    const WdecEvidence *e = evidence ? evidence : &empty;
     int possible = 0;
     int earned = 0;
     int device_verified;
@@ -69,7 +69,7 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     int stable_window_verified;
 
     memset(&result, 0, sizeof(result));
-    result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
+    result.finding = WDEC_FINDING_SCAN_UNAVAILABLE;
 
     device_verified = e->scan_complete && e->device_found;
     backup_counts_consistent =
@@ -88,58 +88,58 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
     /* Integrity warnings describe contradictory or incomplete evidence.
        They do not overwrite the measured-coverage percentage. */
     if (e->device_found && !e->scan_complete)
-        result.quality_flags |= SAMBU_QUALITY_DEVICE_WITHOUT_SCAN;
+        result.quality_flags |= WDEC_QUALITY_DEVICE_WITHOUT_SCAN;
     if (e->backup_scan_complete && !backup_counts_consistent)
-        result.quality_flags |= SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT;
+        result.quality_flags |= WDEC_QUALITY_BACKUP_COUNTS_INCONSISTENT;
     if (e->backup_scan_complete && e->backup_found &&
         e->backup_folders_seen > 0u && backup_counts_consistent &&
         e->backup_folders_valid < e->backup_folders_seen)
-        result.quality_flags |= SAMBU_QUALITY_BACKUP_SET_INCOMPLETE;
+        result.quality_flags |= WDEC_QUALITY_BACKUP_SET_INCOMPLETE;
     if (e->stability_window_elapsed && !e->usb_watch_registered)
-        result.quality_flags |= SAMBU_QUALITY_STABILITY_WITHOUT_WATCH;
+        result.quality_flags |= WDEC_QUALITY_STABILITY_WITHOUT_WATCH;
 
     /* Score only checks that completed successfully. */
     if (e->scan_complete) {
-        result.evidence_mask |= SAMBU_EVIDENCE_SCAN_COMPLETE;
+        result.evidence_mask |= WDEC_EVIDENCE_SCAN_COMPLETE;
         possible += 40;
         if (device_verified) {
-            result.evidence_mask |= SAMBU_EVIDENCE_DEVICE_VISIBLE;
+            result.evidence_mask |= WDEC_EVIDENCE_DEVICE_VISIBLE;
             result.device_points = 40;
             earned += result.device_points;
         }
     }
 
     if (e->service_query_complete) {
-        result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_CHECKED;
+        result.evidence_mask |= WDEC_EVIDENCE_SERVICE_CHECKED;
         possible += 25;
         if (e->service_running) {
-            result.evidence_mask |= SAMBU_EVIDENCE_SERVICE_RUNNING;
+            result.evidence_mask |= WDEC_EVIDENCE_SERVICE_RUNNING;
             result.service_points = 25;
             earned += result.service_points;
         }
     }
 
     if (e->backup_scan_complete) {
-        result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_CHECKED;
+        result.evidence_mask |= WDEC_EVIDENCE_BACKUP_CHECKED;
         possible += 25;
         if (e->backup_found) {
-            result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_FOUND;
+            result.evidence_mask |= WDEC_EVIDENCE_BACKUP_FOUND;
             result.backup_points = 10;
             earned += result.backup_points;
         }
         if (backup_set_complete) {
-            result.evidence_mask |= SAMBU_EVIDENCE_BACKUP_MARKERS;
+            result.evidence_mask |= WDEC_EVIDENCE_BACKUP_MARKERS;
             result.marker_points = 15;
             earned += result.marker_points;
         }
     }
 
     if (e->usb_watch_registered)
-        result.evidence_mask |= SAMBU_EVIDENCE_USB_WATCH;
+        result.evidence_mask |= WDEC_EVIDENCE_USB_WATCH;
     if (e->recent_usb_removals > 0u)
-        result.evidence_mask |= SAMBU_EVIDENCE_USB_REMOVAL;
+        result.evidence_mask |= WDEC_EVIDENCE_USB_REMOVAL;
     if (stable_window_verified)
-        result.evidence_mask |= SAMBU_EVIDENCE_STABILITY_WINDOW;
+        result.evidence_mask |= WDEC_EVIDENCE_STABILITY_WINDOW;
 
     if (stable_window_verified) {
         possible += 10;
@@ -158,44 +158,44 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
 
     /* Unknown checks remain distinct from verified negative observations. */
     if (!e->scan_complete) {
-        result.finding = SAMBU_FINDING_SCAN_UNAVAILABLE;
+        result.finding = WDEC_FINDING_SCAN_UNAVAILABLE;
     } else if (!device_verified) {
-        result.finding = SAMBU_FINDING_NO_DEVICE;
+        result.finding = WDEC_FINDING_NO_DEVICE;
     } else if (!e->service_query_complete) {
-        result.finding = SAMBU_FINDING_SERVICE_UNKNOWN;
+        result.finding = WDEC_FINDING_SERVICE_UNKNOWN;
     } else if (!e->service_running) {
-        result.finding = SAMBU_FINDING_SERVICE_UNAVAILABLE;
+        result.finding = WDEC_FINDING_SERVICE_UNAVAILABLE;
     } else if (e->recent_usb_removals > 0u) {
-        result.finding = SAMBU_FINDING_USB_UNSTABLE;
+        result.finding = WDEC_FINDING_USB_UNSTABLE;
     } else if (!e->backup_scan_complete) {
-        result.finding = SAMBU_FINDING_BACKUP_UNKNOWN;
+        result.finding = WDEC_FINDING_BACKUP_UNKNOWN;
     } else if (e->backup_found && e->backup_folders_seen > 0u &&
                !backup_set_complete) {
-        result.finding = SAMBU_FINDING_BACKUP_STRUCTURE;
+        result.finding = WDEC_FINDING_BACKUP_STRUCTURE;
     } else if (backup_set_complete && e->backup_age_known &&
                e->backup_age_days > 30u) {
-        result.finding = SAMBU_FINDING_BACKUP_STALE;
+        result.finding = WDEC_FINDING_BACKUP_STALE;
     } else if (!e->backup_found || !backup_set_complete) {
-        result.finding = SAMBU_FINDING_BACKUP_MISSING;
+        result.finding = WDEC_FINDING_BACKUP_MISSING;
     } else if (!stable_window_verified) {
-        result.finding = SAMBU_FINDING_STABILITY_UNCONFIRMED;
+        result.finding = WDEC_FINDING_STABILITY_UNCONFIRMED;
     } else {
-        result.finding = SAMBU_FINDING_HEALTHY;
+        result.finding = WDEC_FINDING_HEALTHY;
     }
 
     return result;
 }
 
-void sambu_ledger_init(SambuLedger *ledger)
+void wdec_ledger_init(WdecLedger *ledger)
 {
     if (ledger) memset(ledger, 0, sizeof(*ledger));
 }
 
-void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
+void wdec_ledger_record(WdecLedger *ledger, uint32_t finding_code,
                          uint64_t monotonic_ms)
 {
     size_t i;
-    SambuLedgerEntry *entry;
+    WdecLedgerEntry *entry;
 
     if (!ledger || finding_code == 0u) return;
 
@@ -205,7 +205,7 @@ void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
             if (entry->occurrences < UINT32_MAX) ++entry->occurrences;
             if (monotonic_ms < entry->last_seen_ms ||
                 monotonic_ms < entry->window_start_ms ||
-                monotonic_ms - entry->window_start_ms > SAMBU_LEDGER_WINDOW_MS) {
+                monotonic_ms - entry->window_start_ms > WDEC_LEDGER_WINDOW_MS) {
                 entry->window_start_ms = monotonic_ms;
                 entry->window_occurrences = 1u;
             } else if (entry->window_occurrences < UINT32_MAX) {
@@ -216,12 +216,12 @@ void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
         }
     }
 
-    if (ledger->count < SAMBU_LEDGER_CAPACITY) {
+    if (ledger->count < WDEC_LEDGER_CAPACITY) {
         entry = &ledger->entries[ledger->count++];
-        ledger->next = ledger->count % SAMBU_LEDGER_CAPACITY;
+        ledger->next = ledger->count % WDEC_LEDGER_CAPACITY;
     } else {
         entry = &ledger->entries[ledger->next];
-        ledger->next = (ledger->next + 1u) % SAMBU_LEDGER_CAPACITY;
+        ledger->next = (ledger->next + 1u) % WDEC_LEDGER_CAPACITY;
     }
 
     entry->finding_code = finding_code;
@@ -232,7 +232,7 @@ void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
     entry->window_occurrences = 1u;
 }
 
-uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
+uint32_t wdec_ledger_occurrences(const WdecLedger *ledger,
                                   uint32_t finding_code)
 {
     size_t i;
@@ -244,7 +244,7 @@ uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
     return 0u;
 }
 
-uint32_t sambu_ledger_recent_occurrences(const SambuLedger *ledger,
+uint32_t wdec_ledger_recent_occurrences(const WdecLedger *ledger,
                                          uint32_t finding_code,
                                          uint64_t now_ms)
 {
@@ -252,70 +252,70 @@ uint32_t sambu_ledger_recent_occurrences(const SambuLedger *ledger,
     if (!ledger || finding_code == 0u) return 0u;
 
     for (i = 0; i < ledger->count; ++i) {
-        const SambuLedgerEntry *entry = &ledger->entries[i];
+        const WdecLedgerEntry *entry = &ledger->entries[i];
         if (entry->finding_code != finding_code) continue;
         if (now_ms < entry->last_seen_ms || now_ms < entry->window_start_ms)
             return 0u;
-        if (now_ms - entry->last_seen_ms > SAMBU_LEDGER_WINDOW_MS ||
-            now_ms - entry->window_start_ms > SAMBU_LEDGER_WINDOW_MS)
+        if (now_ms - entry->last_seen_ms > WDEC_LEDGER_WINDOW_MS ||
+            now_ms - entry->window_start_ms > WDEC_LEDGER_WINDOW_MS)
             return 0u;
         return entry->window_occurrences;
     }
     return 0u;
 }
 
-SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
+WdecPattern wdec_ledger_pattern(const WdecLedger *ledger,
                                   uint32_t finding_code,
                                   uint64_t now_ms)
 {
-    const uint32_t recent = sambu_ledger_recent_occurrences(
+    const uint32_t recent = wdec_ledger_recent_occurrences(
         ledger, finding_code, now_ms);
-    if (recent == 0u) return SAMBU_PATTERN_NONE;
-    if (recent == 1u) return SAMBU_PATTERN_SINGLE;
-    if (recent < 4u) return SAMBU_PATTERN_RECURRENT;
-    return SAMBU_PATTERN_PERSISTENT;
+    if (recent == 0u) return WDEC_PATTERN_NONE;
+    if (recent == 1u) return WDEC_PATTERN_SINGLE;
+    if (recent < 4u) return WDEC_PATTERN_RECURRENT;
+    return WDEC_PATTERN_PERSISTENT;
 }
 
-const char *sambu_pattern_key(SambuPattern pattern)
+const char *wdec_pattern_key(WdecPattern pattern)
 {
     switch (pattern) {
-        case SAMBU_PATTERN_SINGLE: return "single";
-        case SAMBU_PATTERN_RECURRENT: return "recurrent";
-        case SAMBU_PATTERN_PERSISTENT: return "persistent";
-        case SAMBU_PATTERN_NONE:
+        case WDEC_PATTERN_SINGLE: return "single";
+        case WDEC_PATTERN_RECURRENT: return "recurrent";
+        case WDEC_PATTERN_PERSISTENT: return "persistent";
+        case WDEC_PATTERN_NONE:
         default: return "none";
     }
 }
 
-const char *sambu_quality_key(uint32_t quality_flags)
+const char *wdec_quality_key(uint32_t quality_flags)
 {
     if (quality_flags == 0u) return "clean";
     if ((quality_flags & (quality_flags - 1u)) != 0u)
         return "multiple_integrity_warnings";
 
     switch (quality_flags) {
-        case SAMBU_QUALITY_DEVICE_WITHOUT_SCAN:
+        case WDEC_QUALITY_DEVICE_WITHOUT_SCAN:
             return "device_without_completed_scan";
-        case SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT:
+        case WDEC_QUALITY_BACKUP_COUNTS_INCONSISTENT:
             return "backup_counts_inconsistent";
-        case SAMBU_QUALITY_BACKUP_SET_INCOMPLETE:
+        case WDEC_QUALITY_BACKUP_SET_INCOMPLETE:
             return "backup_set_incomplete";
-        case SAMBU_QUALITY_STABILITY_WITHOUT_WATCH:
+        case WDEC_QUALITY_STABILITY_WITHOUT_WATCH:
             return "stability_without_usb_watch";
         default:
             return "unknown_integrity_warning";
     }
 }
 
-uint32_t sambu_ledger_unique_count(const SambuLedger *ledger)
+uint32_t wdec_ledger_unique_count(const WdecLedger *ledger)
 {
     if (!ledger) return 0u;
     return (uint32_t)ledger->count;
 }
 
-int sambu_relaxation_update(SambuRelaxationState *state, double observation,
+int wdec_relaxation_update(WdecRelaxationState *state, double observation,
                             uint64_t monotonic_ms, double tau_ms,
-                            SambuRelaxationResult *result)
+                            WdecRelaxationResult *result)
 {
     double alpha;
     double residual;
@@ -384,11 +384,11 @@ int sambu_relaxation_update(SambuRelaxationState *state, double observation,
     result->z_score = z_score;
     result->alpha = alpha;
     result->samples = state->samples;
-    result->warm = state->samples >= SAMBU_RELAXATION_WARMUP_SAMPLES;
+    result->warm = state->samples >= WDEC_RELAXATION_WARMUP_SAMPLES;
     return 1;
 }
 
-int sambu_architecture_validate(void)
+int wdec_architecture_validate(void)
 {
     const size_t layer_count = sizeof(g_layers) / sizeof(g_layers[0]);
     const uint32_t all_layers = (1u << (sizeof(g_layers) / sizeof(g_layers[0]))) - 1u;
@@ -404,7 +404,7 @@ int sambu_architecture_validate(void)
 
         for (i = 0; i < layer_count; ++i) {
             const uint32_t node_bit = 1u << i;
-            const SambuLayer *layer = &g_layers[i];
+            const WdecLayer *layer = &g_layers[i];
 
             if ((completed & node_bit) != 0u) continue;
             if ((layer->requires & available) != layer->requires) continue;
@@ -424,32 +424,32 @@ int sambu_architecture_validate(void)
     return completed == all_layers;
 }
 
-const char *sambu_finding_key(SambuFinding finding)
+const char *wdec_finding_key(WdecFinding finding)
 {
     switch (finding) {
-        case SAMBU_FINDING_SCAN_UNAVAILABLE: return "scan_unavailable";
-        case SAMBU_FINDING_NO_DEVICE: return "apple_device_not_visible";
-        case SAMBU_FINDING_SERVICE_UNAVAILABLE: return "apple_service_unavailable";
-        case SAMBU_FINDING_USB_UNSTABLE: return "usb_connection_unstable";
-        case SAMBU_FINDING_BACKUP_STRUCTURE: return "backup_markers_missing";
-        case SAMBU_FINDING_BACKUP_STALE: return "backup_marker_stale";
-        case SAMBU_FINDING_BACKUP_MISSING: return "backup_not_verified";
-        case SAMBU_FINDING_HEALTHY: return "windows_side_checks_passed";
-        case SAMBU_FINDING_SERVICE_UNKNOWN: return "apple_service_status_unknown";
-        case SAMBU_FINDING_BACKUP_UNKNOWN: return "backup_scan_incomplete";
-        case SAMBU_FINDING_STABILITY_UNCONFIRMED: return "usb_stability_unconfirmed";
-        case SAMBU_FINDING_NONE:
+        case WDEC_FINDING_SCAN_UNAVAILABLE: return "scan_unavailable";
+        case WDEC_FINDING_NO_DEVICE: return "apple_device_not_visible";
+        case WDEC_FINDING_SERVICE_UNAVAILABLE: return "apple_service_unavailable";
+        case WDEC_FINDING_USB_UNSTABLE: return "usb_connection_unstable";
+        case WDEC_FINDING_BACKUP_STRUCTURE: return "backup_markers_missing";
+        case WDEC_FINDING_BACKUP_STALE: return "backup_marker_stale";
+        case WDEC_FINDING_BACKUP_MISSING: return "backup_not_verified";
+        case WDEC_FINDING_HEALTHY: return "windows_side_checks_passed";
+        case WDEC_FINDING_SERVICE_UNKNOWN: return "apple_service_status_unknown";
+        case WDEC_FINDING_BACKUP_UNKNOWN: return "backup_scan_incomplete";
+        case WDEC_FINDING_STABILITY_UNCONFIRMED: return "usb_stability_unconfirmed";
+        case WDEC_FINDING_NONE:
         default:
             return "none";
     }
 }
 
-const char *sambu_engine_version(void)
+const char *wdec_engine_version(void)
 {
-    return SAMBU_ENGINE_VERSION;
+    return WDEC_ENGINE_VERSION;
 }
 
-const char *sambu_report_schema(void)
+const char *wdec_report_schema(void)
 {
-    return SAMBU_REPORT_SCHEMA;
+    return WDEC_REPORT_SCHEMA;
 }
