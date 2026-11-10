@@ -1,0 +1,23 @@
+# CMake / build output
+/build/
+/out/
+/cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.exp
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# Tool output
+ToolzNG-report-*.txt
