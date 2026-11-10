@@ -359,6 +359,43 @@ static int test_quality_gate(void)
     return 0;
 }
 
+static int test_bounded_provenance_trace(void)
+{
+    SambuTrace trace;
+    SambuTraceEvent snapshot[SAMBU_TRACE_CAPACITY];
+    size_t count;
+    uint32_t i;
+
+    sambu_trace_init(&trace);
+    CHECK(sambu_trace_snapshot(&trace, snapshot, SAMBU_TRACE_CAPACITY) == 0u);
+    CHECK(!sambu_trace_record(&trace, (SambuTraceStage)999,
+                              SAMBU_TRACE_OBSERVED, 1u, 0u, 0u, 1u));
+    CHECK(!sambu_trace_record(&trace, SAMBU_TRACE_SOURCE,
+                              (SambuTraceOutcome)999, 1u, 0u, 0u, 1u));
+
+    for (i = 1u; i <= SAMBU_TRACE_CAPACITY + 6u; ++i) {
+        CHECK(sambu_trace_record(&trace, SAMBU_TRACE_EVIDENCE,
+                                 SAMBU_TRACE_OBSERVED, i, i, 0u,
+                                 (uint64_t)i * 10u));
+    }
+    CHECK(trace.count == SAMBU_TRACE_CAPACITY);
+    CHECK(trace.dropped == 6u);
+    count = sambu_trace_snapshot(&trace, snapshot, SAMBU_TRACE_CAPACITY);
+    CHECK(count == SAMBU_TRACE_CAPACITY);
+    CHECK(snapshot[0].sequence == 7u);
+    CHECK(snapshot[0].event_code == 7u);
+    CHECK(snapshot[SAMBU_TRACE_CAPACITY - 1u].sequence ==
+          (uint64_t)SAMBU_TRACE_CAPACITY + 6u);
+    CHECK(snapshot[SAMBU_TRACE_CAPACITY - 1u].monotonic_ms ==
+          ((uint64_t)SAMBU_TRACE_CAPACITY + 6u) * 10u);
+    CHECK(snapshot[0].stage == SAMBU_TRACE_EVIDENCE);
+    CHECK(snapshot[0].outcome == SAMBU_TRACE_OBSERVED);
+    CHECK(sambu_trace_snapshot(NULL, snapshot, SAMBU_TRACE_CAPACITY) == 0u);
+    CHECK(sambu_trace_snapshot(&trace, NULL, SAMBU_TRACE_CAPACITY) == 0u);
+    CHECK(sambu_trace_snapshot(&trace, snapshot, 0u) == 0u);
+    return 0;
+}
+
 int main(void)
 {
     CHECK(test_policy() == 0);
@@ -368,8 +405,9 @@ int main(void)
     CHECK(test_ledger() == 0);
     CHECK(test_recurrence_pattern() == 0);
     CHECK(test_quality_gate() == 0);
+    CHECK(test_bounded_provenance_trace() == 0);
     CHECK(sambu_architecture_validate());
-    CHECK(strcmp(sambu_engine_version(), "1.3.0") == 0);
+    CHECK(strcmp(sambu_engine_version(), "1.4.0") == 0);
     CHECK(strcmp(sambu_report_schema(), "toolzng.diagnostic.v1") == 0);
     CHECK(strcmp(sambu_finding_key(SAMBU_FINDING_SERVICE_UNKNOWN),
                  "apple_service_status_unknown") == 0);
