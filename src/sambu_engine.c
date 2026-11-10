@@ -164,7 +164,7 @@ SambuAssessment sambu_assess(const SambuEvidence *evidence)
         result.finding = SAMBU_FINDING_SERVICE_UNAVAILABLE;
     } else if (e->recent_usb_removals > 0u) {
         result.finding = SAMBU_FINDING_USB_UNSTABLE;
-    } else if (!e->backup_scan_complete && !e->backup_marker_valid) {
+    } else if (!e->backup_scan_complete) {
         result.finding = SAMBU_FINDING_BACKUP_UNKNOWN;
     } else if (e->backup_found && e->backup_folders_seen > 0u &&
                !backup_set_complete) {
