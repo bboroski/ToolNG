@@ -1,0 +1,29 @@
+{
+  "project_id": "toolng",
+  "schema_version": 1,
+  "contract_major": 1,
+  "role": "windows-apple-connection-diagnostics",
+  "maturity": "native-desktop",
+  "provides": [
+    "apple-usb-discovery",
+    "service-state-observation",
+    "local-read-only-backup-markers",
+    "evidence-aware-readiness",
+    "local-reports",
+    "safe-guidance"
+  ],
+  "consumes": [
+    "windows-pnp-and-service-evidence",
+    "portable-sambu-policy-workflow-core"
+  ],
+  "integrations": [
+    "SAMBU portable policy/workflow code is embedded in ToolNG native modules",
+    "Klipot portal provides discovery and documentation; no runtime link"
+  ],
+  "safety": [
+    "No silent device mutations",
+    "No cloud report upload",
+    "Unknown is distinct from failed",
+    "Illustrative SVG previews are not live scan evidence"
+  ]
+}
