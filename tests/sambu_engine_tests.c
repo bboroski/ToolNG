@@ -318,6 +318,7 @@ static int test_quality_gate(void)
     evidence.scan_complete = 1;
     evidence.device_found = 1;
     evidence.service_running = 1;
+    evidence.backup_scan_complete = 1;
     evidence.backup_found = 1;
     evidence.backup_marker_valid = 1;
     evidence.backup_folders_seen = 3u;
