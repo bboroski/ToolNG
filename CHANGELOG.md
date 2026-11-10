@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 — Duck Desktop Experience
+
+- Added per-monitor DPI-awareness v2 and retained user zoom (80–160%) with A−/A+ controls and Ctrl +/-/0 shortcuts.
+- Replaced blue UI accents with the black/graphite/yellow design tokens.
+- Added local private-by-default TXT report generation, an in-app history list, scrollable preview, clipboard copy, optional TXT Save As export, and SHA-256 sidecars.
+- Moved DuckFix route output into the application-local Reports directory.
+- Added native offline Help navigation and F1 shortcut; removed routine Apple support/store browser launch buttons.
+- Kept legacy LinkDNA and PulseVault files in place; new display settings use a separate settings.ini file.
+
+
 ## 0.4.0 — Duck Intelligence Plus
 
 - Added LinkDNA local baseline signature to detect changes in the Windows-visible Apple USB/service profile. The FNV-1a digest is a change detector, not a security identity.
