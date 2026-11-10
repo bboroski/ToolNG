@@ -1,10 +1,10 @@
-# ToolzNG within the NUN ecosystem
+# ToolNG within the NUN ecosystem
 
-ToolzNG remains a local Windows diagnostic application. It is not a remote device-management agent, an iOS repair tool or a general plugin host. The NUN contracts are intended for structured exchange of policy metadata and diagnostic evidence; they do not broaden ToolzNG's device-access permissions.
+ToolNG remains a local Windows diagnostic application. It is not a remote device-management agent, an iOS repair tool or a general plugin host. The NUN contracts are intended for structured exchange of policy metadata and diagnostic evidence; they do not broaden ToolNG's device-access permissions.
 
 ## Alucard — bounded diagnostics
 
-Scans, watchers, event history and report retention must stay within explicit time, memory and record-count bounds. On pressure, ToolzNG may stop optional sampling, shorten non-critical history or reject a new report. It must preserve the distinction between `Observed`, `Not found` and `Unknown`. An emergency UI state must never convert incomplete evidence into a positive result.
+Scans, watchers, event history and report retention must stay within explicit time, memory and record-count bounds. On pressure, ToolNG may stop optional sampling, shorten non-critical history or reject a new report. It must preserve the distinction between `Observed`, `Not found` and `Unknown`. An emergency UI state must never convert incomplete evidence into a positive result.
 
 ## Shanks — local-first by default
 
@@ -28,6 +28,6 @@ The current diagnostic path should remain synchronous and bounded where practica
 
 ## Contract boundary
 
-Klipot defines the shared capability and event schemas. ToolzNG's current integration with SAMBU is a native C adaptation of selected policy principles, not an embedded Python runtime or a dependency on the whole SAMBU package. There is no current Klipot event transport or plugin executor in ToolzNG; those remain future adapter work.
+Klipot defines the shared capability and event schemas. ToolNG's current integration with SAMBU is a native C adaptation of selected policy principles, not an embedded Python runtime or a dependency on the whole SAMBU package. There is no current Klipot event transport or plugin executor in ToolNG; those remain future adapter work.
 
 Safety-sensitive actions remain outside the tool's scope: no jailbreak, passcode bypass, Activation Lock bypass, backup-payload inspection, hidden device writes or automatic driver repair.
