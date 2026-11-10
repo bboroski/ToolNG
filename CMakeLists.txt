@@ -19,13 +19,7 @@ add_executable(ToolzNG WIN32
 
 target_include_directories(ToolzNG PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-target_compile_definitions(ToolzNG PRIVATE
-    UNICODE
-    _UNICODE
-    WIN32_LEAN_AND_MEAN
-    NOMINMAX
-    _WIN32_WINNT=0x0A00
-)
+# Windows feature macros are declared once in src/main.c for the native C build.
 
 target_link_libraries(ToolzNG PRIVATE
     setupapi
