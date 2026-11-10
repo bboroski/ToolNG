@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.3.0"
+#define SAMBU_ENGINE_VERSION "1.4.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
@@ -134,6 +134,52 @@ typedef struct SambuRelaxationResult {
     uint32_t samples;
     int warm;
 } SambuRelaxationResult;
+
+#define SAMBU_TRACE_CAPACITY 64u
+
+typedef enum SambuTraceStage {
+    SAMBU_TRACE_SOURCE = 1,
+    SAMBU_TRACE_POLICY = 2,
+    SAMBU_TRACE_EVIDENCE = 3,
+    SAMBU_TRACE_ASSESSMENT = 4,
+    SAMBU_TRACE_RELAXATION = 5,
+    SAMBU_TRACE_REPORT = 6
+} SambuTraceStage;
+
+typedef enum SambuTraceOutcome {
+    SAMBU_TRACE_OBSERVED = 1,
+    SAMBU_TRACE_ACCEPTED = 2,
+    SAMBU_TRACE_REJECTED = 3,
+    SAMBU_TRACE_DEGRADED = 4
+} SambuTraceOutcome;
+
+/* Bounded provenance only: no raw device payloads or personal data are stored. */
+typedef struct SambuTraceEvent {
+    uint64_t sequence;
+    uint64_t monotonic_ms;
+    uint32_t event_code;
+    uint32_t evidence_mask;
+    uint32_t quality_flags;
+    SambuTraceStage stage;
+    SambuTraceOutcome outcome;
+} SambuTraceEvent;
+
+typedef struct SambuTrace {
+    SambuTraceEvent events[SAMBU_TRACE_CAPACITY];
+    size_t head;
+    size_t count;
+    uint64_t next_sequence;
+    uint32_t dropped;
+} SambuTrace;
+
+void sambu_trace_init(SambuTrace *trace);
+int sambu_trace_record(SambuTrace *trace, SambuTraceStage stage,
+                       SambuTraceOutcome outcome, uint32_t event_code,
+                       uint32_t evidence_mask, uint32_t quality_flags,
+                       uint64_t monotonic_ms);
+/* Copies the oldest available events first; no more than capacity entries. */
+size_t sambu_trace_snapshot(const SambuTrace *trace, SambuTraceEvent *out,
+                            size_t capacity);
 
 /* S — fail-closed action policy. Device mutation and network upload are never granted. */
 int sambu_authorize(SambuOperation operation, SambuOrigin origin);
