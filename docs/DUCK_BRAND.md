@@ -1,8 +1,8 @@
-# 🦆 ToolzNG Duck Brand
+# 🦆 ToolNG Duck Brand
 
 ## Identity
 
-The ToolzNG mascot is a golden rubber duck engineer wearing dark glasses. It signals a friendly, careful utility rather than a system-modification tool.
+The ToolNG mascot is a golden rubber duck engineer wearing dark glasses. It signals a friendly, careful utility rather than a system-modification tool.
 
 ## Palette
 
