@@ -203,3 +203,7 @@ MIT — see [LICENSE](LICENSE).
 **ToolzNG — fewer guesses, clearer signals.** 🦆
 
 </div>
+
+## Cross-repository integration
+
+The shared boundaries, dependency direction and implementation-status matrix are documented in [Platform Integration](docs/PLATFORM_INTEGRATION.md).
