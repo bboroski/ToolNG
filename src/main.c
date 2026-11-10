@@ -38,19 +38,19 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define TIMER_READINESS      43
 
 /* Theme tokens: graphite base, controlled yellow accents, accessible status colors. */
-#define COL_BG              RGB(13, 13, 13)
-#define COL_HEADER          RGB(20, 20, 20)
-#define COL_SIDEBAR         RGB(20, 20, 20)
-#define COL_PANEL           RGB(26, 26, 26)
-#define COL_CARD            RGB(26, 26, 26)
-#define COL_CARD_HOVER      RGB(38, 38, 38)
-#define COL_BORDER          RGB(38, 38, 38)
-#define COL_TEXT            RGB(230, 230, 230)
-#define COL_MUTED           RGB(153, 153, 153)
-#define COL_ACCENT          RGB(255, 214, 0)
-#define COL_ACCENT_DARK     RGB(191, 161, 0)
-#define COL_GREEN           RGB(76, 175, 80)
-#define COL_AMBER           RGB(255, 214, 0)
+#define COL_BG              (g_app.high_contrast ? RGB(0, 0, 0) : RGB(13, 13, 13))
+#define COL_HEADER          (g_app.high_contrast ? RGB(0, 0, 0) : RGB(20, 20, 20))
+#define COL_SIDEBAR         (g_app.high_contrast ? RGB(0, 0, 0) : RGB(20, 20, 20))
+#define COL_PANEL           (g_app.high_contrast ? RGB(0, 0, 0) : RGB(26, 26, 26))
+#define COL_CARD            (g_app.high_contrast ? RGB(0, 0, 0) : RGB(26, 26, 26))
+#define COL_CARD_HOVER      (g_app.high_contrast ? RGB(32, 32, 32) : RGB(38, 38, 38))
+#define COL_BORDER          (g_app.high_contrast ? RGB(255, 255, 255) : RGB(38, 38, 38))
+#define COL_TEXT            (g_app.high_contrast ? RGB(255, 255, 255) : RGB(230, 230, 230))
+#define COL_MUTED           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(153, 153, 153))
+#define COL_ACCENT          RGB(255, 255, 0)
+#define COL_ACCENT_DARK     (g_app.high_contrast ? RGB(255, 255, 0) : RGB(191, 161, 0))
+#define COL_GREEN           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(76, 175, 80))
+#define COL_AMBER           RGB(255, 255, 0)
 #define COL_ERROR           RGB(255, 68, 68)
 
 #define PAGE_OVERVIEW 0
@@ -100,6 +100,7 @@ typedef struct AppState {
     UINT dpi;
     UINT effective_dpi;
     UINT zoom_percent;
+    BOOL high_contrast;
     BOOL scan_complete;
     UINT device_count;
     AppleDevice devices[MAX_APPLE_DEVICES];
@@ -411,6 +412,47 @@ static void initialize_local_store(void)
     append_path(g_app.reports_dir, ARRAYSIZE(g_app.reports_dir),
                 g_app.local_store, L"Reports");
     (void)CreateDirectoryW(g_app.reports_dir, NULL);
+}
+
+static void update_high_contrast(void)
+{
+    HIGHCONTRASTW settings;
+    ZeroMemory(&settings, sizeof(settings));
+    settings.cbSize = sizeof(settings);
+    g_app.high_contrast =
+        SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(settings), &settings, 0) &&
+        ((settings.dwFlags & HCF_HIGHCONTRASTON) != 0);
+}
+
+static void migrate_legacy_reports(void)
+{
+    PWSTR documents = NULL;
+    WCHAR pattern[MAX_PATH * 2];
+    WIN32_FIND_DATAW data;
+    HANDLE find;
+    if (!g_app.settings_file[0] || !g_app.reports_dir[0]) return;
+    if (GetPrivateProfileIntW(L"Migration", L"legacy_reports_v1", 0,
+                              g_app.settings_file) != 0) return;
+    if (SUCCEEDED(SHGetKnownFolderPath(&FOLDERID_Documents, 0, NULL, &documents))) {
+        append_path(pattern, ARRAYSIZE(pattern), documents, L"ToolzNG-report-*.txt");
+        find = FindFirstFileW(pattern, &data);
+        if (find != INVALID_HANDLE_VALUE) {
+            do {
+                WCHAR source[MAX_PATH * 2], destination[MAX_PATH * 2];
+                if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+                append_path(source, ARRAYSIZE(source), documents, data.cFileName);
+                append_path(destination, ARRAYSIZE(destination),
+                            g_app.reports_dir, data.cFileName);
+                if (GetFileAttributesW(destination) == INVALID_FILE_ATTRIBUTES)
+                    (void)CopyFileW(source, destination, TRUE);
+            } while (FindNextFileW(find, &data));
+            FindClose(find);
+        }
+        CoTaskMemFree(documents);
+    }
+    /* Mark the one-time migration complete; source files are deliberately preserved. */
+    (void)WritePrivateProfileStringW(L"Migration", L"legacy_reports_v1", L"1",
+                                      g_app.settings_file);
 }
 
 static void load_display_settings(void)
@@ -1785,6 +1827,8 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             create_fonts();
             initialize_local_store();
             load_display_settings();
+            migrate_legacy_reports();
+            update_high_contrast();
             g_app.effective_dpi = effective_dpi();
             register_usb_watch(hwnd);
             refresh_report_history();
@@ -1796,6 +1840,12 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
 
         case WM_ERASEBKGND:
             return 1;
+
+        case WM_SETTINGCHANGE:
+        case WM_THEMECHANGED:
+            update_high_contrast();
+            InvalidateRect(hwnd, NULL, FALSE);
+            return 0;
 
         case WM_PAINT:
             paint_window(hwnd);
@@ -1957,6 +2007,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (!g_app.dpi) g_app.dpi = 96;
     initialize_local_store();
     load_display_settings();
+    migrate_legacy_reports();
+    update_high_contrast();
     g_app.effective_dpi = effective_dpi();
     ZeroMemory(&wc, sizeof(wc));
     wc.cbSize = sizeof(wc);
