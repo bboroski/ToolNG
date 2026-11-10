@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- SAMBU Recurrence Radar: bounded 10-minute recurrence windows, single/recurrent/persistent pattern classification, and a concise DuckFix hint for repeated findings.
+- CTest coverage for recurrence windows, timeout reset, monotonic-clock reset, and pattern thresholds.
+- A Reapers-inspired engineering case study documenting how cyclic threats, early-warning sentinels, staged escalation, and dependency graphs inform a generic diagnostic model without adding game lore to the product.
+
+### Fixed
+- Compile the SAMBU engine as part of ToolzNG; its functions were already referenced by the Win32 application but omitted from the executable sources.
+- Register the existing SAMBU engine tests with CTest and run them in the Windows CI workflow.
+- Count finding transitions rather than repeated UI refreshes, preventing false recurrence inflation.
+
 ## 0.5.0 — Duck Desktop Experience
 
 - Added per-monitor DPI-awareness v2 and retained user zoom (80–160%) with A−/A+ controls and Ctrl +/-/0 shortcuts.
