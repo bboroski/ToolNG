@@ -20,7 +20,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Configure CMake
         run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
       - name: Build Release executable and tests
