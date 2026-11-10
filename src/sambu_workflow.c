@@ -1,4 +1,4 @@
-#include "sambu_workflow.h"
+#include "wdep_workflow.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -11,8 +11,8 @@ typedef enum TokenKind {
 
 typedef struct Token {
     TokenKind kind;
-    char text[SAMBU_WORKFLOW_TEXT_CAP];
-    SambuSourceSpan span;
+    char text[WDEP_WORKFLOW_TEXT_CAP];
+    WdepSourceSpan span;
 } Token;
 
 typedef struct Parser {
@@ -22,7 +22,7 @@ typedef struct Parser {
     uint32_t line;
     uint32_t column;
     Token token;
-    SambuWorkflowDiagnostic *diagnostic;
+    WdepWorkflowDiagnostic *diagnostic;
     bool failed;
 } Parser;
 
@@ -37,8 +37,8 @@ static void copy_string(char *dst, size_t cap, const char *src)
     dst[n] = '\0';
 }
 
-static void set_error(Parser *p, SambuWorkflowError code,
-                      SambuSourceSpan span, const char *message)
+static void set_error(Parser *p, WdepWorkflowError code,
+                      WdepSourceSpan span, const char *message)
 {
     if (!p || p->failed) return;
     p->failed = true;
@@ -115,20 +115,20 @@ static void next_token(Parser *p)
                     if (p->offset >= p->length) break;
                     c = p->source[p->offset];
                     if (c != '"' && c != '\\') {
-                        set_error(p, SAMBU_WF_LEXICAL, t->span,
+                        set_error(p, WDEP_WF_LEXICAL, t->span,
                                   "Only quote and slash escapes are supported.");
                         return;
                     }
                 }
                 if (n + 1u >= sizeof(t->text)) {
-                    set_error(p, SAMBU_WF_SOURCE_LIMIT, t->span,
+                    set_error(p, WDEP_WF_SOURCE_LIMIT, t->span,
                               "String exceeds the fixed manifest capacity.");
                     return;
                 }
                 t->text[n++] = c;
                 advance(p);
             }
-            set_error(p, SAMBU_WF_LEXICAL, t->span,
+            set_error(p, WDEP_WF_LEXICAL, t->span,
                       "Unterminated string literal.");
             return;
         default:
@@ -137,7 +137,7 @@ static void next_token(Parser *p)
                 while (p->offset < p->length &&
                        isdigit((unsigned char)p->source[p->offset])) {
                     if (n + 1u >= sizeof(t->text)) {
-                        set_error(p, SAMBU_WF_BUDGET, t->span,
+                        set_error(p, WDEP_WF_BUDGET, t->span,
                                   "Numeric token is too long.");
                         return;
                     }
@@ -150,7 +150,7 @@ static void next_token(Parser *p)
                     c = p->source[p->offset];
                     if (!isalnum((unsigned char)c) && c != '_' && c != '-') break;
                     if (n + 1u >= sizeof(t->text)) {
-                        set_error(p, SAMBU_WF_SOURCE_LIMIT, t->span,
+                        set_error(p, WDEP_WF_SOURCE_LIMIT, t->span,
                                   "Identifier exceeds the fixed name capacity.");
                         return;
                     }
@@ -158,7 +158,7 @@ static void next_token(Parser *p)
                     advance(p);
                 }
             } else {
-                set_error(p, SAMBU_WF_LEXICAL, t->span,
+                set_error(p, WDEP_WF_LEXICAL, t->span,
                           "Unexpected character in workflow source.");
                 return;
             }
@@ -172,7 +172,7 @@ static bool expect(Parser *p, TokenKind kind, const char *message)
 {
     if (p->failed) return false;
     if (p->token.kind != kind) {
-        set_error(p, SAMBU_WF_SYNTAX, p->token.span, message);
+        set_error(p, WDEP_WF_SYNTAX, p->token.span, message);
         return false;
     }
     next_token(p);
@@ -182,7 +182,7 @@ static bool expect(Parser *p, TokenKind kind, const char *message)
 static bool keyword(Parser *p, const char *word)
 {
     if (p->token.kind != TOK_ID || strcmp(p->token.text, word) != 0) {
-        set_error(p, SAMBU_WF_SYNTAX, p->token.span, "Unexpected keyword.");
+        set_error(p, WDEP_WF_SYNTAX, p->token.span, "Unexpected keyword.");
         return false;
     }
     next_token(p);
@@ -192,11 +192,11 @@ static bool keyword(Parser *p, const char *word)
 static bool name(Parser *p, char *dst, size_t cap)
 {
     if (p->token.kind != TOK_ID) {
-        set_error(p, SAMBU_WF_SYNTAX, p->token.span, "Expected identifier.");
+        set_error(p, WDEP_WF_SYNTAX, p->token.span, "Expected identifier.");
         return false;
     }
     if (strlen(p->token.text) >= cap) {
-        set_error(p, SAMBU_WF_SOURCE_LIMIT, p->token.span, "Identifier is too long.");
+        set_error(p, WDEP_WF_SOURCE_LIMIT, p->token.span, "Identifier is too long.");
         return false;
     }
     copy_string(dst, cap, p->token.text);
@@ -204,32 +204,32 @@ static bool name(Parser *p, char *dst, size_t cap)
     return !p->failed;
 }
 
-static SambuWorkflowAction resolve_action(const char *module, const char *verb)
+static WdepWorkflowAction resolve_action(const char *module, const char *verb)
 {
     if (strcmp(module, "observe") == 0 && strcmp(verb, "apple_usb") == 0)
-        return SAMBU_WF_SCAN_USB;
+        return WDEP_WF_SCAN_USB;
     if (strcmp(module, "observe") == 0 && strcmp(verb, "apple_service") == 0)
-        return SAMBU_WF_READ_SERVICE;
+        return WDEP_WF_READ_SERVICE;
     if (strcmp(module, "record") == 0 && strcmp(verb, "link_profile") == 0)
-        return SAMBU_WF_RECORD_PROFILE;
+        return WDEP_WF_RECORD_PROFILE;
     if (strcmp(module, "observe") == 0 && strcmp(verb, "backup_markers") == 0)
-        return SAMBU_WF_AUDIT_BACKUP;
+        return WDEP_WF_AUDIT_BACKUP;
     if (strcmp(module, "compute") == 0 && strcmp(verb, "readiness") == 0)
-        return SAMBU_WF_ASSESS_READINESS;
-    return SAMBU_WF_NONE;
+        return WDEP_WF_ASSESS_READINESS;
+    return WDEP_WF_NONE;
 }
 
-static bool parse_manifest(Parser *p, SambuWorkflow *out)
+static bool parse_manifest(Parser *p, WdepWorkflow *out)
 {
     unsigned seen = 0u;
     if (!keyword(p, "manifest") || !expect(p, TOK_LBRACE, "Expected manifest block."))
         return false;
     while (!p->failed && p->token.kind != TOK_RBRACE && p->token.kind != TOK_EOF) {
-        char field[SAMBU_WORKFLOW_NAME_CAP];
+        char field[WDEP_WORKFLOW_NAME_CAP];
         if (!name(p, field, sizeof(field))) return false;
         if (strcmp(field, "purpose") == 0) {
             if ((seen & 1u) || p->token.kind != TOK_STRING) {
-                set_error(p, SAMBU_WF_SYNTAX, p->token.span, "Purpose must be one quoted string.");
+                set_error(p, WDEP_WF_SYNTAX, p->token.span, "Purpose must be one quoted string.");
                 return false;
             }
             copy_string(out->purpose, sizeof(out->purpose), p->token.text);
@@ -239,26 +239,26 @@ static bool parse_manifest(Parser *p, SambuWorkflow *out)
             unsigned long value = 0u;
             size_t i;
             if (seen & 2u) {
-                set_error(p, SAMBU_WF_SYNTAX, p->token.span, "max_steps is duplicated.");
+                set_error(p, WDEP_WF_SYNTAX, p->token.span, "max_steps is duplicated.");
                 return false;
             }
             if (p->token.kind != TOK_NUMBER) {
-                set_error(p, SAMBU_WF_SYNTAX, p->token.span, "max_steps must be an integer.");
+                set_error(p, WDEP_WF_SYNTAX, p->token.span, "max_steps must be an integer.");
                 return false;
             }
             for (i = 0u; p->token.text[i]; ++i) {
                 unsigned long digit = (unsigned long)(p->token.text[i] - '0');
-                if (value > (SAMBU_WORKFLOW_STEP_CAP / 10u) ||
-                    (value == (SAMBU_WORKFLOW_STEP_CAP / 10u) &&
-                     digit > (SAMBU_WORKFLOW_STEP_CAP % 10u))) {
-                    set_error(p, SAMBU_WF_BUDGET, p->token.span,
+                if (value > (WDEP_WORKFLOW_STEP_CAP / 10u) ||
+                    (value == (WDEP_WORKFLOW_STEP_CAP / 10u) &&
+                     digit > (WDEP_WORKFLOW_STEP_CAP % 10u))) {
+                    set_error(p, WDEP_WF_BUDGET, p->token.span,
                               "max_steps is outside 1..8.");
                     return false;
                 }
                 value = value * 10u + digit;
             }
-            if (value == 0u || value > SAMBU_WORKFLOW_STEP_CAP) {
-                set_error(p, SAMBU_WF_BUDGET, p->token.span, "max_steps is outside 1..8.");
+            if (value == 0u || value > WDEP_WORKFLOW_STEP_CAP) {
+                set_error(p, WDEP_WF_BUDGET, p->token.span, "max_steps is outside 1..8.");
                 return false;
             }
             out->max_steps = (uint16_t)value;
@@ -266,39 +266,39 @@ static bool parse_manifest(Parser *p, SambuWorkflow *out)
             next_token(p);
         } else if (strcmp(field, "autonomy") == 0) {
             if ((seen & 4u) || p->token.kind != TOK_ID) {
-                set_error(p, SAMBU_WF_SYNTAX, p->token.span, "autonomy must be declared once.");
+                set_error(p, WDEP_WF_SYNTAX, p->token.span, "autonomy must be declared once.");
                 return false;
             }
             if (strcmp(p->token.text, "observe_only") == 0)
-                out->autonomy = SAMBU_WF_OBSERVE_ONLY;
+                out->autonomy = WDEP_WF_OBSERVE_ONLY;
             else if (strcmp(p->token.text, "local_record") == 0)
-                out->autonomy = SAMBU_WF_LOCAL_RECORD;
+                out->autonomy = WDEP_WF_LOCAL_RECORD;
             else {
-                set_error(p, SAMBU_WF_POLICY, p->token.span, "Unknown autonomy class.");
+                set_error(p, WDEP_WF_POLICY, p->token.span, "Unknown autonomy class.");
                 return false;
             }
             seen |= 4u;
             next_token(p);
         } else {
-            set_error(p, SAMBU_WF_SYNTAX, p->token.span, "Unknown manifest field.");
+            set_error(p, WDEP_WF_SYNTAX, p->token.span, "Unknown manifest field.");
             return false;
         }
         if (!expect(p, TOK_SEMI, "Expected ';' after manifest field.")) return false;
     }
     if (!expect(p, TOK_RBRACE, "Expected end of manifest.")) return false;
     if (seen != 7u || out->purpose[0] == '\0') {
-        set_error(p, SAMBU_WF_SYNTAX, p->token.span,
+        set_error(p, WDEP_WF_SYNTAX, p->token.span,
                   "Manifest requires a non-empty purpose, max_steps and autonomy.");
         return false;
     }
     return true;
 }
 
-static bool parse_step(Parser *p, SambuWorkflow *out)
+static bool parse_step(Parser *p, WdepWorkflow *out)
 {
-    SambuWorkflowStep step;
-    char module[SAMBU_WORKFLOW_NAME_CAP] = {0};
-    char verb[SAMBU_WORKFLOW_NAME_CAP] = {0};
+    WdepWorkflowStep step;
+    char module[WDEP_WORKFLOW_NAME_CAP] = {0};
+    char verb[WDEP_WORKFLOW_NAME_CAP] = {0};
     uint16_t i;
     memset(&step, 0, sizeof(step));
     step.source = p->token.span;
@@ -307,13 +307,13 @@ static bool parse_step(Parser *p, SambuWorkflow *out)
         !name(p, module, sizeof(module)) || !expect(p, TOK_DOT, "Expected qualified action.") ||
         !name(p, verb, sizeof(verb))) return false;
     step.action = resolve_action(module, verb);
-    if (step.action == SAMBU_WF_NONE) {
-        set_error(p, SAMBU_WF_UNKNOWN_ACTION, step.source,
-                  "Action is not present in the ToolzNG host allowlist.");
+    if (step.action == WDEP_WF_NONE) {
+        set_error(p, WDEP_WF_UNKNOWN_ACTION, step.source,
+                  "Action is not present in the WDEP host allowlist.");
         return false;
     }
     if (p->token.kind != TOK_SEMI) {
-        set_error(p, SAMBU_WF_SYNTAX, p->token.span, "Expected ';' after step.");
+        set_error(p, WDEP_WF_SYNTAX, p->token.span, "Expected ';' after step.");
         return false;
     }
     step.source.length = (p->token.span.offset + p->token.span.length) - step.source.offset;
@@ -321,34 +321,34 @@ static bool parse_step(Parser *p, SambuWorkflow *out)
     if (p->failed) return false;
     for (i = 0u; i < out->step_count; ++i) {
         if (strcmp(out->steps[i].name, step.name) == 0) {
-            set_error(p, SAMBU_WF_DUPLICATE_STEP, step.source, "Step names must be unique.");
+            set_error(p, WDEP_WF_DUPLICATE_STEP, step.source, "Step names must be unique.");
             return false;
         }
     }
-    if (out->step_count >= SAMBU_WORKFLOW_STEP_CAP) {
-        set_error(p, SAMBU_WF_BUDGET, step.source, "Compiled step capacity exceeded.");
+    if (out->step_count >= WDEP_WORKFLOW_STEP_CAP) {
+        set_error(p, WDEP_WF_BUDGET, step.source, "Compiled step capacity exceeded.");
         return false;
     }
     out->steps[out->step_count++] = step;
     return true;
 }
 
-bool sambu_workflow_compile(const char *source, size_t length,
-                            SambuWorkflow *program,
-                            SambuWorkflowDiagnostic *diagnostic)
+bool wdep_workflow_compile(const char *source, size_t length,
+                            WdepWorkflow *program,
+                            WdepWorkflowDiagnostic *diagnostic)
 {
     Parser p;
     if (diagnostic) memset(diagnostic, 0, sizeof(*diagnostic));
     if (!source || !program || length == 0u) {
         if (diagnostic) {
-            diagnostic->code = SAMBU_WF_ARGUMENT;
+            diagnostic->code = WDEP_WF_ARGUMENT;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Source and program are required.");
         }
         return false;
     }
-    if (length > SAMBU_WORKFLOW_SOURCE_CAP) {
+    if (length > WDEP_WORKFLOW_SOURCE_CAP) {
         if (diagnostic) {
-            diagnostic->code = SAMBU_WF_SOURCE_LIMIT;
+            diagnostic->code = WDEP_WF_SOURCE_LIMIT;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Workflow source exceeds 3072 bytes.");
         }
         return false;
@@ -364,12 +364,12 @@ bool sambu_workflow_compile(const char *source, size_t length,
         if (!parse_step(&p, program)) return false;
     }
     if (!expect(&p, TOK_RBRACE, "Expected end of workflow.") || p.token.kind != TOK_EOF) {
-        if (!p.failed) set_error(&p, SAMBU_WF_SYNTAX, p.token.span, "Unexpected trailing input.");
+        if (!p.failed) set_error(&p, WDEP_WF_SYNTAX, p.token.span, "Unexpected trailing input.");
         return false;
     }
     if (program->step_count == 0u || program->step_count > program->max_steps) {
         if (diagnostic) {
-            diagnostic->code = SAMBU_WF_BUDGET;
+            diagnostic->code = WDEP_WF_BUDGET;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Empty workflow or manifest step budget exceeded.");
         }
         return false;
@@ -377,92 +377,92 @@ bool sambu_workflow_compile(const char *source, size_t length,
     return true;
 }
 
-bool sambu_workflow_preflight(const SambuWorkflow *program,
-                             const SambuWorkflowPolicy *policy,
-                             SambuWorkflowDiagnostic *diagnostic)
+bool wdep_workflow_preflight(const WdepWorkflow *program,
+                             const WdepWorkflowPolicy *policy,
+                             WdepWorkflowDiagnostic *diagnostic)
 {
     uint16_t i;
     if (diagnostic) memset(diagnostic, 0, sizeof(*diagnostic));
     if (!program || !policy) {
         if (diagnostic) {
-            diagnostic->code = SAMBU_WF_ARGUMENT;
+            diagnostic->code = WDEP_WF_ARGUMENT;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Program and policy are required.");
         }
         return false;
     }
     if (!program->step_count || program->max_steps == 0u ||
-        program->max_steps > SAMBU_WORKFLOW_STEP_CAP ||
+        program->max_steps > WDEP_WORKFLOW_STEP_CAP ||
         program->step_count > program->max_steps ||
-        program->step_count > policy->max_steps || program->step_count > SAMBU_WORKFLOW_STEP_CAP) {
+        program->step_count > policy->max_steps || program->step_count > WDEP_WORKFLOW_STEP_CAP) {
         if (diagnostic) {
-            diagnostic->code = SAMBU_WF_BUDGET;
+            diagnostic->code = WDEP_WF_BUDGET;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Workflow exceeds the active step budget.");
         }
         return false;
     }
-    if ((program->autonomy != SAMBU_WF_OBSERVE_ONLY &&
-         program->autonomy != SAMBU_WF_LOCAL_RECORD) ||
-        !policy->allow_observation || !sambu_authorize(SAMBU_OP_SCAN, SAMBU_ORIGIN_INTERNAL)) {
+    if ((program->autonomy != WDEP_WF_OBSERVE_ONLY &&
+         program->autonomy != WDEP_WF_LOCAL_RECORD) ||
+        !policy->allow_observation || !wdep_authorize(WDEP_OP_SCAN, WDEP_ORIGIN_INTERNAL)) {
         if (diagnostic) {
-            diagnostic->code = SAMBU_WF_POLICY;
+            diagnostic->code = WDEP_WF_POLICY;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "Observation is not authorized.");
         }
         return false;
     }
     for (i = 0u; i < program->step_count; ++i) {
-        const SambuWorkflowStep *step = &program->steps[i];
+        const WdepWorkflowStep *step = &program->steps[i];
         if (!step->name[0]) {
             if (diagnostic) {
-                diagnostic->code = SAMBU_WF_SYNTAX;
+                diagnostic->code = WDEP_WF_SYNTAX;
                 diagnostic->source = step->source;
                 copy_string(diagnostic->message, sizeof(diagnostic->message), "Step name is empty.");
             }
             return false;
         }
-        if (step->action == SAMBU_WF_RECORD_PROFILE) {
-            if (program->autonomy != SAMBU_WF_LOCAL_RECORD || !policy->allow_local_record ||
-                !sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL)) {
+        if (step->action == WDEP_WF_RECORD_PROFILE) {
+            if (program->autonomy != WDEP_WF_LOCAL_RECORD || !policy->allow_local_record ||
+                !wdep_authorize(WDEP_OP_RECORD_LOCAL_PROFILE, WDEP_ORIGIN_INTERNAL)) {
                 if (diagnostic) {
-                    diagnostic->code = SAMBU_WF_POLICY;
+                    diagnostic->code = WDEP_WF_POLICY;
                     diagnostic->source = step->source;
                     copy_string(diagnostic->message, sizeof(diagnostic->message), "Local profile recording failed dual preflight.");
                 }
                 return false;
             }
-        } else if (step->action < SAMBU_WF_SCAN_USB || step->action > SAMBU_WF_ASSESS_READINESS) {
+        } else if (step->action < WDEP_WF_SCAN_USB || step->action > WDEP_WF_ASSESS_READINESS) {
             if (diagnostic) {
-                diagnostic->code = SAMBU_WF_UNKNOWN_ACTION;
+                diagnostic->code = WDEP_WF_UNKNOWN_ACTION;
                 diagnostic->source = step->source;
                 copy_string(diagnostic->message, sizeof(diagnostic->message), "Unrecognized action.");
             }
             return false;
         }
     }
-    if (program->autonomy != SAMBU_WF_OBSERVE_ONLY &&
-        program->autonomy != SAMBU_WF_LOCAL_RECORD) {
-        if (diagnostic) diagnostic->code = SAMBU_WF_POLICY;
+    if (program->autonomy != WDEP_WF_OBSERVE_ONLY &&
+        program->autonomy != WDEP_WF_LOCAL_RECORD) {
+        if (diagnostic) diagnostic->code = WDEP_WF_POLICY;
         return false;
     }
     return true;
 }
 
-bool sambu_workflow_begin(SambuWorkflowSession *session,
-                          const SambuWorkflow *program,
-                          const SambuWorkflowPolicy *policy,
-                          const SambuWorkflowHost *host,
-                          SambuWorkflowDiagnostic *diagnostic)
+bool wdep_workflow_begin(WdepWorkflowSession *session,
+                          const WdepWorkflow *program,
+                          const WdepWorkflowPolicy *policy,
+                          const WdepWorkflowHost *host,
+                          WdepWorkflowDiagnostic *diagnostic)
 {
     if (!session || !host || !host->handler) {
         if (diagnostic) {
             memset(diagnostic, 0, sizeof(*diagnostic));
-            diagnostic->code = SAMBU_WF_ARGUMENT;
+            diagnostic->code = WDEP_WF_ARGUMENT;
             copy_string(diagnostic->message, sizeof(diagnostic->message), "A host action handler is required.");
         }
         return false;
     }
     memset(session, 0, sizeof(*session));
-    if (!sambu_workflow_preflight(program, policy, diagnostic)) {
-        session->state = SAMBU_WF_FAILED;
+    if (!wdep_workflow_preflight(program, policy, diagnostic)) {
+        session->state = WDEP_WF_FAILED;
         if (diagnostic) session->run.diagnostic = *diagnostic;
         return false;
     }
@@ -470,16 +470,16 @@ bool sambu_workflow_begin(SambuWorkflowSession *session,
     session->policy = *policy;
     session->host = *host;
     session->run.preflight_approved = true;
-    session->state = SAMBU_WF_RUNNING;
+    session->state = WDEP_WF_RUNNING;
     return true;
 }
 
-static SambuWorkflowState workflow_session_invalid(
-    SambuWorkflowSession *session, const char *message)
+static WdepWorkflowState workflow_session_invalid(
+    WdepWorkflowSession *session, const char *message)
 {
-    session->state = SAMBU_WF_FAILED;
+    session->state = WDEP_WF_FAILED;
     session->run.completed = false;
-    session->run.diagnostic.code = SAMBU_WF_SESSION_INVALID;
+    session->run.diagnostic.code = WDEP_WF_SESSION_INVALID;
     memset(&session->run.diagnostic.source, 0,
            sizeof(session->run.diagnostic.source));
     copy_string(session->run.diagnostic.message,
@@ -487,20 +487,20 @@ static SambuWorkflowState workflow_session_invalid(
     return session->state;
 }
 
-SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
+WdepWorkflowState wdep_workflow_tick(WdepWorkflowSession *session)
 {
-    SambuWorkflowEvidence *entry;
-    const SambuWorkflowStep *step;
+    WdepWorkflowEvidence *entry;
+    const WdepWorkflowStep *step;
     bool ok;
-    if (session == NULL) return SAMBU_WF_FAILED;
-    if (session->state != SAMBU_WF_RUNNING) return session->state;
+    if (session == NULL) return WDEP_WF_FAILED;
+    if (session->state != WDEP_WF_RUNNING) return session->state;
 
     /* The session is public caller-owned state. Recheck its execution contract
        before indexing evidence or invoking a platform callback. */
     if (!session->run.preflight_approved || session->run.completed ||
         session->host.handler == NULL ||
         session->program.step_count == 0u ||
-        session->program.step_count > SAMBU_WORKFLOW_STEP_CAP ||
+        session->program.step_count > WDEP_WORKFLOW_STEP_CAP ||
         session->program.max_steps == 0u ||
         session->policy.max_steps == 0u ||
         session->program.max_steps > session->policy.max_steps ||
@@ -515,7 +515,7 @@ SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
             session, "Workflow session invariants changed after preflight; no action was executed.");
     }
     for (uint16_t i = 0u; i < session->cursor; ++i) {
-        const SambuWorkflowEvidence *prior = &session->run.evidence[i];
+        const WdepWorkflowEvidence *prior = &session->run.evidence[i];
         if (prior->sequence != (uint16_t)(i + 1u) ||
             prior->action != session->program.steps[i].action ||
             !prior->succeeded) {
@@ -523,8 +523,8 @@ SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
                 session, "Prior workflow evidence does not match the executed step sequence.");
         }
     }
-    if (session->program.autonomy != SAMBU_WF_OBSERVE_ONLY &&
-        session->program.autonomy != SAMBU_WF_LOCAL_RECORD) {
+    if (session->program.autonomy != WDEP_WF_OBSERVE_ONLY &&
+        session->program.autonomy != WDEP_WF_LOCAL_RECORD) {
         return workflow_session_invalid(
             session, "Workflow autonomy mode is not recognized.");
     }
@@ -533,17 +533,17 @@ SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
             session, "Observation permission was revoked after preflight.");
     }
     step = &session->program.steps[session->cursor];
-    if (step->action < SAMBU_WF_SCAN_USB ||
-        step->action > SAMBU_WF_ASSESS_READINESS ||
+    if (step->action < WDEP_WF_SCAN_USB ||
+        step->action > WDEP_WF_ASSESS_READINESS ||
         memchr(step->name, '\0', sizeof(step->name)) == NULL ||
         step->name[0] == '\0') {
         return workflow_session_invalid(
             session, "Current workflow step is malformed or not allowlisted.");
     }
-    if (step->action == SAMBU_WF_RECORD_PROFILE &&
-        (session->program.autonomy != SAMBU_WF_LOCAL_RECORD ||
+    if (step->action == WDEP_WF_RECORD_PROFILE &&
+        (session->program.autonomy != WDEP_WF_LOCAL_RECORD ||
          !session->policy.allow_local_record ||
-         !sambu_authorize(SAMBU_OP_RECORD_LOCAL_PROFILE, SAMBU_ORIGIN_INTERNAL))) {
+         !wdep_authorize(WDEP_OP_RECORD_LOCAL_PROFILE, WDEP_ORIGIN_INTERNAL))) {
         return workflow_session_invalid(
             session, "Current workflow step no longer satisfies local-record policy.");
     }
@@ -562,56 +562,56 @@ SambuWorkflowState sambu_workflow_tick(SambuWorkflowSession *session)
         ++session->run.passed;
         if (!entry->finding[0]) copy_string(entry->finding, sizeof(entry->finding), "Completed.");
         if (session->cursor == session->program.step_count) {
-            session->state = SAMBU_WF_COMPLETED;
+            session->state = WDEP_WF_COMPLETED;
             session->run.completed = true;
         }
     } else {
         ++session->run.failed;
-        session->run.diagnostic.code = SAMBU_WF_HOST_FAILURE;
+        session->run.diagnostic.code = WDEP_WF_HOST_FAILURE;
         session->run.diagnostic.source = step->source;
         copy_string(session->run.diagnostic.message, sizeof(session->run.diagnostic.message),
                     entry->finding[0] ? entry->finding : "Host action failed; remaining steps skipped.");
-        session->state = SAMBU_WF_FAILED;
+        session->state = WDEP_WF_FAILED;
     }
     return session->state;
 }
 
-const char *sambu_workflow_action_name(SambuWorkflowAction action)
+const char *wdep_workflow_action_name(WdepWorkflowAction action)
 {
     switch (action) {
-        case SAMBU_WF_SCAN_USB: return "observe.apple_usb";
-        case SAMBU_WF_READ_SERVICE: return "observe.apple_service";
-        case SAMBU_WF_RECORD_PROFILE: return "record.link_profile";
-        case SAMBU_WF_AUDIT_BACKUP: return "observe.backup_markers";
-        case SAMBU_WF_ASSESS_READINESS: return "compute.readiness";
+        case WDEP_WF_SCAN_USB: return "observe.apple_usb";
+        case WDEP_WF_READ_SERVICE: return "observe.apple_service";
+        case WDEP_WF_RECORD_PROFILE: return "record.link_profile";
+        case WDEP_WF_AUDIT_BACKUP: return "observe.backup_markers";
+        case WDEP_WF_ASSESS_READINESS: return "compute.readiness";
         default: return "unknown";
     }
 }
 
-const char *sambu_workflow_error_name(SambuWorkflowError error)
+const char *wdep_workflow_error_name(WdepWorkflowError error)
 {
     switch (error) {
-        case SAMBU_WF_ARGUMENT: return "argument";
-        case SAMBU_WF_SOURCE_LIMIT: return "source_limit";
-        case SAMBU_WF_LEXICAL: return "lexical";
-        case SAMBU_WF_SYNTAX: return "syntax";
-        case SAMBU_WF_UNKNOWN_ACTION: return "unknown_action";
-        case SAMBU_WF_DUPLICATE_STEP: return "duplicate_step";
-        case SAMBU_WF_BUDGET: return "budget";
-        case SAMBU_WF_POLICY: return "policy";
-        case SAMBU_WF_HOST_FAILURE: return "host_failure";
-        case SAMBU_WF_SESSION_INVALID: return "session_invalid";
-        case SAMBU_WF_OK: default: return "ok";
+        case WDEP_WF_ARGUMENT: return "argument";
+        case WDEP_WF_SOURCE_LIMIT: return "source_limit";
+        case WDEP_WF_LEXICAL: return "lexical";
+        case WDEP_WF_SYNTAX: return "syntax";
+        case WDEP_WF_UNKNOWN_ACTION: return "unknown_action";
+        case WDEP_WF_DUPLICATE_STEP: return "duplicate_step";
+        case WDEP_WF_BUDGET: return "budget";
+        case WDEP_WF_POLICY: return "policy";
+        case WDEP_WF_HOST_FAILURE: return "host_failure";
+        case WDEP_WF_SESSION_INVALID: return "session_invalid";
+        case WDEP_WF_OK: default: return "ok";
     }
 }
 
-const char *sambu_workflow_state_name(SambuWorkflowState state)
+const char *wdep_workflow_state_name(WdepWorkflowState state)
 {
     switch (state) {
-        case SAMBU_WF_IDLE: return "idle";
-        case SAMBU_WF_RUNNING: return "running";
-        case SAMBU_WF_COMPLETED: return "completed";
-        case SAMBU_WF_FAILED: return "failed";
+        case WDEP_WF_IDLE: return "idle";
+        case WDEP_WF_RUNNING: return "running";
+        case WDEP_WF_COMPLETED: return "completed";
+        case WDEP_WF_FAILED: return "failed";
         default: return "unknown";
     }
 }
