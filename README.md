@@ -1,14 +1,16 @@
 <div align="center">
 
-<img src="assets/readme-hero.svg" alt="ToolzNG — native Windows Apple-device diagnostics" width="100%" />
+<img src="assets/readme-hero.svg" alt="ToolzNG — нативна діагностика Apple-пристроїв у Windows" width="100%" />
 
 # ToolzNG
 
-### Native Apple-device connection diagnostics for Windows
+### Діагностика підключення Apple-пристроїв у Windows
 
-**Проверяй. Понимай. Действуй безопасно.**
+**Перевіряй. Розумій. Дій безпечно.**
 
-A local-first C17 / Win32 utility that explains Windows-visible Apple connection signals, USB events and backup-marker checks — without silent device changes or cloud uploads.
+Локальний C17 / Win32-інструмент, який пояснює видимі Windows сигнали Apple-пристроїв, USB-події та маркери резервних копій — без прихованої зміни пристрою чи хмарного передавання даних.
+
+[Українська](README.md) · [English](README.en.md) · [Русский](README.ru.md)
 
 ![ToolzNG 0.6.1](https://img.shields.io/badge/ToolzNG-0.6.1-FFD600?style=for-the-badge&labelColor=171923)
 ![C17](https://img.shields.io/badge/C-17-FFD600?style=for-the-badge&labelColor=171923)
@@ -16,119 +18,111 @@ A local-first C17 / Win32 utility that explains Windows-visible Apple connection
 ![MIT](https://img.shields.io/badge/License-MIT-FFD600?style=for-the-badge&labelColor=171923)
 [![CI](https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml)
 
-[Overview](#-what-toolzng-does) · [Screens](#-inside-the-app) · [Diagnostics](#-how-it-works) · [Build](#-build-from-source) · [Privacy](#-privacy-and-boundaries)
+[Огляд](#-що-таке-toolzng) · [Інтерфейс](#-інтерфейс) · [Оцінювання](#-як-працює-оцінювання) · [Збірка](#-збірка) · [Приватність](#-приватність-та-межі)
 
 </div>
 
 ---
 
-## What ToolzNG does
+## Що таке ToolzNG
 
-An iPhone or iPad connection can fail at different Windows layers: the device may not appear in Plug and Play, Apple Mobile Device Service may be unavailable, USB attachment may be intermittent, or a local backup folder may have incomplete markers. ToolzNG separates these observations instead of reducing everything to “connected / disconnected”.
+Проблеми з підключенням iPhone або iPad можуть виникати на різних рівнях Windows: пристрій не з'являється в Plug and Play, служба Apple Mobile Device Service недоступна, USB-з'єднання переривається або локальна резервна копія має неповні структурні маркери. ToolzNG розділяє ці сигнали замість спрощеного статусу «підключено / не підключено».
 
-It is a **Windows-side diagnostic assistant**, not an iPhone repair suite, backup manager or iOS health monitor.
+Це **діагностичний помічник для Windows**, а не пакет ремонту iPhone, менеджер backup чи монітор здоров’я iOS.
 
-## Inside the app
+## Інтерфейс
+
+<p align="center"><img src="assets/toolzng-duck.svg" alt="Фірмовий маскот ToolzNG" width="220" /></p>
 
 <p align="center">
-  <img src="assets/toolzng-duck.svg" alt="ToolzNG duck engineer mascot" width="220" />
+<img src="assets/screenshots/overview.svg" alt="Прев'ю панелі ToolzNG; демонстраційні дані" width="100%" />
+**01 · Огляд** — готовність, покриття доказами та пріоритетна знахідка.
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/overview.svg" alt="ToolzNG overview UI preview with Duck Readiness and quality indicators; sample data" width="100%" />
-  <strong>01 · Overview</strong><br />
-  Readiness, evidence coverage, current finding and module navigation.
+<img src="assets/screenshots/usb-devices.svg" alt="Прев'ю USB-інспекції Apple; демонстраційні дані" width="100%" />
+**02 · USB Apple** — видимість PnP, стан служби та повнота перевірок.
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/usb-devices.svg" alt="ToolzNG Apple USB devices UI preview; sample data" width="100%" />
-  <strong>02 · Apple USB inspection</strong><br />
-  PnP visibility, Apple service state and measured-check status.
+<img src="assets/screenshots/reports.svg" alt="Прев'ю локальних звітів; демонстраційні дані" width="100%" />
+**03 · Звіти** — історія, докази, прапорці якості та попередній перегляд.
 </p>
 
-<p align="center">
-  <img src="assets/screenshots/reports.svg" alt="ToolzNG local reports UI preview; sample data" width="100%" />
-  <strong>03 · Local reports</strong><br />
-  Report history, evidence fields, quality flags and private preview.
-</p>
+<img src="assets/diagnostic-flow.svg" alt="Процес ToolzNG: спостереження, перевірка, оцінювання, рекомендація та звіт за дією користувача" width="100%" />
 
-<img src="assets/diagnostic-flow.svg" alt="ToolzNG workflow: observe, validate, assess, guide and prepare a user-requested report" width="100%" />
+> **Візуальна примітка:** інтерфейсні панелі — статичні SVG-прев'ю з демонстраційними SAMPLE DATA, а не знімки живого сканування чи реальні дані пристрою.
 
-> **Visual note:** the three interface panels are static SVG previews with illustrative SAMPLE DATA. They are not screenshots of a live scan or real device measurements.
+## Можливості
 
-## Capabilities
-
-| Module | Value |
+| Модуль | Практична цінність |
 |---|---|
-| **Apple USB Discovery** | Finds Windows PnP interfaces with Apple Vendor ID <code>05AC</code> and reports Apple Mobile Device Service state. |
-| **Duck Readiness** | Explainable 0–100 score from measurable Windows-side signals, with evidence coverage shown separately. |
-| **SAMBU Quality Gate** | Flags incomplete scans, inconsistent backup counts and unsupported stability claims. |
-| **USB Pulse** | Observes Apple USB arrival/removal notifications and retains a bounded recent event window. |
-| **USB Pulse relaxation** | Adds a 30-second EWMA trend, variance and residual to the bounded local event journal; advisory only. |
-| **Recurrence Radar** | Classifies isolated, repeated or persistent state transitions over a 10-minute window. |
-| **Backup Sentinel** | Read-only check for expected <code>Info.plist</code> and <code>Manifest.db</code> / <code>Manifest.plist</code> markers. |
-| **Backup Freshness** | Shows the modification age of the newest <code>Info.plist</code> marker. |
-| **DuckFix Guide** | Prioritizes a safe next step; it does not apply repairs. |
-| **LinkDNA** | Compares a local FNV-1a fingerprint of Windows-visible Apple signals; not cryptographic identity. |
-| **PulseVault** | Bounded local JSONL USB event journal with rotation. |
-| **Privacy Shield & Evidence Seal** | Redacts Hardware ID and full backup paths; SHA-256 sidecar detects later report changes. |
-| **Offline Reports & Help** | Local history (up to 32 files), in-app preview, copy, TXT export and F1 help. |
+| **Apple USB Discovery** | Виявляє Windows PnP-інтерфейси з Apple Vendor ID <code>05AC</code> і показує стан Apple Mobile Device Service. |
+| **Duck Readiness** | Пояснювана оцінка 0–100 за вимірюваними сигналами Windows із окремим покриттям доказами. |
+| **SAMBU Quality Gate** | Виявляє неповні сканування, суперечливі лічильники backup і непідтверджені висновки про стабільність. |
+| **USB Pulse** | Відстежує події підключення/відключення Apple USB в обмеженому часовому вікні. |
+| **Recurrence Radar** | Розрізняє одиничні, повторювані та стійкі переходи станів у 10-хвилинному вікні. |
+| **Backup Sentinel** | Read-only перевірка маркерів <code>Info.plist</code> та <code>Manifest.db</code> / <code>Manifest.plist</code>. |
+| **Backup Freshness** | Показує час зміни найновішого маркера <code>Info.plist</code>. |
+| **DuckFix Guide** | Пропонує безпечний наступний крок, але не виконує автоматичний ремонт. |
+| **LinkDNA** | Порівнює локальний FNV-1a відбиток сигналів Apple; це не криптографічна ідентичність. |
+| **PulseVault** | Обмежений локальний JSONL-журнал USB-подій із ротацією. |
+| **Privacy Shield / Evidence Seal** | Приховує Hardware ID і повні шляхи backup; SHA-256 sidecar виявляє подальшу зміну файла. |
+| **Offline Reports & Help** | До 32 локальних звітів, перегляд, копіювання, TXT-експорт і довідка F1. |
 
-## How it works
+## Як працює оцінювання
 
-ToolzNG uses an inspectable assessment model:
-
-| Confirmed signal | Maximum points |
+| Підтверджений сигнал | Максимум |
 |---|---:|
-| Completed scan and visible Apple USB interface | 40 |
-| Apple Mobile Device Service confirmed running | 25 |
-| Local backup root found | 10 |
-| All discovered backup folders contain expected markers | 15 |
-| Device confirmed, watcher active, observation window elapsed, no recent removals | 10 |
-| **Total** | **100** |
+| Сканування завершене, інтерфейс Apple USB видимий | 40 |
+| Apple Mobile Device Service підтверджено запущена | 25 |
+| Локальний корінь backup знайдено | 10 |
+| Усі знайдені каталоги backup мають очікувані маркери | 15 |
+| Пристрій підтверджений, watcher активний, вікно спостереження завершене, видалень не було | 10 |
+| **Разом** | **100** |
 
-The score is normalized over weights that could actually be measured. **Evidence coverage** shows what share of the full model was measurable; incomplete coverage makes the result provisional. A perfect score with partial coverage is not a complete pass.
+Оцінка нормалізується за вагами, які реально вдалося виміряти. **Evidence coverage** показує частку повної моделі, доступну для перевірки; неповне покриття робить результат попереднім. Ідеальний бал із частковими даними не є повним проходженням перевірки.
 
-The Quality Gate distinguishes:
-- **Observed** — check completed and signal confirmed.
-- **Not found** — check completed, expected signal absent.
-- **Unknown** — access failed, enumeration incomplete or observation window unfinished.
+Quality Gate розрізняє:
+- **Observed** — перевірку завершено, сигнал підтверджено.
+- **Not found** — перевірку завершено, сигнал відсутній.
+- **Unknown** — доступ не отримано, перелік неповний або спостереження не завершене.
 
-A denied service query does not mean the service is stopped. An incomplete backup scan does not mean a backup is absent. A watcher that never started cannot prove USB stability.
+Відмова Service Control Manager не означає, що службу зупинено. Неповна перевірка backup не доводить відсутність копії. Неактивний watcher не підтверджує стабільність USB.
 
-## Privacy and boundaries
+## Приватність та межі
 
-ToolzNG is local-first:
+ToolzNG дотримується local-first підходу:
 
-- no account, telemetry service or cloud upload is required;
-- backup payload contents are not read for a structural marker check;
-- private reports omit Hardware ID and full backup paths;
-- report creation, clipboard access and export require explicit user action;
-- device mutation and network transfer are denied by the SAMBU capability policy;
-- event journal and report history have fixed storage bounds;
-- ordinary operation does not require administrator privileges.
+- не потрібні акаунт, телеметрія чи хмарне передавання;
+- payload резервних копій не читається для структурної перевірки;
+- приватні звіти приховують Hardware ID і повні шляхи backup;
+- створення звіту, буфер обміну та експорт вимагають явної дії користувача;
+- політика SAMBU забороняє зміну пристрою та мережеве передавання;
+- журнали й історія звітів мають фіксовані межі;
+- звичайна робота не потребує прав адміністратора.
 
-**What the measurements do not prove:** VID <code>05AC</code> is not an iOS pairing session; marker files do not prove backup integrity or restorability; an <code>Info.plist</code> timestamp is not the age of every backup datum; FNV-1a is not cryptographic identity; a SHA-256 sidecar does not prove report truth.
+**Межі доказів:** VID <code>05AC</code> не доводить iOS pairing; маркери не доводять цілісність або відновлюваність backup; timestamp <code>Info.plist</code> не є віком усіх даних; FNV-1a не є криптографічною ідентичністю; SHA-256 sidecar не доводить правдивість звіту.
 
-ToolzNG does not jailbreak, bypass passcodes or Activation Lock, flash/reset an iPhone, read personal device content, repair drivers automatically, or measure cable electrical quality, USB throughput, battery health or iOS temperature.
+ToolzNG не виконує jailbreak, не обходить пароль або Activation Lock, не прошиває та не скидає iPhone, не читає особисті дані, не ремонтує драйвери автоматично й не вимірює електричні параметри кабелю, USB throughput, стан батареї чи температуру iOS.
 
-## Architecture
+## Архітектура
 
-| Layer | Implementation |
+| Рівень | Технологія |
 |---|---|
-| Desktop | C17 · Win32 API · GDI |
+| Desktop UI | C17 · Win32 API · GDI |
 | Device discovery | Windows SetupAPI / Plug and Play |
 | Apple service | Windows Service Control Manager |
-| Events | Windows device notifications |
-| Diagnostic core | Portable C17 SAMBU policy and workflow |
-| Reports | Local TXT · SHA-256 sidecar |
+| USB events | Windows device notifications |
+| Diagnostic core | Портативне C17-ядро політик і workflow SAMBU |
+| Reports | Локальний TXT · SHA-256 sidecar |
 | Build | CMake 3.20+ |
 
-The portable core owns deterministic assessment, capability checks, evidence-quality rules and bounded finding memory. Windows APIs remain at the platform boundary. The embedded workflow DSL invokes five fixed diagnostic actions; it is not a general-purpose interpreter, shell or scripting runtime.
+Ядро відповідає за детерміновану оцінку, дозволи, якість доказів та обмежену пам’ять findings. Windows API ізольовані на платформному рівні. Workflow DSL викликає п’ять фіксованих дій; це не універсальний інтерпретатор, shell чи скриптова мова.
 
-## Build from source
+## Збірка
 
-**Windows x64:** Windows 10/11, Visual Studio 2022 or compatible MSVC Build Tools (*Desktop development with C++*), CMake 3.20+.
+**Windows x64:** Windows 10/11, Visual Studio 2022 або MSVC Build Tools із Desktop development with C++, CMake 3.20+.
 
 ~~~powershell
 cmake -S . -B build -A x64 -DBUILD_TESTING=ON
@@ -136,55 +130,43 @@ cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ~~~
 
-Executable: <code>build\Release\ToolzNG.exe</code>.
+Виконуваний файл: <code>build\Release\ToolzNG.exe</code>. Графічний інтерфейс працює лише у Windows. Збірка ядра не перевіряє драйвери Apple, pairing, реальний пристрій чи фізичний кабель.
 
-**Portable core tests** (no Win32 desktop target):
+## Гарячі клавіші
 
-~~~bash
-cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build --parallel
-ctest --test-dir build --output-on-failure
-~~~
-
-The GUI is Windows-only. A portable-core build does not validate Apple drivers, pairing state, an actual device or a physical cable.
-
-## Keyboard shortcuts
-
-| Shortcut | Action |
+| Комбінація | Дія |
 |---|---|
-| <code>F5</code> | Repeat USB scan |
-| <code>Ctrl+R</code> | Create local report |
-| <code>F1</code> | Open in-app help |
-| <code>Ctrl++</code> / <code>Ctrl+-</code> | Zoom in / out |
-| <code>Ctrl+0</code> | Restore 100% zoom |
-| <code>A−</code> / <code>A+</code> | Change toolbar zoom |
+| <code>F5</code> | Повторити USB-сканування |
+| <code>Ctrl+R</code> | Створити локальний звіт |
+| <code>F1</code> | Відкрити довідку |
+| <code>Ctrl++</code> / <code>Ctrl+-</code> | Змінити масштаб |
+| <code>Ctrl+0</code> | Повернути 100% |
+| <code>A−</code> / <code>A+</code> | Масштаб панелі |
 
-The UI includes Per-Monitor DPI v2 and saved 80–160% zoom. Full UI Automation support and finished keyboard navigation remain roadmap work.
+Наявні Per-Monitor DPI v2 та збереження масштабу 80–160%. Повна підтримка UI Automation і завершена клавіатурна навігація залишаються в roadmap.
 
-## Roadmap
+## Дорожня карта
 
-1. Optional Windows adapter for a supported <code>libimobiledevice</code> build with explicit pairing checks.
-2. Show device model and iOS version only when a trusted pairing API returns them.
-3. Expand Apple USB driver diagnostics without silent system changes.
-4. Improve RU/EN localization, accessibility and keyboard navigation.
-5. Signed installer, reproducible packaging and physical-device smoke tests.
+1. Необов’язковий Windows adapter для сумісної збірки <code>libimobiledevice</code> із перевіркою pairing.
+2. Модель пристрою та версія iOS — лише коли їх повертає довірений pairing API.
+3. Поглиблена діагностика Apple USB-драйверів без прихованої зміни системи.
+4. RU/EN локалізація, доступність і клавіатурна навігація.
+5. Підписаний інсталятор, відтворювана упаковка та апаратні smoke-тести.
 
-## Engineering standards
+## Інженерні стандарти
 
-- [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — evidence, privacy, bounded behavior and visual standards.
-- [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — assessment model and restricted workflow.
-- [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — tests, resilience and release criteria.
-- [GUI Design and Visual Evidence](docs/GUI_DESIGN.md) — current Win32/GDI navigation model and preview/screenshot rules.
-- [Relaxation Signal Model](docs/RELAXATION_SIGNAL_MODEL.md) — smoothed USB trends, model assumptions and non-diagnostic interpretation.
+- [Duck Design Rules](docs/DUCK_DESIGN_RULES.md) — докази, приватність, обмеження та дизайн.
+- [SAMBU Integration](docs/SAMBU_INTEGRATION.md) — оцінювання й обмежений workflow.
+- [Engineering Quality Gates](docs/ENGINEERING_QUALITY_GATES.md) — тести, надійність і релізні критерії.
 
-For material UI changes, provide real application captures or label previews explicitly as illustrative.
+Для суттєвих змін UI додавайте реальні знімки програми або явно позначайте прев’ю як демонстраційні.
 
-## License
+## Ліцензія
 
-MIT — see [LICENSE](LICENSE).
+MIT — див. [LICENSE](LICENSE).
 
 <div align="center">
 
-**ToolzNG — меньше догадок, больше понятных сигналов.** 🦆
+**ToolzNG — менше здогадок, більше зрозумілих сигналів.** 🦆
 
 </div>
