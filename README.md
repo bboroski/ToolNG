@@ -201,6 +201,10 @@ MIT — див. [LICENSE](LICENSE).
 ToolNG — нативний Windows-інтерфейс оператора в SAMBU Ecosystem. Він зберігає локальну обробку доказів та явні дії користувача; SAMBU надає переносиме ядро policy/workflow. [Посібник інтеграції](docs/ECOSYSTEM_INTEGRATION.md) · [Дизайн GUI](docs/GUI_DESIGN.md) · [Портал Klipot](https://github.com/bboroski/Klipot)
 
 
+## Localized signal reports
+
+ToolNG keeps diagnostic finding IDs stable while allowing localized display labels. Its recurrence ledger records state transitions, not source text or translated content. See [Localized Diagnostic Labels and Recurrence Evidence](docs/LOCALIZED_SIGNAL_REPORTS.md).
+
 ## SAMBU Ecosystem module
 
 <p align="center"><img src="https://raw.githubusercontent.com/bboroski/SAMBU/main/assets/sambu-ecosystem-overview.svg" alt="SAMBU central platform and six specialized modules" width="100%" /></p>
