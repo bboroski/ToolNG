@@ -4,11 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.1.0"
 #define SAMBU_ENGINE_VERSION "1.2.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
 #define SAMBU_LEDGER_WINDOW_MS 600000ULL
+#define SAMBU_RELAXATION_WARMUP_SAMPLES 4u
 
 typedef enum SambuOperation {
     SAMBU_OP_READ_LOCAL = 1,
@@ -61,7 +61,7 @@ typedef struct SambuEvidence {
     int service_running;
     int backup_scan_complete;
     int backup_found;
-    int backup_marker_valid; /* true when at least one discovered folder has valid markers */
+    int backup_marker_valid;
     uint32_t backup_folders_seen;
     uint32_t backup_folders_valid;
     int backup_age_known;
@@ -81,15 +81,15 @@ enum {
 typedef struct SambuAssessment {
     SambuFinding finding;
     int readiness_score;
-    /* Kept for report/API compatibility: this is measured coverage, not probability. */
+    /* Compatibility field: this measures coverage/consistency, not probability. */
     unsigned confidence_percent;
     unsigned score_coverage_percent;
     int score_provisional;
-    int device_points;      /* 0..40 */
-    int service_points;     /* 0..25 */
-    int backup_points;      /* 0..10 */
-    int marker_points;      /* 0..15 */
-    int stability_points;   /* 0..10 */
+    int device_points;
+    int service_points;
+    int backup_points;
+    int marker_points;
+    int stability_points;
     uint32_t evidence_mask;
     uint32_t quality_flags;
 } SambuAssessment;
@@ -116,10 +116,30 @@ typedef struct SambuLedger {
     size_t next;
 } SambuLedger;
 
+/* Bounded EWMA state for noisy, time-stamped diagnostic observations.
+   The filter is advisory and does not modify the deterministic readiness score. */
+typedef struct SambuRelaxationState {
+    double mean;
+    double variance;
+    uint64_t last_update_ms;
+    uint32_t samples;
+    int initialized;
+} SambuRelaxationState;
+
+typedef struct SambuRelaxationResult {
+    double mean;
+    double variance;
+    double residual;
+    double z_score;
+    double alpha;
+    uint32_t samples;
+    int warm;
+} SambuRelaxationResult;
+
 /* S — fail-closed action policy. Device mutation and network upload are never granted. */
 int sambu_authorize(SambuOperation operation, SambuOrigin origin);
 
-/* A/V — deterministic assessment, known-evidence normalization and score breakdown. */
+/* A/V — deterministic assessment, evidence coverage and score breakdown. */
 SambuAssessment sambu_assess(const SambuEvidence *evidence);
 
 /* M — bounded failure/finding memory; stores codes and counters, never raw device data. */
@@ -137,6 +157,12 @@ SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
 const char *sambu_pattern_key(SambuPattern pattern);
 const char *sambu_quality_key(uint32_t quality_flags);
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger);
+
+/* Exponential relaxation for diagnostic time series. tau_ms must be positive.
+   A backward clock jump starts a fresh observation window. Returns 0 on invalid input. */
+int sambu_relaxation_update(SambuRelaxationState *state, double observation,
+                            uint64_t monotonic_ms, double tau_ms,
+                            SambuRelaxationResult *result);
 
 /* B — validate the dependency graph before the application starts. */
 int sambu_architecture_validate(void);
