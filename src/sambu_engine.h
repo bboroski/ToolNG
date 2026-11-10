@@ -1,60 +1,60 @@
-#ifndef TOOLZNG_SAMBU_ENGINE_H
-#define TOOLZNG_SAMBU_ENGINE_H
+#ifndef TOOLZNG_WDEP_ENGINE_H
+#define TOOLZNG_WDEP_ENGINE_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.4.0"
-#define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
-#define SAMBU_LEDGER_CAPACITY 32u
-#define SAMBU_LEDGER_WINDOW_MS 600000ULL
-#define SAMBU_RELAXATION_WARMUP_SAMPLES 4u
+#define WDEP_ENGINE_VERSION "1.4.0"
+#define WDEP_REPORT_SCHEMA "wdep.diagnostic.v1"
+#define WDEP_LEDGER_CAPACITY 32u
+#define WDEP_LEDGER_WINDOW_MS 600000ULL
+#define WDEP_RELAXATION_WARMUP_SAMPLES 4u
 
-typedef enum SambuOperation {
-    SAMBU_OP_READ_LOCAL = 1,
-    SAMBU_OP_SCAN = 2,
-    SAMBU_OP_WRITE_PRIVATE_REPORT = 3,
-    SAMBU_OP_EXPORT = 4,
-    SAMBU_OP_CLIPBOARD = 5,
-    SAMBU_OP_MUTATE_DEVICE = 6,
-    SAMBU_OP_UPLOAD_DATA = 7,
-    SAMBU_OP_RECORD_LOCAL_PROFILE = 8
-} SambuOperation;
+typedef enum WdepOperation {
+    WDEP_OP_READ_LOCAL = 1,
+    WDEP_OP_SCAN = 2,
+    WDEP_OP_WRITE_PRIVATE_REPORT = 3,
+    WDEP_OP_EXPORT = 4,
+    WDEP_OP_CLIPBOARD = 5,
+    WDEP_OP_MUTATE_DEVICE = 6,
+    WDEP_OP_UPLOAD_DATA = 7,
+    WDEP_OP_RECORD_LOCAL_PROFILE = 8
+} WdepOperation;
 
-typedef enum SambuOrigin {
-    SAMBU_ORIGIN_INTERNAL = 0,
-    SAMBU_ORIGIN_USER = 1
-} SambuOrigin;
+typedef enum WdepOrigin {
+    WDEP_ORIGIN_INTERNAL = 0,
+    WDEP_ORIGIN_USER = 1
+} WdepOrigin;
 
-typedef enum SambuFinding {
-    SAMBU_FINDING_NONE = 0,
-    SAMBU_FINDING_SCAN_UNAVAILABLE = 1,
-    SAMBU_FINDING_NO_DEVICE = 2,
-    SAMBU_FINDING_SERVICE_UNAVAILABLE = 3,
-    SAMBU_FINDING_USB_UNSTABLE = 4,
-    SAMBU_FINDING_BACKUP_STRUCTURE = 5,
-    SAMBU_FINDING_BACKUP_STALE = 6,
-    SAMBU_FINDING_BACKUP_MISSING = 7,
-    SAMBU_FINDING_HEALTHY = 8,
-    SAMBU_FINDING_SERVICE_UNKNOWN = 9,
-    SAMBU_FINDING_BACKUP_UNKNOWN = 10,
-    SAMBU_FINDING_STABILITY_UNCONFIRMED = 11
-} SambuFinding;
+typedef enum WdepFinding {
+    WDEP_FINDING_NONE = 0,
+    WDEP_FINDING_SCAN_UNAVAILABLE = 1,
+    WDEP_FINDING_NO_DEVICE = 2,
+    WDEP_FINDING_SERVICE_UNAVAILABLE = 3,
+    WDEP_FINDING_USB_UNSTABLE = 4,
+    WDEP_FINDING_BACKUP_STRUCTURE = 5,
+    WDEP_FINDING_BACKUP_STALE = 6,
+    WDEP_FINDING_BACKUP_MISSING = 7,
+    WDEP_FINDING_HEALTHY = 8,
+    WDEP_FINDING_SERVICE_UNKNOWN = 9,
+    WDEP_FINDING_BACKUP_UNKNOWN = 10,
+    WDEP_FINDING_STABILITY_UNCONFIRMED = 11
+} WdepFinding;
 
 enum {
-    SAMBU_EVIDENCE_SCAN_COMPLETE = 1u << 0,
-    SAMBU_EVIDENCE_DEVICE_VISIBLE = 1u << 1,
-    SAMBU_EVIDENCE_SERVICE_RUNNING = 1u << 2,
-    SAMBU_EVIDENCE_BACKUP_FOUND = 1u << 3,
-    SAMBU_EVIDENCE_BACKUP_MARKERS = 1u << 4,
-    SAMBU_EVIDENCE_USB_WATCH = 1u << 5,
-    SAMBU_EVIDENCE_USB_REMOVAL = 1u << 6,
-    SAMBU_EVIDENCE_STABILITY_WINDOW = 1u << 7,
-    SAMBU_EVIDENCE_SERVICE_CHECKED = 1u << 8,
-    SAMBU_EVIDENCE_BACKUP_CHECKED = 1u << 9
+    WDEP_EVIDENCE_SCAN_COMPLETE = 1u << 0,
+    WDEP_EVIDENCE_DEVICE_VISIBLE = 1u << 1,
+    WDEP_EVIDENCE_SERVICE_RUNNING = 1u << 2,
+    WDEP_EVIDENCE_BACKUP_FOUND = 1u << 3,
+    WDEP_EVIDENCE_BACKUP_MARKERS = 1u << 4,
+    WDEP_EVIDENCE_USB_WATCH = 1u << 5,
+    WDEP_EVIDENCE_USB_REMOVAL = 1u << 6,
+    WDEP_EVIDENCE_STABILITY_WINDOW = 1u << 7,
+    WDEP_EVIDENCE_SERVICE_CHECKED = 1u << 8,
+    WDEP_EVIDENCE_BACKUP_CHECKED = 1u << 9
 };
 
-typedef struct SambuEvidence {
+typedef struct WdepEvidence {
     int scan_complete;
     int device_found;
     int service_query_complete;
@@ -69,17 +69,17 @@ typedef struct SambuEvidence {
     uint32_t recent_usb_removals;
     int usb_watch_registered;
     int stability_window_elapsed;
-} SambuEvidence;
+} WdepEvidence;
 
 enum {
-    SAMBU_QUALITY_DEVICE_WITHOUT_SCAN = 1u << 0,
-    SAMBU_QUALITY_BACKUP_COUNTS_INCONSISTENT = 1u << 1,
-    SAMBU_QUALITY_BACKUP_SET_INCOMPLETE = 1u << 2,
-    SAMBU_QUALITY_STABILITY_WITHOUT_WATCH = 1u << 3
+    WDEP_QUALITY_DEVICE_WITHOUT_SCAN = 1u << 0,
+    WDEP_QUALITY_BACKUP_COUNTS_INCONSISTENT = 1u << 1,
+    WDEP_QUALITY_BACKUP_SET_INCOMPLETE = 1u << 2,
+    WDEP_QUALITY_STABILITY_WITHOUT_WATCH = 1u << 3
 };
 
-typedef struct SambuAssessment {
-    SambuFinding finding;
+typedef struct WdepAssessment {
+    WdepFinding finding;
     int readiness_score;
     /* Kept for report/API compatibility: this is measured coverage, not probability. */
     unsigned confidence_percent;
@@ -92,40 +92,40 @@ typedef struct SambuAssessment {
     int stability_points;   /* 0..10 */
     uint32_t evidence_mask;
     uint32_t quality_flags;
-} SambuAssessment;
+} WdepAssessment;
 
-typedef struct SambuLedgerEntry {
+typedef struct WdepLedgerEntry {
     uint32_t finding_code;
     uint32_t occurrences;
     uint64_t first_seen_ms;
     uint64_t last_seen_ms;
     uint64_t window_start_ms;
     uint32_t window_occurrences;
-} SambuLedgerEntry;
+} WdepLedgerEntry;
 
-typedef enum SambuPattern {
-    SAMBU_PATTERN_NONE = 0,
-    SAMBU_PATTERN_SINGLE = 1,
-    SAMBU_PATTERN_RECURRENT = 2,
-    SAMBU_PATTERN_PERSISTENT = 3
-} SambuPattern;
+typedef enum WdepPattern {
+    WDEP_PATTERN_NONE = 0,
+    WDEP_PATTERN_SINGLE = 1,
+    WDEP_PATTERN_RECURRENT = 2,
+    WDEP_PATTERN_PERSISTENT = 3
+} WdepPattern;
 
-typedef struct SambuLedger {
-    SambuLedgerEntry entries[SAMBU_LEDGER_CAPACITY];
+typedef struct WdepLedger {
+    WdepLedgerEntry entries[WDEP_LEDGER_CAPACITY];
     size_t count;
     size_t next;
-} SambuLedger;
+} WdepLedger;
 
 /* Bounded exponential relaxation for noisy diagnostic time series. */
-typedef struct SambuRelaxationState {
+typedef struct WdepRelaxationState {
     double mean;
     double variance;
     uint64_t last_update_ms;
     uint32_t samples;
     int initialized;
-} SambuRelaxationState;
+} WdepRelaxationState;
 
-typedef struct SambuRelaxationResult {
+typedef struct WdepRelaxationResult {
     double mean;
     double variance;
     double residual;
@@ -133,88 +133,88 @@ typedef struct SambuRelaxationResult {
     double alpha;
     uint32_t samples;
     int warm;
-} SambuRelaxationResult;
+} WdepRelaxationResult;
 
-#define SAMBU_TRACE_CAPACITY 64u
+#define WDEP_TRACE_CAPACITY 64u
 
-typedef enum SambuTraceStage {
-    SAMBU_TRACE_SOURCE = 1,
-    SAMBU_TRACE_POLICY = 2,
-    SAMBU_TRACE_EVIDENCE = 3,
-    SAMBU_TRACE_ASSESSMENT = 4,
-    SAMBU_TRACE_RELAXATION = 5,
-    SAMBU_TRACE_REPORT = 6
-} SambuTraceStage;
+typedef enum WdepTraceStage {
+    WDEP_TRACE_SOURCE = 1,
+    WDEP_TRACE_POLICY = 2,
+    WDEP_TRACE_EVIDENCE = 3,
+    WDEP_TRACE_ASSESSMENT = 4,
+    WDEP_TRACE_RELAXATION = 5,
+    WDEP_TRACE_REPORT = 6
+} WdepTraceStage;
 
-typedef enum SambuTraceOutcome {
-    SAMBU_TRACE_OBSERVED = 1,
-    SAMBU_TRACE_ACCEPTED = 2,
-    SAMBU_TRACE_REJECTED = 3,
-    SAMBU_TRACE_DEGRADED = 4
-} SambuTraceOutcome;
+typedef enum WdepTraceOutcome {
+    WDEP_TRACE_OBSERVED = 1,
+    WDEP_TRACE_ACCEPTED = 2,
+    WDEP_TRACE_REJECTED = 3,
+    WDEP_TRACE_DEGRADED = 4
+} WdepTraceOutcome;
 
 /* Bounded provenance only: no raw device payloads or personal data are stored. */
-typedef struct SambuTraceEvent {
+typedef struct WdepTraceEvent {
     uint64_t sequence;
     uint64_t monotonic_ms;
     uint32_t event_code;
     uint32_t evidence_mask;
     uint32_t quality_flags;
-    SambuTraceStage stage;
-    SambuTraceOutcome outcome;
-} SambuTraceEvent;
+    WdepTraceStage stage;
+    WdepTraceOutcome outcome;
+} WdepTraceEvent;
 
-typedef struct SambuTrace {
-    SambuTraceEvent events[SAMBU_TRACE_CAPACITY];
+typedef struct WdepTrace {
+    WdepTraceEvent events[WDEP_TRACE_CAPACITY];
     size_t head;
     size_t count;
     uint64_t next_sequence;
     uint32_t dropped;
-} SambuTrace;
+} WdepTrace;
 
-void sambu_trace_init(SambuTrace *trace);
-int sambu_trace_record(SambuTrace *trace, SambuTraceStage stage,
-                       SambuTraceOutcome outcome, uint32_t event_code,
+void wdep_trace_init(WdepTrace *trace);
+int wdep_trace_record(WdepTrace *trace, WdepTraceStage stage,
+                       WdepTraceOutcome outcome, uint32_t event_code,
                        uint32_t evidence_mask, uint32_t quality_flags,
                        uint64_t monotonic_ms);
 /* Copies the oldest available events first; no more than capacity entries. */
-size_t sambu_trace_snapshot(const SambuTrace *trace, SambuTraceEvent *out,
+size_t wdep_trace_snapshot(const WdepTrace *trace, WdepTraceEvent *out,
                             size_t capacity);
 
 /* S — fail-closed action policy. Device mutation and network upload are never granted. */
-int sambu_authorize(SambuOperation operation, SambuOrigin origin);
+int wdep_authorize(WdepOperation operation, WdepOrigin origin);
 
 /* A/V — deterministic assessment, known-evidence normalization and score breakdown. */
-SambuAssessment sambu_assess(const SambuEvidence *evidence);
+WdepAssessment wdep_assess(const WdepEvidence *evidence);
 
 /* M — bounded failure/finding memory; stores codes and counters, never raw device data. */
-void sambu_ledger_init(SambuLedger *ledger);
-void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
+void wdep_ledger_init(WdepLedger *ledger);
+void wdep_ledger_record(WdepLedger *ledger, uint32_t finding_code,
                          uint64_t monotonic_ms);
-uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
+uint32_t wdep_ledger_occurrences(const WdepLedger *ledger,
                                   uint32_t finding_code);
-uint32_t sambu_ledger_recent_occurrences(const SambuLedger *ledger,
+uint32_t wdep_ledger_recent_occurrences(const WdepLedger *ledger,
                                          uint32_t finding_code,
                                          uint64_t now_ms);
-SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
+WdepPattern wdep_ledger_pattern(const WdepLedger *ledger,
                                   uint32_t finding_code,
                                   uint64_t now_ms);
-const char *sambu_pattern_key(SambuPattern pattern);
-const char *sambu_quality_key(uint32_t quality_flags);
-uint32_t sambu_ledger_unique_count(const SambuLedger *ledger);
+const char *wdep_pattern_key(WdepPattern pattern);
+const char *wdep_quality_key(uint32_t quality_flags);
+uint32_t wdep_ledger_unique_count(const WdepLedger *ledger);
 
 /* Time-aware exponential relaxation. A backward clock jump restarts the window.
    Invalid inputs are rejected without committing partial state. */
-int sambu_relaxation_update(SambuRelaxationState *state, double observation,
+int wdep_relaxation_update(WdepRelaxationState *state, double observation,
                             uint64_t monotonic_ms, double tau_ms,
-                            SambuRelaxationResult *result);
+                            WdepRelaxationResult *result);
 
 /* B — validate the dependency graph before the application starts. */
-int sambu_architecture_validate(void);
+int wdep_architecture_validate(void);
 
 /* U — stable identifiers for reports and integrations. */
-const char *sambu_finding_key(SambuFinding finding);
-const char *sambu_engine_version(void);
-const char *sambu_report_schema(void);
+const char *wdep_finding_key(WdepFinding finding);
+const char *wdep_engine_version(void);
+const char *wdep_report_schema(void);
 
 #endif
