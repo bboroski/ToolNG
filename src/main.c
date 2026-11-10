@@ -697,7 +697,7 @@ static void save_report(void)
     }
 
     swprintf_s(preview, ARRAYSIZE(preview),
-        L"ПРЕДПРОСМОТР PRIVACY SHIELD\n\n"
+        L"ПРЕДПРОСМОТР СОСТАВА ОТЧЁТА\n\n"
         L"Apple USB-интерфейсов: %u\n"
         L"Duck Readiness: %d/100\n"
         L"Backup Sentinel: %lu/%lu структурно отмеченных папок\n"
