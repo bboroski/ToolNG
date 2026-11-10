@@ -1,10 +1,10 @@
-# Duck UI system — ToolzNG
+# Duck UI system — ToolNG
 
 **Status:** visual contract adopted for the Windows C17 diagnostic product. The repository already contains vector UI previews in `assets/screenshots/`; these remain illustrative SAMPLE DATA and are not live device scans.
 
 ## Identity and visual hierarchy
 
-ToolzNG is a cautious Windows diagnostics workspace. Use the duck identity as a compact brand marker. Prioritise device evidence, explainable readiness, safe next steps and report integrity. Never turn an informational diagnostic surface into a destructive “repair” dashboard.
+ToolNG is a cautious Windows diagnostics workspace. Use the duck identity as a compact brand marker. Prioritise device evidence, explainable readiness, safe next steps and report integrity. Never turn an informational diagnostic surface into a destructive “repair” dashboard.
 
 ## Color tokens
 
