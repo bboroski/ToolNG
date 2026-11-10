@@ -28,7 +28,7 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #include "sambu_engine.h"
 #include "sambu_workflow.h"
 
-#define APP_TITLE           L"ToolzNG"
+#define APP_TITLE           L"WDEP | Device Evidence"
 #define MAX_APPLE_DEVICES   32
 #define DEVICE_NAME_CHARS   256
 #define DEVICE_HWID_CHARS   512
