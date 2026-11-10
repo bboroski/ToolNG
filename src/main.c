@@ -42,21 +42,21 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define TIMER_READINESS      43
 #define TIMER_WORKFLOW       44
 
-/* Theme tokens: graphite base, controlled yellow accents, accessible status colors. */
-#define COL_BG              (g_app.high_contrast ? RGB(0, 0, 0) : RGB(13, 13, 13))
-#define COL_HEADER          (g_app.high_contrast ? RGB(0, 0, 0) : RGB(20, 20, 20))
-#define COL_SIDEBAR         (g_app.high_contrast ? RGB(0, 0, 0) : RGB(20, 20, 20))
-#define COL_PANEL           (g_app.high_contrast ? RGB(0, 0, 0) : RGB(26, 26, 26))
-#define COL_CARD            (g_app.high_contrast ? RGB(0, 0, 0) : RGB(26, 26, 26))
-#define COL_CARD_HOVER      (g_app.high_contrast ? RGB(32, 32, 32) : RGB(38, 38, 38))
-#define COL_BORDER          (g_app.high_contrast ? RGB(255, 255, 255) : RGB(38, 38, 38))
-#define COL_TEXT            (g_app.high_contrast ? RGB(255, 255, 255) : RGB(230, 230, 230))
-#define COL_MUTED           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(153, 153, 153))
-#define COL_ACCENT          (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 214, 0))
-#define COL_ACCENT_DARK     (g_app.high_contrast ? RGB(255, 255, 0) : RGB(191, 161, 0))
-#define COL_GREEN           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(76, 175, 80))
-#define COL_AMBER           (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 214, 0))
-#define COL_ERROR           RGB(255, 68, 68)
+/* Amber–Obsidian v2: deep graphite surfaces, signal amber and explicit state colours. */
+#define COL_BG              (g_app.high_contrast ? RGB(0, 0, 0) : RGB(11, 11, 13))
+#define COL_HEADER          (g_app.high_contrast ? RGB(0, 0, 0) : RGB(18, 18, 22))
+#define COL_SIDEBAR         (g_app.high_contrast ? RGB(0, 0, 0) : RGB(16, 16, 19))
+#define COL_PANEL           (g_app.high_contrast ? RGB(0, 0, 0) : RGB(28, 28, 30))
+#define COL_CARD            (g_app.high_contrast ? RGB(0, 0, 0) : RGB(24, 24, 27))
+#define COL_CARD_HOVER      (g_app.high_contrast ? RGB(32, 32, 32) : RGB(43, 43, 48))
+#define COL_BORDER          (g_app.high_contrast ? RGB(255, 255, 255) : RGB(52, 52, 58))
+#define COL_TEXT            (g_app.high_contrast ? RGB(255, 255, 255) : RGB(245, 243, 238))
+#define COL_MUTED           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(166, 163, 171))
+#define COL_ACCENT          (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 159, 10))
+#define COL_ACCENT_DARK     (g_app.high_contrast ? RGB(255, 255, 0) : RGB(217, 119, 6))
+#define COL_GREEN           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(100, 199, 135))
+#define COL_AMBER           (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 191, 71))
+#define COL_ERROR           RGB(241, 109, 101)
 
 #define PAGE_OVERVIEW 0
 #define PAGE_DEVICES  1
@@ -235,7 +235,7 @@ static void draw_round_rect(HDC dc, RECT rect, COLORREF fill,
 
 static void draw_button(HDC dc, RECT rect, const WCHAR *label, BOOL primary)
 {
-    COLORREF fill = primary ? COL_ACCENT_DARK : COL_CARD;
+    COLORREF fill = primary ? COL_ACCENT : COL_CARD;
     COLORREF edge = primary ? COL_ACCENT : COL_BORDER;
     draw_round_rect(dc, rect, fill, edge, 10);
     draw_text(dc, label, rect, g_app.font_button,
