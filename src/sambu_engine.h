@@ -4,9 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SAMBU_ENGINE_VERSION "1.0.0"
+#define SAMBU_ENGINE_VERSION "1.1.0"
 #define SAMBU_REPORT_SCHEMA "toolzng.diagnostic.v1"
 #define SAMBU_LEDGER_CAPACITY 32u
+#define SAMBU_LEDGER_WINDOW_MS 600000ULL
 
 typedef enum SambuOperation {
     SAMBU_OP_READ_LOCAL = 1,
@@ -72,7 +73,16 @@ typedef struct SambuLedgerEntry {
     uint32_t occurrences;
     uint64_t first_seen_ms;
     uint64_t last_seen_ms;
+    uint64_t window_start_ms;
+    uint32_t window_occurrences;
 } SambuLedgerEntry;
+
+typedef enum SambuPattern {
+    SAMBU_PATTERN_NONE = 0,
+    SAMBU_PATTERN_SINGLE = 1,
+    SAMBU_PATTERN_RECURRENT = 2,
+    SAMBU_PATTERN_PERSISTENT = 3
+} SambuPattern;
 
 typedef struct SambuLedger {
     SambuLedgerEntry entries[SAMBU_LEDGER_CAPACITY];
@@ -92,6 +102,13 @@ void sambu_ledger_record(SambuLedger *ledger, uint32_t finding_code,
                          uint64_t monotonic_ms);
 uint32_t sambu_ledger_occurrences(const SambuLedger *ledger,
                                   uint32_t finding_code);
+uint32_t sambu_ledger_recent_occurrences(const SambuLedger *ledger,
+                                         uint32_t finding_code,
+                                         uint64_t now_ms);
+SambuPattern sambu_ledger_pattern(const SambuLedger *ledger,
+                                  uint32_t finding_code,
+                                  uint64_t now_ms);
+const char *sambu_pattern_key(SambuPattern pattern);
 uint32_t sambu_ledger_unique_count(const SambuLedger *ledger);
 
 /* B — validate the dependency graph before the application starts. */
