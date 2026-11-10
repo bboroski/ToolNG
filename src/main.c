@@ -1367,7 +1367,7 @@ static void draw_header(HDC dc, int width)
               DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"ToolzNG", (RECT){ 80, 20, 260, 55 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"APPLE DEVICE DIAGNOSTICS", (RECT){ 82, 54, 360, 74 },
+    draw_text(dc, L"APPLE DEVICE DIAGNOSTICS  ·  v0.6.1", (RECT){ 82, 54, 390, 74 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
     draw_button(dc, g_app.zoom_minus_button, L"A−", FALSE);
@@ -1423,7 +1423,7 @@ static void draw_sidebar(HDC dc)
                   COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
 
-    draw_text(dc, L"TOOLZNG  /  C17", (RECT){ 24, g_app.client_height - 48, 200,
+    draw_text(dc, L"TOOLZNG  0.6.1  /  C17", (RECT){ 24, g_app.client_height - 48, 210,
               g_app.client_height - 28 }, g_app.font_small, COL_MUTED,
               DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
@@ -1436,6 +1436,16 @@ static void draw_page_heading(HDC dc, const WCHAR *title, const WCHAR *subtitle)
               g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
 
+static void format_quality_summary(WCHAR *buffer, size_t buffer_count)
+{
+    const WCHAR *state = g_app.sambu_assessment.quality_flags == 0u
+        ? L"OK — сигналы согласованы"
+        : L"ВНИМАНИЕ — см. DuckFix";
+    swprintf_s(buffer, buffer_count,
+        L"SAMBU Quality Gate · %ls · confidence %u%%",
+        state, g_app.sambu_assessment.confidence_percent);
+}
+
 static void draw_overview(HDC dc)
 {
     int x = 250;
@@ -1446,6 +1456,7 @@ static void draw_overview(HDC dc)
     RECT hero = { x, 188, right, 388 };
     WCHAR headline[160];
     WCHAR subline[240];
+    WCHAR quality_line[220];
     int card_y = 416;
 
     draw_page_heading(dc, L"Центр управления", L"Проверяй подключение и обслуживай устройства Apple без рискованных вмешательств.");
@@ -1523,10 +1534,10 @@ static void draw_overview(HDC dc)
               (RECT){ g_app.care_button.left + 16, card_y + 18,
                       g_app.care_button.right - 12, card_y + 43 },
               g_app.font_small, COL_ACCENT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"Проверка скорости", (RECT){ g_app.care_button.left + 16,
+    draw_text(dc, L"Рекомендации iOS", (RECT){ g_app.care_button.left + 16,
               card_y + 53, g_app.care_button.right - 12, card_y + 82 },
               g_app.font_button, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    draw_text(dc, L"Практические настройки iOS: хранилище, аккумулятор, температура и сеть.",
+    draw_text(dc, L"Практические советы по настройкам и обслуживанию iOS — без ложных измерений.",
               (RECT){ g_app.care_button.left + 16, card_y + 88,
                       g_app.care_button.right - 16, card_y + 137 },
               g_app.font_small, COL_MUTED, DT_LEFT | DT_TOP | DT_WORDBREAK);
@@ -1546,6 +1557,11 @@ static void draw_overview(HDC dc)
         draw_text(dc, pulse, (RECT){ x + 2, 647, right, 668 },
                   g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     }
+    format_quality_summary(quality_line, ARRAYSIZE(quality_line));
+    draw_text(dc, quality_line, (RECT){ x + 2, 669, right, 691 },
+        g_app.font_small,
+        g_app.sambu_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
+        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 }
 
 static void draw_devices(HDC dc)
@@ -1563,18 +1579,36 @@ static void draw_devices(HDC dc)
               (RECT){ x + 18, 198, right - 18, 244 },
               g_app.font_body, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
+    {
+        WCHAR quality_line[220];
+        WCHAR backup_line[160];
+        format_quality_summary(quality_line, ARRAYSIZE(quality_line));
+        swprintf_s(backup_line, ARRAYSIZE(backup_line),
+            L"Backup markers: %lu / %lu folders verified",
+            (unsigned long)g_app.backup_valid_count,
+            (unsigned long)g_app.backup_folder_count);
+        draw_round_rect(dc, (RECT){ x, 262, right, 314 }, COL_CARD, COL_BORDER, 10);
+        draw_text(dc, quality_line, (RECT){ x + 16, 268, right - 16, 288 },
+            g_app.font_small,
+            g_app.sambu_assessment.quality_flags == 0u ? COL_GREEN : COL_AMBER,
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+        draw_text(dc, backup_line, (RECT){ x + 16, 290, right - 16, 308 },
+            g_app.font_small, COL_MUTED,
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+    }
+
     if (g_app.device_count == 0) {
-        draw_round_rect(dc, (RECT){ x, 274, right, 374 }, COL_CARD, COL_BORDER, 12);
+        draw_round_rect(dc, (RECT){ x, 326, right, 426 }, COL_CARD, COL_BORDER, 12);
         draw_text(dc, g_app.scan_complete ? L"Устройства Apple не найдены" : L"Нажми «Повторить поиск»",
-                  (RECT){ x + 20, 292, right - 20, 326 },
+                  (RECT){ x + 20, 344, right - 20, 378 },
                   g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         draw_text(dc, L"Проверь разблокировку iPhone/iPad, кабель с передачей данных и драйвер Apple Devices.",
-                  (RECT){ x + 20, 331, right - 20, 360 },
+                  (RECT){ x + 20, 383, right - 20, 412 },
                   g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     } else {
         for (i = 0; i < (int)g_app.device_count && i < 4; ++i) {
-            int top = 274 + i * 86;
-            RECT item = { x, top, right, top + 74 };
+            int top = 326 + i * 78;
+            RECT item = { x, top, right, top + 70 };
             WCHAR id_line[600];
             draw_round_rect(dc, item, COL_CARD, COL_BORDER, 10);
             draw_text(dc, g_app.devices[i].name,
@@ -1591,7 +1625,7 @@ static void draw_devices(HDC dc)
             WCHAR more[96];
             swprintf_s(more, ARRAYSIZE(more), L"Дополнительных записей: %u",
                        g_app.device_count - 4);
-            draw_text(dc, more, (RECT){ x + 2, 625, right, 648 },
+            draw_text(dc, more, (RECT){ x + 2, 642, right, 666 },
                       g_app.font_small, COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         }
     }
@@ -1766,7 +1800,7 @@ static void draw_about(HDC dc)
 
     draw_page_heading(dc, L"О ToolzNG", L"Нативная Windows-утилита на C17 и Win32 API.");
     draw_round_rect(dc, panel, COL_PANEL, COL_BORDER, 14);
-    draw_text(dc, L"ToolzNG  0.6.0", (RECT){ x + 24, 216, right - 24, 254 },
+    draw_text(dc, L"ToolzNG  0.6.1", (RECT){ x + 24, 216, right - 24, 254 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"SAMBU Engine 1.2.0 · Quality Gate · Recurrence Radar · 10 min",
               (RECT){ x + 24, 258, right - 24, 276 },
@@ -2059,7 +2093,12 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
                 InvalidateRect(hwnd, NULL, FALSE);
                 return 0;
             }
+            if (wparam == VK_F5) {
+                handle_action(ACTION_SCAN);
+                return 0;
+            }
             if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+                if (wparam == L'R') { handle_action(ACTION_REPORT); return 0; }
                 if (wparam == VK_OEM_PLUS || wparam == VK_ADD) { adjust_zoom(10); return 0; }
                 if (wparam == VK_OEM_MINUS || wparam == VK_SUBTRACT) { adjust_zoom(-10); return 0; }
                 if (wparam == L'0') {
