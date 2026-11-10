@@ -1159,7 +1159,7 @@ static void save_duckfix_route(void)
 {
     SYSTEMTIME now;
     WCHAR path[MAX_PATH * 2], filename[160], contents[5000];
-    WCHAR engine_version[32], report_schema[64];
+    WCHAR engine_version[32], report_schema[64], finding_key[96];
     if (!sambu_authorize(SAMBU_OP_WRITE_PRIVATE_REPORT, SAMBU_ORIGIN_USER)) {
         set_status(L"Сохранение маршрута требует явного действия пользователя.");
         return;
@@ -1175,6 +1175,8 @@ static void save_duckfix_route(void)
     }
     copy_ascii_to_wide(engine_version, ARRAYSIZE(engine_version), sambu_engine_version());
     copy_ascii_to_wide(report_schema, ARRAYSIZE(report_schema), sambu_report_schema());
+    copy_ascii_to_wide(finding_key, ARRAYSIZE(finding_key),
+                       sambu_finding_key(g_app.sambu_assessment.finding));
     GetLocalTime(&now);
     swprintf_s(filename, ARRAYSIZE(filename),
         L"DuckFix-%04u%02u%02u-%02u%02u%02u-%03u.txt",
@@ -1183,13 +1185,11 @@ static void save_duckfix_route(void)
     append_path(path, ARRAYSIZE(path), g_app.reports_dir, filename);
     swprintf_s(contents, ARRAYSIZE(contents),
         L"ToolzNG — маршрут DuckFix\r\n================================\r\n"
-        L"SAMBU engine: 1.1.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
-        L"SAMBU finding code: %u · confidence: %u%%\r\n"
+        L"SAMBU engine: %ls · diagnostic schema: %ls\r\n"
+        L"SAMBU finding: %u (%ls)\r\n"
         L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
-        L"Состояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
-        L"SAMBU engine: 1.2.0 · diagnostic schema: toolzng.diagnostic.v1\r\n"
-        L"SAMBU finding code: %u · evidence coverage: %u%%\r\n"
-        L"Оценка: %ls\r\nСостояние: %ls\r\nDuck Readiness: %d/100\r\nUSB interfaces: %u\r\n"
+        L"Evidence coverage: %u%% · Duck Readiness: %d/100 · %ls\r\n"
+        L"Состояние: %ls\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
         L"USB events lifetime: %u arrivals / %u removals\r\n\r\n"
         L"ПЕРСОНАЛЬНЫЙ СЛЕДУЮЩИЙ ШАГ\r\n%ls\r\n%ls\r\n\r\n"
@@ -1202,15 +1202,15 @@ static void save_duckfix_route(void)
         L"Это план действий, а не автоматический ремонт. ToolzNG не меняет iOS,\r\n"
         L"не удаляет пользовательские данные и не обходит блокировки.\r\n",
         engine_version, report_schema,
-        (unsigned)g_app.sambu_assessment.finding,
-        g_app.sambu_assessment.confidence_percent,
+        (unsigned)g_app.sambu_assessment.finding, finding_key,
         sambu_workflow_state_name(g_app.sambu_workflow_session.state),
         (unsigned)g_app.sambu_workflow_session.run.passed,
         (unsigned)g_app.sambu_workflow.step_count,
         (unsigned)g_app.sambu_workflow_session.run.failed,
         g_app.sambu_assessment.score_coverage_percent,
+        g_app.readiness_score,
         g_app.sambu_assessment.score_provisional ? L"предварительная" : L"полная",
-        g_app.status, g_app.readiness_score, g_app.device_count,
+        g_app.status, g_app.device_count,
         g_app.service_status, g_app.backup_audit,
         g_app.usb_arrivals_total, g_app.usb_removals_total,
         g_app.coach_title, g_app.coach_body);
