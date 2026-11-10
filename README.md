@@ -208,3 +208,6 @@ ToolNG remains a native C17/Win32 application. It ports selected SAMBU engineeri
 - **Module manifest:** [`sambu.module.json`](sambu.module.json)
 - **Canonical architecture:** [SAMBU Ecosystem Architecture](https://github.com/bboroski/SAMBU/blob/main/docs/ECOSYSTEM_ARCHITECTURE.md)
 - **Shared integration protocol:** [Klipot protocol](https://github.com/bboroski/Klipot/blob/main/docs/INTEGRATION_PROTOCOL.md)
+
+
+[Відкрити NUN Mesh portal](https://bboroski.github.io/Klipot/)
