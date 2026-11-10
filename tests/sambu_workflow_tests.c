@@ -1,4 +1,4 @@
-#include "sambu_workflow.h"
+#include "wdep_workflow.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -20,42 +20,42 @@ typedef struct HostState {
     unsigned fail_at;
 } HostState;
 
-static bool test_host(SambuWorkflowAction action, void *context,
+static bool test_host(WdepWorkflowAction action, void *context,
                       char *finding, size_t finding_capacity)
 {
     HostState *state = (HostState *)context;
     ++state->calls;
     (void)snprintf(finding, finding_capacity, "host call %u action %s",
-                   state->calls, sambu_workflow_action_name(action));
+                   state->calls, wdep_workflow_action_name(action));
     return state->fail_at == 0u || state->calls != state->fail_at;
 }
 
 static void test_compile_and_incremental_run(void)
 {
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    SambuWorkflowPolicy policy = { 5u, true, true };
-    SambuWorkflowHost host;
-    SambuWorkflowSession session;
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    WdepWorkflowPolicy policy = { 5u, true, true };
+    WdepWorkflowHost host;
+    WdepWorkflowSession session;
     HostState state = { 0u, 0u };
 
-    assert(sambu_workflow_compile(valid_source, sizeof(valid_source) - 1u,
+    assert(wdep_workflow_compile(valid_source, sizeof(valid_source) - 1u,
                                   &program, &diagnostic));
     assert(program.step_count == 3u);
     assert(program.steps[0].source.line == 3u);
     assert(program.steps[0].source.column == 3u);
     assert(program.steps[0].source.length > 4u);
-    assert(program.autonomy == SAMBU_WF_LOCAL_RECORD);
+    assert(program.autonomy == WDEP_WF_LOCAL_RECORD);
     host.handler = test_host;
     host.context = &state;
-    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    assert(wdep_workflow_begin(&session, &program, &policy, &host, &diagnostic));
     assert(session.run.preflight_approved);
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_RUNNING);
+    assert(wdep_workflow_tick(&session) == WDEP_WF_RUNNING);
     assert(state.calls == 1u);
     assert(session.run.attempted == 1u && session.run.passed == 1u);
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_RUNNING);
+    assert(wdep_workflow_tick(&session) == WDEP_WF_RUNNING);
     assert(state.calls == 2u);
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_COMPLETED);
+    assert(wdep_workflow_tick(&session) == WDEP_WF_COMPLETED);
     assert(session.run.completed && session.run.passed == 3u);
     assert(state.calls == 3u);
     assert(session.run.evidence[1].source.line == 4u);
@@ -69,28 +69,28 @@ static void test_unknown_action_and_duplicate(void)
     static const char duplicate[] =
         "workflow dup { manifest { purpose \"x\"; max_steps 2; autonomy observe_only; } "
         "step same = observe.apple_usb; step same = observe.apple_service; }";
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    assert(!sambu_workflow_compile(unknown, sizeof(unknown) - 1u, &program, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_UNKNOWN_ACTION);
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    assert(!wdep_workflow_compile(unknown, sizeof(unknown) - 1u, &program, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_UNKNOWN_ACTION);
     assert(diagnostic.source.line == 1u);
-    assert(!sambu_workflow_compile(duplicate, sizeof(duplicate) - 1u, &program, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_DUPLICATE_STEP);
+    assert(!wdep_workflow_compile(duplicate, sizeof(duplicate) - 1u, &program, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_DUPLICATE_STEP);
 }
 
 static void test_policy_and_budget(void)
 {
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    SambuWorkflowPolicy blocked = { 8u, true, false };
-    assert(sambu_workflow_compile(valid_source, sizeof(valid_source) - 1u,
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    WdepWorkflowPolicy blocked = { 8u, true, false };
+    assert(wdep_workflow_compile(valid_source, sizeof(valid_source) - 1u,
                                   &program, &diagnostic));
-    assert(!sambu_workflow_preflight(&program, &blocked, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_POLICY);
+    assert(!wdep_workflow_preflight(&program, &blocked, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_POLICY);
     blocked.allow_local_record = true;
     blocked.max_steps = 2u;
-    assert(!sambu_workflow_preflight(&program, &blocked, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_BUDGET);
+    assert(!wdep_workflow_preflight(&program, &blocked, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_BUDGET);
 }
 
 static void test_missing_manifest_field_and_source_limit(void)
@@ -98,14 +98,14 @@ static void test_missing_manifest_field_and_source_limit(void)
     static const char missing[] =
         "workflow bad { manifest { purpose \"x\"; max_steps 1; } "
         "step usb = observe.apple_usb; }";
-    char large[SAMBU_WORKFLOW_SOURCE_CAP + 1u];
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    assert(!sambu_workflow_compile(missing, sizeof(missing) - 1u, &program, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_SYNTAX);
+    char large[WDEP_WORKFLOW_SOURCE_CAP + 1u];
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    assert(!wdep_workflow_compile(missing, sizeof(missing) - 1u, &program, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_SYNTAX);
     memset(large, ' ', sizeof(large));
-    assert(!sambu_workflow_compile(large, sizeof(large), &program, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_SOURCE_LIMIT);
+    assert(!wdep_workflow_compile(large, sizeof(large), &program, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_SOURCE_LIMIT);
 }
 
 
@@ -114,12 +114,12 @@ static void test_observe_only_cannot_record(void)
     static const char source[] =
         "workflow restricted { manifest { purpose \"observe only\"; max_steps 1; autonomy observe_only; } "
         "step profile = record.link_profile; }";
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    SambuWorkflowPolicy policy = { 8u, true, true };
-    assert(sambu_workflow_compile(source, sizeof(source) - 1u, &program, &diagnostic));
-    assert(!sambu_workflow_preflight(&program, &policy, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_POLICY);
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    WdepWorkflowPolicy policy = { 8u, true, true };
+    assert(wdep_workflow_compile(source, sizeof(source) - 1u, &program, &diagnostic));
+    assert(!wdep_workflow_preflight(&program, &policy, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_POLICY);
 }
 
 static void test_rejects_unbounded_numeric_manifest(void)
@@ -127,27 +127,27 @@ static void test_rejects_unbounded_numeric_manifest(void)
     static const char source[] =
         "workflow bad { manifest { purpose \"x\"; max_steps 999999999999999999999999; "
         "autonomy observe_only; } step usb = observe.apple_usb; }";
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    assert(!sambu_workflow_compile(source, sizeof(source) - 1u, &program, &diagnostic));
-    assert(diagnostic.code == SAMBU_WF_BUDGET);
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    assert(!wdep_workflow_compile(source, sizeof(source) - 1u, &program, &diagnostic));
+    assert(diagnostic.code == WDEP_WF_BUDGET);
 }
 
 static void test_fail_fast(void)
 {
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    SambuWorkflowPolicy policy = { 5u, true, true };
-    SambuWorkflowHost host;
-    SambuWorkflowSession session;
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    WdepWorkflowPolicy policy = { 5u, true, true };
+    WdepWorkflowHost host;
+    WdepWorkflowSession session;
     HostState state = { 0u, 2u };
-    assert(sambu_workflow_compile(valid_source, sizeof(valid_source) - 1u,
+    assert(wdep_workflow_compile(valid_source, sizeof(valid_source) - 1u,
                                   &program, &diagnostic));
     host.handler = test_host;
     host.context = &state;
-    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_RUNNING);
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(wdep_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    assert(wdep_workflow_tick(&session) == WDEP_WF_RUNNING);
+    assert(wdep_workflow_tick(&session) == WDEP_WF_FAILED);
     assert(session.run.attempted == 2u);
     assert(session.run.passed == 1u && session.run.failed == 1u);
     assert(session.run.evidence[2].sequence == 0u);
@@ -156,44 +156,44 @@ static void test_fail_fast(void)
 
 static void test_tampered_session_fails_closed(void)
 {
-    SambuWorkflow program;
-    SambuWorkflowDiagnostic diagnostic;
-    SambuWorkflowPolicy policy = { 5u, true, true };
-    SambuWorkflowHost host;
-    SambuWorkflowSession session;
+    WdepWorkflow program;
+    WdepWorkflowDiagnostic diagnostic;
+    WdepWorkflowPolicy policy = { 5u, true, true };
+    WdepWorkflowHost host;
+    WdepWorkflowSession session;
     HostState state = { 0u, 0u };
 
-    assert(sambu_workflow_compile(valid_source, sizeof(valid_source) - 1u,
+    assert(wdep_workflow_compile(valid_source, sizeof(valid_source) - 1u,
                                   &program, &diagnostic));
     host.handler = test_host;
     host.context = &state;
-    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    assert(wdep_workflow_begin(&session, &program, &policy, &host, &diagnostic));
 
-    session.program.steps[0].action = (SambuWorkflowAction)999;
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    session.program.steps[0].action = (WdepWorkflowAction)999;
+    assert(wdep_workflow_tick(&session) == WDEP_WF_FAILED);
     assert(state.calls == 0u);
     assert(session.run.attempted == 0u);
-    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
-    assert(strcmp(sambu_workflow_error_name(session.run.diagnostic.code),
+    assert(session.run.diagnostic.code == WDEP_WF_SESSION_INVALID);
+    assert(strcmp(wdep_workflow_error_name(session.run.diagnostic.code),
                   "session_invalid") == 0);
 
-    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
-    session.cursor = (uint16_t)(SAMBU_WORKFLOW_STEP_CAP + 1u);
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(wdep_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.cursor = (uint16_t)(WDEP_WORKFLOW_STEP_CAP + 1u);
+    assert(wdep_workflow_tick(&session) == WDEP_WF_FAILED);
     assert(state.calls == 0u);
-    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+    assert(session.run.diagnostic.code == WDEP_WF_SESSION_INVALID);
 
-    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
-    session.program.autonomy = (SambuWorkflowAutonomy)999;
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(wdep_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    session.program.autonomy = (WdepWorkflowAutonomy)999;
+    assert(wdep_workflow_tick(&session) == WDEP_WF_FAILED);
     assert(state.calls == 0u);
-    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+    assert(session.run.diagnostic.code == WDEP_WF_SESSION_INVALID);
 
-    assert(sambu_workflow_begin(&session, &program, &policy, &host, &diagnostic));
+    assert(wdep_workflow_begin(&session, &program, &policy, &host, &diagnostic));
     session.policy.allow_observation = false;
-    assert(sambu_workflow_tick(&session) == SAMBU_WF_FAILED);
+    assert(wdep_workflow_tick(&session) == WDEP_WF_FAILED);
     assert(state.calls == 0u);
-    assert(session.run.diagnostic.code == SAMBU_WF_SESSION_INVALID);
+    assert(session.run.diagnostic.code == WDEP_WF_SESSION_INVALID);
 }
 
 int main(void)
