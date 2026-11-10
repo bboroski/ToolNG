@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(ToolzNG VERSION 0.2.0 LANGUAGES C)
+project(ToolzNG VERSION 0.3.0 LANGUAGES C)
 
 if(NOT WIN32)
     message(FATAL_ERROR "ToolzNG is a native Windows application. Build it on Windows with MSVC or MinGW-w64.")
