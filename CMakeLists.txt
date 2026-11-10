@@ -18,8 +18,8 @@ endfunction()
 
 # Portable WDEC core: policy, evidence assessment and bounded workflow manifests.
 add_library(WDEC.WdecCore STATIC
-    src/sambu_engine.c
-    src/sambu_workflow.c
+    src/wdec_engine.c
+    src/wdec_workflow.c
 )
 target_include_directories(WDEC.WdecCore
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
