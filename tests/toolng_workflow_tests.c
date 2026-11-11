@@ -206,6 +206,6 @@ int main(void)
     test_rejects_unbounded_numeric_manifest();
     test_fail_fast();
     test_tampered_session_fails_closed();
-    puts("SAMBU workflow tests passed.");
+    puts("ToolNG workflow tests passed.");
     return 0;
 }
