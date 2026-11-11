@@ -1,72 +1,43 @@
 <p align="center"><img src="assets/duck-ui/duck-mark.svg" alt="ToolNG mark" width="92"></p>
 <h1 align="center">ToolNG</h1>
 <p align="center"><strong>Windows Device Evidence Probe</strong></p>
-<p align="center"><img src="https://img.shields.io/badge/STATUS-WINDOWS%20DESKTOP-FFD600?style=for-the-badge&labelColor=111111"><img src="https://img.shields.io/badge/CORE-C17%20%2B%20WIN32-FFD600?style=for-the-badge&labelColor=111111"><img src="https://img.shields.io/badge/LICENSE-MIT-FFD600?style=for-the-badge&labelColor=111111"></p>
+<p align="center"><strong>Windows desktop utility · read-only diagnostics</strong></p>
 <p align="center"><a href="README.md">🇺🇦 Українська</a> · <a href="README.en.md">🇬🇧 English</a> · <a href="README.ru.md">🇷🇺 Русский</a></p>
 
----
+> **ToolNG** — ToolNG is a local, read-only Windows diagnostic utility that separates confirmed device signals from unknown state and incomplete evidence coverage.
 
-**ToolNG is a local Windows diagnostic utility that separates confirmed device signals from unknown or unverified state.** Its value is a clear operator view without automatic system intervention.
+## Current capabilities
+- Observe Windows PnP/USB devices and related services.
+- Read-only inspection of local backup markers and connection events.
+- Local reports, logs, exports and sensitive-field redaction.
+- Explainable readiness and evidence-coverage reporting.
 
-## Capabilities
-
-- Discovery of visible Windows PnP/USB device interfaces.
-- Inspection of relevant system-service state.
-- Read-only inspection of local backup markers.
-- Bounded observation of device arrival and removal events.
-- Explainable readiness estimate with a separate evidence-coverage indicator.
-- Local reports, logs, export, and sensitive-field redaction.
-- Safe next-step guidance without automatic repair.
-
-## Build and run
-
-Requires Windows 10/11, CMake, and a compatible C17 compiler.
-
-~~~powershell
+## Quick start and verification
+```bash
 cmake -S . -B build
 cmake --build build --config Release
-python one.py
 python one.py check
-~~~
+```
 
-The <code>one.cmd</code> entry point is also available on Windows.
+## Architecture and verified scope
+ToolNG does not repair devices, modify drivers or services, inspect private backup contents or upload diagnostics. A recommendation is not an executed action.
 
-## Reading the results
+## Engineering quality
+- Run the checks appropriate to the target platform; host CI is not hardware qualification.
+- Mark capabilities as implemented, partial or planned according to code, tests and evidence.
+- A mockup, specification or open pull request is not proof of a production-ready feature.
+- External integrations must be explicit, versioned, isolated and testable.
 
-ToolNG distinguishes a confirmed signal, a completed check with no finding, an unknown state, and a failed check. A high score with incomplete coverage is never presented as full confirmation. Reports stay local; hardware identifiers and long local paths can be redacted. A sidecar checksum can detect later report modification, but it is not a digital signature.
+## NUN Mesh and related repositories
+[SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher) · [Fragile-Baby](https://github.com/bboroski/Fragile-Baby) · [Luci](https://github.com/bboroski/Luci)
 
-## Governance and release control
+Each repository retains its canonical name, code, APIs, release lifecycle and ownership boundaries. Integration means versioned contracts, not automatic merging of independent runtimes.
 
-| Control | Rule |
-|---|---|
-| Platform | Windows 10/11, C17, Win32 |
-| Evidence | Check result and coverage are displayed separately |
-| Privacy | Reports are local and sensitive fields can be redacted |
-| Safe actions | GUI guidance does not mean an operation was executed |
-| Release | Verify build, PnP/service scenarios, and report export |
+## Design and documentation
+The shared interface direction is **Duck Black / Yellow**: dark surfaces, yellow accents for actions and state, readable typography, accessible contrast, keyboard navigation and reduced-motion support. See [design/DUCK_UI_SYSTEM.md](design/DUCK_UI_SYSTEM.md) when present.
 
-## Safety boundaries
-
-ToolNG does not flash, repair, reset, or change device state; it does not read private backup contents or send diagnostic data to the cloud. Any system change remains a separate operator-authorized action.
-
-## Ecosystem and license
-
-**ToolNG** is the canonical repository and product name. Related projects: [SAMBU](https://github.com/bboroski/SAMBU), [ReaperCripple](https://github.com/bboroski/ReaperCripple), [Kloz](https://github.com/bboroski/Kloz), [CO](https://github.com/bboroski/CO), [SaintSI](https://github.com/bboroski/SaintSI), [Klipot](https://github.com/bboroski/Klipot), [NUN](https://github.com/bboroski/NUN), [NUNLauncher](https://github.com/bboroski/NUNLauncher), [Fragile-Baby](https://github.com/bboroski/Fragile-Baby), and [Luci](https://github.com/bboroski/Luci).
-
-MIT — see [LICENSE](LICENSE).
+## License
+MIT
 
 ---
-
-**Built with love for reliable systems and people.**
-
-## NUN Mesh
-
-<p align="center"><img src="assets/nun-mesh.svg" alt="NUN Mesh — seven connected engineering repositories with versioned contracts" width="100%"></p>
-
-ToolNG is the local Windows diagnostics layer of NUN Mesh. It collects observable device signals and creates reports that disclose evidence coverage. The interface may recommend an action, but it must not silently modify devices, drivers, services, or backups.
-
-Shared workspace rules: [Adaptive Workspace Integration](docs/ADAPTIVE_WORKSPACE_INTEGRATION.md).
-
-## Product system
-
-Shared Duck design, multilingual documentation, capability governance, marketing-claim controls and release rules: [docs/PRODUCT_SYSTEM.md](docs/PRODUCT_SYSTEM.md). The 10,000-ID registry is planning capacity, not a claim of 10,000 shipped functions.
+**Built with care for engineering, clarity and people.**
