@@ -58,3 +58,11 @@ MIT — see [LICENSE](LICENSE).
 ---
 
 **Built with love for reliable systems and people.**
+
+## NUN Mesh
+
+<p align="center"><img src="assets/nun-mesh.svg" alt="NUN Mesh — seven connected engineering repositories with versioned contracts" width="100%"></p>
+
+ToolNG is the local Windows diagnostics layer of NUN Mesh. It collects observable device signals and creates reports that disclose evidence coverage. The interface may recommend an action, but it must not silently modify devices, drivers, services, or backups.
+
+Shared workspace rules: [Adaptive Workspace Integration](docs/ADAPTIVE_WORKSPACE_INTEGRATION.md).
