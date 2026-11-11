@@ -6,9 +6,9 @@
 
 ## Findings
 
-| ID | Domain | Preliminary risk | Status | Evidence | Next action |
-|---|---|---:|---|---|---|
-| — | — | — | not assessed | No finding is asserted. The current baseline review has not completed a repository-wide audit. | Perform and evidence the full audit before classifying this repository as debt-free. |
+| ID | Domain | Impact | Likelihood | Risk | Effort (1–5) | Owner | Target | Acceptance decision | Status | Evidence | Next action |
+|---|---|---:|---:|---:|---:|---|---|---|---|---|---|
+| — | — | — | — | — | — | TBD (maintainer) | TBD | Not assessed | not assessed | No finding is asserted. The current baseline review has not completed a repository-wide audit. | Perform and evidence the full audit before classifying this repository as debt-free. |
 
 ## Risk method
 
