@@ -3,6 +3,21 @@
 <p align="center"><strong>Windows Device Evidence Probe</strong></p>
 <p align="center"><strong>Windows desktop utility · read-only диагностика</strong></p>
 <p align="center"><a href="README.md">🇺🇦 Українська</a> · <a href="README.en.md">🇬🇧 English</a> · <a href="README.ru.md">🇷🇺 Русский</a></p>
+<sub>Обновлено: 2026-11-11</sub>
+
+
+## Навигация
+
+- [Текущие возможности](#текущие-возможности)
+- [Быстрый старт и проверка](#быстрый-старт-и-проверка)
+- [Архитектура и подтверждённые границы](#архитектура-и-подтверждённые-границы)
+- [Превью интерфейса](#превью-интерфейса)
+- [Инженерное качество](#инженерное-качество)
+- [Карта документации](#карта-документации)
+- [NUN Mesh и связанные репозитории](#nun-mesh-и-связанные-репозитории)
+- [Дизайн и документация](#дизайн-и-документация)
+- [Лицензия](#лицензия)
+- [Палитра Duck Black / Yellow](#палитра-duck-black-yellow)
 
 > **ToolNG** — ToolNG — локальная read-only утилита диагностики Windows, отделяющая подтверждённые сигналы устройств от неизвестного состояния и неполноты проверок.
 
@@ -22,16 +37,36 @@ python one.py check
 ## Архитектура и подтверждённые границы
 ToolNG не ремонтирует устройства, не меняет драйверы или службы, не изучает приватное содержимое backup и не отправляет диагностику в облако. Рекомендация не означает выполненное действие.
 
+## Превью интерфейса
+
+Это статические векторные превью интерфейса, а не снимки работающего сканирования. Все значения устройств и диагностики — демонстрационные SAMPLE DATA.
+
+<p align="center"><img src="assets/screenshots/overview.svg" alt="ToolNG: обзорная панель, демонстрационные данные" width="960"></p>
+<p align="center"><em>Обзорная панель</em></p>
+
+<p align="center"><img src="assets/screenshots/usb-devices.svg" alt="ToolNG: список USB-устройств, демонстрационные данные" width="960"></p>
+<p align="center"><em>USB-устройства</em></p>
+
+<p align="center"><img src="assets/screenshots/reports.svg" alt="ToolNG: локальные отчёты, демонстрационные данные" width="960"></p>
+<p align="center"><em>Локальные отчёты</em></p>
+
 ## Инженерное качество
 - Запускайте проверки для целевой платформы; host CI не заменяет аппаратную квалификацию.
 - Статусы implemented, partial и planned должны подтверждаться кодом, тестами и доказательствами.
 - Макет, спецификация или открытый Pull Request не доказывают production-ready реализацию.
 - Внешние интеграции должны быть явными, версионированными, изолированными и тестируемыми.
 
+## Карта документации
+
+- [Сборка и проверка](docs/BUILDING.md)
+- [Безопасность и границы применения](docs/SAFETY_AND_SCOPE.md)
+- [Проектирование GUI](docs/GUI_DESIGN.md)
+- [Система Duck UI](docs/DUCK_UI_SYSTEM.md)
+
 ## NUN Mesh и связанные репозитории
 
 <p align="center"><img src="assets/nun-mesh.svg" alt="NUN Mesh architecture diagram showing independent repositories connected by versioned contracts" width="960"></p>
-[SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher) · [Fragile-Baby](https://github.com/bboroski/Fragile-Baby) · [Luci](https://github.com/bboroski/Luci)
+[SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher)
 
 Каждый репозиторий сохраняет каноническое имя, собственный код, API, цикл выпуска и границы ответственности. Интеграция означает версионированные контракты, а не автоматическое слияние независимых runtime.
 
