@@ -51,6 +51,11 @@ if(BUILD_TESTING)
     target_link_libraries(ToolNG.PlatformTests PRIVATE ToolNG.PolicyCore)
     toolng_enable_warnings(ToolNG.PlatformTests)
     add_test(NAME toolng_platform_tests COMMAND ToolNG.PlatformTests)
+
+    add_executable(ToolNG.CorrelationTests tests/toolng_correlation_tests.c)
+    target_include_directories(ToolNG.CorrelationTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    toolng_enable_warnings(ToolNG.CorrelationTests)
+    add_test(NAME toolng_correlation_tests COMMAND ToolNG.CorrelationTests)
 endif()
 
 # The desktop shell is platform-specific; the policy/workflow core remains testable.
