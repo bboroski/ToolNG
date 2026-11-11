@@ -29,6 +29,8 @@ ToolNG does not repair devices, modify drivers or services, inspect private back
 - External integrations must be explicit, versioned, isolated and testable.
 
 ## NUN Mesh and related repositories
+
+<p align="center"><img src="assets/nun-mesh.svg" alt="ToolNG in NUN Mesh — independent engineering modules connected through versioned contracts" width="100%"></p>
 [SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher) · [Fragile-Baby](https://github.com/bboroski/Fragile-Baby) · [Luci](https://github.com/bboroski/Luci)
 
 Each repository retains its canonical name, code, APIs, release lifecycle and ownership boundaries. Integration means versioned contracts, not automatic merging of independent runtimes.
@@ -41,3 +43,8 @@ MIT
 
 ---
 **Built with care for engineering, clarity and people.**
+
+
+## GUI and contribution standard
+
+The shared visual identity uses deep black `#111111` and Duck Yellow `#FFD600`. Repository-specific GUI boundaries, real-versus-concept status, accessibility and evidence requirements are defined in [GUI Design Standard](docs/gui/GUI_DESIGN_STANDARD.md). Use the [Pull Request template](.github/PULL_REQUEST_TEMPLATE.md) for changes; merge policy requires two independent approvals and passing required CI checks, subject to branch protection.

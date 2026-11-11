@@ -30,6 +30,8 @@ ToolNG не ремонтує пристрої, не змінює драйвер�
 - Зовнішні інтеграції мають бути явними, версіонованими, ізольованими й перевірюваними.
 
 ## NUN Mesh та пов'язані репозиторії
+
+<p align="center"><img src="assets/nun-mesh.svg" alt="ToolNG in NUN Mesh — independent engineering modules connected through versioned contracts" width="100%"></p>
 [SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher) · [Fragile-Baby](https://github.com/bboroski/Fragile-Baby) · [Luci](https://github.com/bboroski/Luci)
 
 Репозиторії зберігають власні назви, код, API, цикли випуску та межі відповідальності. Інтеграція означає узгоджені контракти, а не автоматичне злиття незалежних runtime.
@@ -42,3 +44,8 @@ MIT
 
 ---
 **Створено з любов'ю до інженерії, системності та людей.**
+
+
+## Інтерфейсний стандарт і внесок
+
+Візуальна система та межі GUI: [GUI Design Standard](docs/gui/GUI_DESIGN_STANDARD.md) і [Duck UI system](design/DUCK_UI_SYSTEM.md). Значення статусу/прогресу в макетах є умовними, доки їх не підключено до реальних вимірювань. Шаблон перевірки змін: [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md). Для злиття потрібні два незалежні схвалення та всі обов'язкові перевірки CI; примусове застосування залежить від налаштувань захисту гілки.
