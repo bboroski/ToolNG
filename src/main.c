@@ -46,17 +46,20 @@ const GUID GUID_DEVINTERFACE_USB_DEVICE =
 #define COL_BG              (g_app.high_contrast ? RGB(0, 0, 0) : RGB(13, 13, 13))
 #define COL_HEADER          (g_app.high_contrast ? RGB(0, 0, 0) : RGB(20, 20, 20))
 #define COL_SIDEBAR         (g_app.high_contrast ? RGB(0, 0, 0) : RGB(20, 20, 20))
-#define COL_PANEL           (g_app.high_contrast ? RGB(0, 0, 0) : RGB(26, 26, 26))
-#define COL_CARD            (g_app.high_contrast ? RGB(0, 0, 0) : RGB(26, 26, 26))
-#define COL_CARD_HOVER      (g_app.high_contrast ? RGB(32, 32, 32) : RGB(38, 38, 38))
-#define COL_BORDER          (g_app.high_contrast ? RGB(255, 255, 255) : RGB(38, 38, 38))
-#define COL_TEXT            (g_app.high_contrast ? RGB(255, 255, 255) : RGB(230, 230, 230))
-#define COL_MUTED           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(153, 153, 153))
+#define COL_PANEL           (g_app.high_contrast ? RGB(0, 0, 0) : RGB(23, 23, 23))
+#define COL_CARD            (g_app.high_contrast ? RGB(0, 0, 0) : RGB(29, 29, 29))
+#define COL_CARD_HOVER      (g_app.high_contrast ? RGB(32, 32, 32) : RGB(36, 36, 36))
+#define COL_BORDER          (g_app.high_contrast ? RGB(255, 255, 255) : RGB(48, 48, 48))
+#define COL_TEXT            (g_app.high_contrast ? RGB(255, 255, 255) : RGB(242, 242, 242))
+#define COL_MUTED           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(163, 163, 163))
 #define COL_ACCENT          (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 214, 0))
+#define COL_ACCENT_HOVER    (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 227, 77))
 #define COL_ACCENT_DARK     (g_app.high_contrast ? RGB(255, 255, 0) : RGB(191, 161, 0))
-#define COL_GREEN           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(76, 175, 80))
+#define COL_ACCENT_BORDER   (g_app.high_contrast ? RGB(255, 255, 0) : RGB(108, 91, 0))
+#define COL_SELECTED_BG     (g_app.high_contrast ? RGB(0, 0, 0) : RGB(51, 43, 0))
+#define COL_GREEN           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(86, 196, 119))
 #define COL_AMBER           (g_app.high_contrast ? RGB(255, 255, 0) : RGB(255, 214, 0))
-#define COL_ERROR           RGB(255, 68, 68)
+#define COL_ERROR           (g_app.high_contrast ? RGB(255, 255, 255) : RGB(255, 98, 98))
 
 #define PAGE_OVERVIEW 0
 #define PAGE_DEVICES  1
@@ -106,6 +109,10 @@ typedef struct AppState {
     UINT effective_dpi;
     UINT zoom_percent;
     BOOL high_contrast;
+    POINT pointer;
+    BOOL pointer_known;
+    BOOL tracking_mouse;
+    int hover_target;
     BOOL scan_complete;
     BOOL apple_service_query_complete;
     BOOL backup_scan_complete;
@@ -235,11 +242,14 @@ static void draw_round_rect(HDC dc, RECT rect, COLORREF fill,
 
 static void draw_button(HDC dc, RECT rect, const WCHAR *label, BOOL primary)
 {
-    COLORREF fill = primary ? COL_ACCENT_DARK : COL_CARD;
-    COLORREF edge = primary ? COL_ACCENT : COL_BORDER;
+    BOOL hovered = g_app.pointer_known && PtInRect(&rect, g_app.pointer);
+    COLORREF fill = primary
+        ? (hovered ? COL_ACCENT_HOVER : COL_ACCENT)
+        : (hovered ? COL_CARD_HOVER : COL_CARD);
+    COLORREF edge = primary ? COL_ACCENT : (hovered ? COL_ACCENT_BORDER : COL_BORDER);
     draw_round_rect(dc, rect, fill, edge, 10);
     draw_text(dc, label, rect, g_app.font_button,
-              primary ? COL_BG : COL_ACCENT,
+              primary ? COL_BG : (hovered ? COL_ACCENT_HOVER : COL_ACCENT),
               DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
@@ -1580,6 +1590,45 @@ static void save_report(void)
     InvalidateRect(g_app.hwnd, NULL, FALSE);
 }
 
+static void draw_duck_mark(HDC dc, RECT rect)
+{
+    HBRUSH badge = CreateSolidBrush(COL_ACCENT);
+    HPEN badge_edge = CreatePen(PS_SOLID, 1, COL_ACCENT_BORDER);
+    HGDIOBJ old_brush = SelectObject(dc, badge);
+    HGDIOBJ old_pen = SelectObject(dc, badge_edge);
+    RoundRect(dc, rect.left, rect.top, rect.right, rect.bottom, 11, 11);
+    SelectObject(dc, old_brush);
+    SelectObject(dc, old_pen);
+    DeleteObject(badge);
+    DeleteObject(badge_edge);
+
+    {
+        HBRUSH ink = CreateSolidBrush(COL_BG);
+        HPEN no_pen = (HPEN)GetStockObject(NULL_PEN);
+        HGDIOBJ previous_brush = SelectObject(dc, ink);
+        HGDIOBJ previous_pen = SelectObject(dc, no_pen);
+        POINT bill[3];
+        Ellipse(dc, rect.left + 6, rect.top + 18, rect.left + 29, rect.top + 32);
+        Ellipse(dc, rect.left + 18, rect.top + 7, rect.left + 33, rect.top + 23);
+        bill[0] = (POINT){ rect.left + 30, rect.top + 13 };
+        bill[1] = (POINT){ rect.right - 2, rect.top + 17 };
+        bill[2] = (POINT){ rect.left + 30, rect.top + 21 };
+        Polygon(dc, bill, 3);
+        SelectObject(dc, previous_brush);
+        SelectObject(dc, previous_pen);
+        DeleteObject(ink);
+    }
+    {
+        HBRUSH eye = CreateSolidBrush(COL_ACCENT);
+        HGDIOBJ previous_brush = SelectObject(dc, eye);
+        HGDIOBJ previous_pen = SelectObject(dc, (HPEN)GetStockObject(NULL_PEN));
+        Ellipse(dc, rect.left + 24, rect.top + 11, rect.left + 27, rect.top + 14);
+        SelectObject(dc, previous_brush);
+        SelectObject(dc, previous_pen);
+        DeleteObject(eye);
+    }
+}
+
 static void draw_header(HDC dc, int width)
 {
     RECT header = { 0, 0, width, 88 };
@@ -1591,9 +1640,7 @@ static void draw_header(HDC dc, int width)
     FillRect(dc, &header, brush);
     DeleteObject(brush);
 
-    draw_round_rect(dc, logo, COL_ACCENT_DARK, COL_ACCENT, 11);
-    draw_text(dc, L"T", logo, g_app.font_brand, COL_TEXT,
-              DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    draw_duck_mark(dc, logo);
     draw_text(dc, L"ToolNG", (RECT){ 80, 20, 260, 55 },
               g_app.font_title, COL_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     draw_text(dc, L"APPLE DEVICE DIAGNOSTICS  ·  v0.6.1", (RECT){ 82, 54, 390, 74 },
@@ -1638,15 +1685,19 @@ static void draw_sidebar(HDC dc)
     for (i = 0; i < PAGE_COUNT; ++i) {
         int top = 148 + i * 56;
         g_app.nav[i] = (RECT){ 16, top, 208, top + 48 };
-        if (g_app.page == i) {
-            draw_round_rect(dc, g_app.nav[i], COL_ACCENT_DARK, COL_ACCENT, 9);
-        } else {
-            draw_round_rect(dc, g_app.nav[i], COL_SIDEBAR, COL_SIDEBAR, 9);
+        {
+            BOOL selected = g_app.page == i;
+            BOOL hovered = g_app.pointer_known && PtInRect(&g_app.nav[i], g_app.pointer);
+            COLORREF fill = selected ? COL_SELECTED_BG
+                : (hovered ? COL_CARD_HOVER : COL_SIDEBAR);
+            COLORREF edge = selected ? COL_ACCENT_BORDER
+                : (hovered ? COL_BORDER : COL_SIDEBAR);
+            draw_round_rect(dc, g_app.nav[i], fill, edge, 9);
         }
         RECT text_rect = { 30, top + 3, 196, top + 26 };
         RECT hint_rect = { 30, top + 25, 198, top + 44 };
         draw_text(dc, labels[i], text_rect, g_app.font_button,
-                  g_app.page == i ? COL_TEXT : COL_MUTED,
+                  g_app.page == i ? COL_ACCENT : COL_TEXT,
                   DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         draw_text(dc, hints[i], hint_rect, g_app.font_small,
                   COL_MUTED, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
@@ -2115,6 +2166,35 @@ static BOOL point_in_rect(POINT point, RECT rect)
     return PtInRect(&rect, point) != FALSE;
 }
 
+static int hover_target_at(POINT point)
+{
+    int i;
+    if (point_in_rect(point, g_app.zoom_minus_button)) return 1;
+    if (point_in_rect(point, g_app.zoom_plus_button)) return 2;
+    for (i = 0; i < PAGE_COUNT; ++i)
+        if (point_in_rect(point, g_app.nav[i])) return 10 + i;
+    if (g_app.page == PAGE_OVERVIEW) {
+        if (point_in_rect(point, g_app.scan_button)) return 100;
+        if (point_in_rect(point, g_app.report_button)) return 101;
+        if (point_in_rect(point, g_app.devices_button)) return 102;
+        if (point_in_rect(point, g_app.backups_button)) return 103;
+        if (point_in_rect(point, g_app.care_button)) return 104;
+    } else if (g_app.page == PAGE_DEVICES) {
+        if (point_in_rect(point, g_app.scan_button)) return 110;
+    } else if (g_app.page == PAGE_CARE) {
+        if (point_in_rect(point, g_app.support_button)) return 120;
+        if (point_in_rect(point, g_app.playbook_button)) return 121;
+    } else if (g_app.page == PAGE_REPORTS) {
+        if (point_in_rect(point, g_app.report_refresh_button)) return 130;
+        if (point_in_rect(point, g_app.report_copy_button)) return 131;
+        if (point_in_rect(point, g_app.report_export_button)) return 132;
+        for (i = 0; i < REPORT_ROWS; ++i)
+            if (g_app.report_row_index[i] >= 0 &&
+                point_in_rect(point, g_app.report_rows[i])) return 140 + i;
+    }
+    return 0;
+}
+
 static void handle_action(int action)
 {
     switch (action) {
@@ -2420,11 +2500,45 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message,
             }
             return DefWindowProcW(hwnd, message, wparam, lparam);
 
+            case WM_MOUSEMOVE: {
+            TRACKMOUSEEVENT tracking;
+            POINT point;
+            int next_target;
+            g_app.effective_dpi = effective_dpi();
+            point.x = MulDiv(GET_X_LPARAM(lparam), 96, (int)g_app.effective_dpi);
+            point.y = MulDiv(GET_Y_LPARAM(lparam), 96, (int)g_app.effective_dpi);
+            next_target = hover_target_at(point);
+            g_app.pointer = point;
+            g_app.pointer_known = TRUE;
+            if (!g_app.tracking_mouse) {
+                ZeroMemory(&tracking, sizeof(tracking));
+                tracking.cbSize = sizeof(tracking);
+                tracking.dwFlags = TME_LEAVE;
+                tracking.hwndTrack = hwnd;
+                g_app.tracking_mouse = TrackMouseEvent(&tracking);
+            }
+            if (next_target != g_app.hover_target) {
+                g_app.hover_target = next_target;
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            return 0;
+        }
+
+        case WM_MOUSELEAVE:
+            g_app.tracking_mouse = FALSE;
+            g_app.pointer_known = FALSE;
+            if (g_app.hover_target != 0) {
+                g_app.hover_target = 0;
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            return 0;
+
         case WM_LBUTTONUP: {
             POINT point;
             g_app.effective_dpi = effective_dpi();
             point.x = MulDiv(GET_X_LPARAM(lparam), 96, (int)g_app.effective_dpi);
             point.y = MulDiv(GET_Y_LPARAM(lparam), 96, (int)g_app.effective_dpi);
+            SetFocus(hwnd);
             handle_click(point);
             return 0;
         }
