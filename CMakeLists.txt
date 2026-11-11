@@ -21,6 +21,7 @@ add_library(ToolNG.PolicyCore STATIC
     src/toolng_engine.c
     src/toolng_workflow.c
     src/toolng_platform.c
+    src/toolng_guidance.c
 )
 target_include_directories(ToolNG.PolicyCore
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -36,6 +37,11 @@ if(BUILD_TESTING)
     target_link_libraries(ToolNG.PolicyTests PRIVATE ToolNG.PolicyCore)
     toolng_enable_warnings(ToolNG.PolicyTests)
     add_test(NAME toolng_engine_tests COMMAND ToolNG.PolicyTests)
+
+    add_executable(ToolNG.GuidanceTests tests/toolng_guidance_tests.c)
+    target_link_libraries(ToolNG.GuidanceTests PRIVATE ToolNG.PolicyCore)
+    toolng_enable_warnings(ToolNG.GuidanceTests)
+    add_test(NAME toolng_guidance_tests COMMAND ToolNG.GuidanceTests)
 
     add_executable(ToolNG.WorkflowTests tests/toolng_workflow_tests.c)
     target_link_libraries(ToolNG.WorkflowTests PRIVATE ToolNG.PolicyCore)
