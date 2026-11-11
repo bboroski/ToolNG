@@ -1,7 +1,7 @@
 <!-- Title: ToolNG — Windows USB та Apple Device Diagnostics -->
 <p align="center"><img src="assets/duck-ui/duck-mark.svg" alt="Логотип ToolNG" width="76"></p>
 
-# ToolNG — Windows-діагностика USB та Apple-пристроїв
+# ToolNG
 
 [![Windows CI](https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml/badge.svg?branch=main)](https://github.com/bboroski/ToolNG/actions/workflows/windows-ci.yml) [![MIT License](https://img.shields.io/badge/license-MIT-FFD600?style=flat&labelColor=111111)](LICENSE)
 
