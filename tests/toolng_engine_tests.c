@@ -1,4 +1,4 @@
-#include "sambu_engine.h"
+#include "toolng_engine.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -408,7 +408,7 @@ int main(void)
     CHECK(test_bounded_provenance_trace() == 0);
     CHECK(toolng_architecture_validate());
     CHECK(strcmp(toolng_engine_version(), "1.4.0") == 0);
-    CHECK(strcmp(toolng_report_schema(), "toolzng.diagnostic.v1") == 0);
+    CHECK(strcmp(toolng_report_schema(), "toolng.diagnostic.v1") == 0);
     CHECK(strcmp(toolng_finding_key(TOOLNG_FINDING_SERVICE_UNKNOWN),
                  "apple_service_status_unknown") == 0);
     CHECK(strcmp(toolng_finding_key(TOOLNG_FINDING_BACKUP_UNKNOWN),

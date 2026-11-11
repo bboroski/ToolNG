@@ -1,0 +1,23 @@
+name: ToolNG E2K native qualification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2k-native:
+    runs-on: [self-hosted, linux, e2k]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify native host and LCC
+        run: |
+          test "$(uname -m)" = "e2k"
+          command -v lcc
+          lcc --version
+      - name: Build portable policy core and run tests
+        run: |
+          cmake -S . -B .build-e2k -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/e2k-linux-lcc.cmake -DBUILD_TESTING=ON
+          cmake --build .build-e2k --parallel
+          ctest --test-dir .build-e2k --output-on-failure

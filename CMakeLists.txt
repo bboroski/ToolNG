@@ -20,6 +20,7 @@ endfunction()
 add_library(ToolNG.PolicyCore STATIC
     src/toolng_engine.c
     src/toolng_workflow.c
+    src/toolng_platform.c
 )
 target_include_directories(ToolNG.PolicyCore
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -45,6 +46,11 @@ if(BUILD_TESTING)
     target_link_libraries(ToolNG.RelaxationTests PRIVATE ToolNG.PolicyCore)
     toolng_enable_warnings(ToolNG.RelaxationTests)
     add_test(NAME toolng_relaxation_tests COMMAND ToolNG.RelaxationTests)
+
+    add_executable(ToolNG.PlatformTests tests/toolng_platform_tests.c)
+    target_link_libraries(ToolNG.PlatformTests PRIVATE ToolNG.PolicyCore)
+    toolng_enable_warnings(ToolNG.PlatformTests)
+    add_test(NAME toolng_platform_tests COMMAND ToolNG.PlatformTests)
 endif()
 
 # The desktop shell is platform-specific; the policy/workflow core remains testable.
