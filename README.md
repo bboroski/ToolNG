@@ -78,3 +78,10 @@ MIT
 
 ---
 **Створено з любов'ю до інженерії, системності та людей.**
+
+
+## Diagnostic Console GUI
+
+A standalone [ToolNG diagnostic console prototype](docs/gui/index.html) and [1600×900 vector preview](docs/gui/preview.svg) are available under `docs/gui/`. The concept focuses on Windows device inventory, connection timelines, read-only backup markers and evidence-based reports. **All displayed device counts and events are synthetic sample data; the prototype does not access Windows hardware or change the host.**
+
+The interface is responsive, keyboard-operable and supports reduced motion. See [GUI design notes](docs/GUI_DESIGN.md) and [safety boundaries](docs/SAFETY_AND_SCOPE.md).
