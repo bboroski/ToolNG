@@ -18,15 +18,16 @@ cmake --build build --config Release
 python one.py check
 ```
 
+## Screenshots
+
+No verified capture of the running application is tracked. Vector previews containing SAMPLE DATA are not screenshots.
+
 ## Scope
 ToolNG does not repair devices, modify drivers or services, inspect private backup contents or upload diagnostics. A recommendation is not an executed action.
 
 ## Project documentation
-![Overview — sample data](assets/screenshots/overview.svg)
 
-![USB devices — sample data](assets/screenshots/usb-devices.svg)
 
-![Reports — sample data](assets/screenshots/reports.svg)
 
 *Static previews with SAMPLE DATA, not live scan results.*
 
