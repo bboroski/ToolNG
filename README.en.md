@@ -66,3 +66,7 @@ MIT — see [LICENSE](LICENSE).
 ToolNG is the local Windows diagnostics layer of NUN Mesh. It collects observable device signals and creates reports that disclose evidence coverage. The interface may recommend an action, but it must not silently modify devices, drivers, services, or backups.
 
 Shared workspace rules: [Adaptive Workspace Integration](docs/ADAPTIVE_WORKSPACE_INTEGRATION.md).
+
+## Product system
+
+Shared Duck design, multilingual documentation, capability governance, marketing-claim controls and release rules: [docs/PRODUCT_SYSTEM.md](docs/PRODUCT_SYSTEM.md). The 10,000-ID registry is planning capacity, not a claim of 10,000 shipped functions.
