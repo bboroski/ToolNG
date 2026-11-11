@@ -1,4 +1,4 @@
-#include "sambu_workflow.h"
+#include "toolng_workflow.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
