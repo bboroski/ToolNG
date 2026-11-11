@@ -1,72 +1,43 @@
 <p align="center"><img src="assets/duck-ui/duck-mark.svg" alt="ToolNG mark" width="92"></p>
 <h1 align="center">ToolNG</h1>
 <p align="center"><strong>Windows Device Evidence Probe</strong></p>
-<p align="center"><img src="https://img.shields.io/badge/STATUS-WINDOWS%20DESKTOP-FFD600?style=for-the-badge&labelColor=111111"><img src="https://img.shields.io/badge/CORE-C17%20%2B%20WIN32-FFD600?style=for-the-badge&labelColor=111111"><img src="https://img.shields.io/badge/LICENSE-MIT-FFD600?style=for-the-badge&labelColor=111111"></p>
+<p align="center"><strong>Windows desktop utility · read-only диагностика</strong></p>
 <p align="center"><a href="README.md">🇺🇦 Українська</a> · <a href="README.en.md">🇬🇧 English</a> · <a href="README.ru.md">🇷🇺 Русский</a></p>
 
----
+> **ToolNG** — ToolNG — локальная read-only утилита диагностики Windows, отделяющая подтверждённые сигналы устройств от неизвестного состояния и неполноты проверок.
 
-**ToolNG — локальная диагностическая утилита Windows, которая отделяет подтверждённые сигналы устройства от неизвестного или непроверенного состояния.** Её ценность — прозрачная информация для оператора без автоматического вмешательства в систему.
-
-## Возможности
-
-- Обнаружение видимых интерфейсов устройств Windows PnP/USB.
-- Проверка состояния соответствующих системных служб.
-- Read-only просмотр локальных маркеров резервного копирования.
-- Ограниченное наблюдение за событиями подключения и отключения.
-- Объяснимая оценка готовности с отдельным показателем полноты доказательств.
+## Текущие возможности
+- Наблюдение за Windows PnP/USB-устройствами и связанными службами.
+- Read-only проверка локальных маркеров резервного копирования и событий подключения.
 - Локальные отчёты, журналы, экспорт и редактирование чувствительных полей.
-- Рекомендации по следующим шагам без автоматического ремонта.
+- Объяснимая оценка готовности и полноты доказательств.
 
-## Сборка и запуск
-
-Требуются Windows 10/11, CMake и совместимый компилятор C17.
-
-~~~powershell
+## Быстрый старт и проверка
+```bash
 cmake -S . -B build
 cmake --build build --config Release
-python one.py
 python one.py check
-~~~
+```
 
-В Windows также доступен <code>one.cmd</code>.
+## Архитектура и подтверждённые границы
+ToolNG не ремонтирует устройства, не меняет драйверы или службы, не изучает приватное содержимое backup и не отправляет диагностику в облако. Рекомендация не означает выполненное действие.
 
-## Как читать результаты
+## Инженерное качество
+- Запускайте проверки для целевой платформы; host CI не заменяет аппаратную квалификацию.
+- Статусы implemented, partial и planned должны подтверждаться кодом, тестами и доказательствами.
+- Макет, спецификация или открытый Pull Request не доказывают production-ready реализацию.
+- Внешние интеграции должны быть явными, версионированными, изолированными и тестируемыми.
 
-ToolNG различает подтверждённый сигнал, завершённую проверку без находки, неизвестное состояние и ошибку проверки. Высокая оценка при неполном покрытии не представляется полной проверкой. Отчёты остаются локальными; аппаратные идентификаторы и длинные локальные пути можно скрывать. Контрольная сумма sidecar-файла помогает обнаружить последующее изменение отчёта, но не является цифровой подписью.
+## NUN Mesh и связанные репозитории
+[SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher) · [Fragile-Baby](https://github.com/bboroski/Fragile-Baby) · [Luci](https://github.com/bboroski/Luci)
 
-## Управление и выпуск
+Каждый репозиторий сохраняет каноническое имя, собственный код, API, цикл выпуска и границы ответственности. Интеграция означает версионированные контракты, а не автоматическое слияние независимых runtime.
 
-| Контроль | Правило |
-|---|---|
-| Платформа | Windows 10/11, C17, Win32 |
-| Доказательства | Результат проверки и coverage показываются отдельно |
-| Конфиденциальность | Отчёты локальные; чувствительные поля можно скрыть |
-| Безопасные действия | Рекомендация GUI не означает, что операция выполнена |
-| Релиз | Проверить сборку, PnP/служебные сценарии и экспорт отчётов |
+## Дизайн и документация
+Общее направление интерфейсов — **Duck Black / Yellow**: тёмные поверхности, жёлтые акценты для действий и состояний, читаемая типографика, доступный контраст, клавиатурная навигация и поддержка reduced motion. Подробности — в [design/DUCK_UI_SYSTEM.md](design/DUCK_UI_SYSTEM.md), если файл присутствует.
 
-## Границы безопасности
-
-ToolNG не прошивает, не ремонтирует, не сбрасывает и не меняет состояние устройства; не читает приватное содержимое резервных копий и не передаёт диагностические данные в облако. Любое изменение системы остаётся отдельным действием, разрешённым оператором.
-
-## Экосистема и лицензия
-
-**ToolNG** — каноническое название репозитория и инструмента. Связанные проекты: [SAMBU](https://github.com/bboroski/SAMBU), [ReaperCripple](https://github.com/bboroski/ReaperCripple), [Kloz](https://github.com/bboroski/Kloz), [CO](https://github.com/bboroski/CO), [SaintSI](https://github.com/bboroski/SaintSI), [Klipot](https://github.com/bboroski/Klipot), [NUN](https://github.com/bboroski/NUN), [NUNLauncher](https://github.com/bboroski/NUNLauncher), [Fragile-Baby](https://github.com/bboroski/Fragile-Baby) и [Luci](https://github.com/bboroski/Luci).
-
-MIT — см. [LICENSE](LICENSE).
+## Лицензия
+MIT
 
 ---
-
-**Создано с любовью к надёжным системам и людям.**
-
-## NUN Mesh
-
-<p align="center"><img src="assets/nun-mesh.svg" alt="NUN Mesh — семь инженерных репозиториев, связанных версионированными контрактами" width="100%"></p>
-
-ToolNG — локальный слой диагностики Windows в NUN Mesh. Он собирает наблюдаемые сигналы устройств и создаёт отчёты с указанием полноты доказательств. Интерфейс может рекомендовать действие, но не должен незаметно изменять устройства, драйверы, службы или резервные копии.
-
-Общие правила рабочего интерфейса: [Adaptive Workspace Integration](docs/ADAPTIVE_WORKSPACE_INTEGRATION.md).
-
-## Продуктовая система
-
-Единые правила дизайна Duck, трёхъязычной документации, управления возможностями, маркетинговых заявлений и выпусков: [docs/PRODUCT_SYSTEM.md](docs/PRODUCT_SYSTEM.md). Реестр на 10 000 ID — это ёмкость планирования, а не заявление о 10 000 готовых функциях.
+**Создано с любовью к инженерии, системности и людям.**
