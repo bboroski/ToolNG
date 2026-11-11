@@ -1215,7 +1215,7 @@ static void save_duckfix_route(void)
         L"ToolNG — маршрут DuckFix\r\n================================\r\n"
         L"Diagnostic engine: %ls · diagnostic schema: %ls\r\n"
         L"Finding: %u (%ls)\r\n"
-        L"Workflow: %ls · steps %u/%u (failed %u)\r\n"
+        L"Workflow: %hs · steps %u/%u (failed %u)\r\n"
         L"Evidence coverage: %u%% · Duck Readiness: %d/100 · %ls\r\n"
         L"Состояние: %ls\r\nUSB interfaces: %u\r\n"
         L"Apple service: %ls\r\nBackup Sentinel: %ls\r\n"
