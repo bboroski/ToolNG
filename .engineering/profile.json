@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "standard_id": "PERSONA-ENG-STD",
+  "repository": "bboroski/ToolNG",
+  "project": {
+    "domain": "Windows host-side device evidence and diagnostics utility",
+    "mission": "Provide local, read-only Windows device and backup-marker diagnostics with explainable evidence coverage.",
+    "maturity": "host-side-diagnostics"
+  },
+  "architecture": {
+    "preserve_existing_boundaries": true,
+    "primary_technologies": [
+      "C17",
+      "Win32",
+      "CMake",
+      "local diagnostic reporting"
+    ],
+    "explicit_non_goals": [
+      "Do not modify drivers or Windows services",
+      "Do not read private backup contents",
+      "Do not upload diagnostics to cloud services",
+      "A recommendation is not an executed repair"
+    ]
+  },
+  "safety_boundaries": [
+    "Keep device inspection and reporting read-only.",
+    "Do not convert incomplete evidence into a positive health assertion.",
+    "Redact sensitive fields in reports and logs.",
+    "No remote telemetry or repair workflow without a separately reviewed design and explicit consent."
+  ],
+  "native_validation": {
+    "status": "defined",
+    "commands": [
+      "cmake -S . -B build",
+      "cmake --build build --config Release",
+      "python one.py check"
+    ],
+    "evidence_note": "Run the current Windows-target build and any available host checks; Linux CI does not prove Windows device API behavior."
+  },
+  "required_gates": [
+    "profile-validation",
+    "native-project-checks",
+    "architecture-and-compatibility-review",
+    "security-and-privacy-review",
+    "documentation-review",
+    "human-review",
+    "target-qualification-when-applicable"
+  ],
+  "merge_policy": {
+    "pull_request_required": true,
+    "direct_main_push_policy": "enforce-with-branch-rules",
+    "bypass_required_checks": false,
+    "release_requires_separate_qualification": true
+  },
+  "status_vocabulary": [
+    "PROPOSED",
+    "PLANNED",
+    "IMPLEMENTED",
+    "TESTED",
+    "VERIFIED",
+    "MERGED",
+    "RELEASED",
+    "BLOCKED"
+  ]
+}
