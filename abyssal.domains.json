@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "repository": "bboroski/ToolNG",
+  "role": "read-only Windows device diagnostics and evidence reporting",
+  "maturity": "native-desktop",
+  "domains": {
+    "lucifer": {
+      "status": "partial",
+      "evidence": [
+        "docs/SAFETY_AND_SCOPE.md"
+      ]
+    },
+    "beelzebub": {
+      "status": "partial",
+      "evidence": [
+        "src/toolng_engine.c",
+        "docs/LOCALIZED_SIGNAL_REPORTS.md"
+      ]
+    },
+    "leviathan": {
+      "status": "partial",
+      "evidence": [
+        "src/toolng_workflow.c",
+        "docs/BOUNDED_PROVENANCE_TRACE.md"
+      ]
+    },
+    "asmodeus": {
+      "status": "implemented",
+      "evidence": [
+        "docs/SAMBU_INTEGRATION.md",
+        "ecosystem/manifest.json"
+      ]
+    },
+    "belphegor": {
+      "status": "partial",
+      "evidence": [
+        "scripts/verify_docs.py",
+        "scripts/build-windows.ps1"
+      ]
+    },
+    "mammon": {
+      "status": "partial",
+      "evidence": [
+        "src/toolng_engine.h"
+      ]
+    },
+    "satan": {
+      "status": "implemented",
+      "evidence": [
+        "docs/SAFETY_AND_SCOPE.md"
+      ]
+    },
+    "belial": {
+      "status": "implemented",
+      "evidence": [
+        "docs/BOUNDED_PROVENANCE_TRACE.md"
+      ]
+    },
+    "astaroth": {
+      "status": "partial",
+      "evidence": [
+        "docs/ENGINEERING_QUALITY_GATES.md"
+      ]
+    },
+    "baal": {
+      "status": "implemented",
+      "evidence": [
+        "CMakeLists.txt",
+        "src/main.c"
+      ]
+    },
+    "adramelech": {
+      "status": "partial",
+      "evidence": [
+        ".github/workflows/windows-ci.yml"
+      ]
+    },
+    "ariel": {
+      "status": "partial",
+      "evidence": [
+        "docs/GUI_DESIGN.md",
+        "assets/screenshots/reports.svg"
+      ]
+    },
+    "pazuzu": {
+      "status": "implemented",
+      "evidence": [
+        "tests/toolng_engine_tests.c",
+        "tests/toolng_relaxation_tests.c"
+      ]
+    }
+  },
+  "integrations": [
+    {
+      "repository": "bboroski/SAMBU",
+      "relation": "adapter",
+      "status": "implemented"
+    },
+    {
+      "repository": "bboroski/Klipot",
+      "relation": "metadata",
+      "status": "partial"
+    }
+  ]
+}
