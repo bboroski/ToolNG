@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "bboroski/ToolNG",
+  "optimization_method": "four-vector",
+  "status": "baseline_pending",
+  "implementation_status": "profile_added",
+  "product_role": "windows-diagnostics",
+  "detected_stack": "c-cpp",
+  "vectors": {
+    "physics": {
+      "focus": "latency-throughput-resource-cost",
+      "metrics": [
+        "discovery_latency",
+        "preflight_latency",
+        "workflow_tick_latency",
+        "report_size"
+      ],
+      "baseline": "not_measured"
+    },
+    "biology": {
+      "focus": "bounded-resource-lifecycle-and-feedback",
+      "controls": [
+        "handle_lifetime",
+        "bounded_run_history",
+        "read_only_evidence"
+      ],
+      "baseline": "not_measured"
+    },
+    "technology": {
+      "focus": "modularity-contracts-security",
+      "boundaries": [
+        "discovery",
+        "evidence",
+        "policy",
+        "report"
+      ]
+    },
+    "sambo": {
+      "focus": "reuse-leverage-and-safe-deferral",
+      "strategies": [
+        "windows_apis",
+        "bounded_scan",
+        "timeout"
+      ]
+    }
+  },
+  "verification": {
+    "commands": [
+      "cmake -S . -B build",
+      "cmake --build build",
+      "ctest --test-dir build --output-on-failure"
+    ],
+    "results": "not_run_in_this_change"
+  },
+  "guardrails": [
+    "No automatic device repair"
+  ],
+  "acceptance": [
+    "baseline recorded on a named platform",
+    "no unbounded queues caches retries or loops",
+    "errors and partial results remain explicit",
+    "public contracts remain compatible or are versioned",
+    "performance claims have before-after evidence"
+  ],
+  "updated_at": "2026-11-11"
+}
