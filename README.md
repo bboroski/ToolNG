@@ -3,8 +3,22 @@
 <p align="center"><strong>Windows Device Evidence Probe</strong></p>
 <p align="center"><img src="https://img.shields.io/badge/STATUS-WINDOWS%20DESKTOP%20UTILITY%20%C2%B7%20HOST-SIDE%20DIAGNOSTICS-FFD600?style=for-the-badge&labelColor=111111" alt="Windows desktop utility · host-side diagnostics"></p>
 <p align="center"><a href="README.md">🇺🇦 Українська</a> · <a href="README.en.md">🇬🇧 English</a> · <a href="README.ru.md">🇷🇺 Русский</a></p>
-<sub>Оновлено: 2026-11-12</sub>
+<sub>Оновлено: 2026-11-11</sub>
 
+
+## Навігація
+
+- [Поточні можливості](#поточні-можливості)
+- [Швидкий старт і перевірка](#швидкий-старт-і-перевірка)
+- [Архітектура, межі та достовірність](#архітектура-межі-та-достовірність)
+- [Прев'ю інтерфейсу](#превю-інтерфейсу)
+- [Інженерна якість](#інженерна-якість)
+- [Карта документації](#карта-документації)
+- [NUN Mesh та пов'язані репозиторії](#nun-mesh-та-повязані-репозиторії)
+- [Дизайн і документація](#дизайн-і-документація)
+- [Ліцензія](#ліцензія)
+
+> **ToolNG** — ToolNG — локальний read-only інструмент діагностики Windows, який відокремлює підтверджені сигнали від невідомого стану та неповного покриття.
 
 ## NEON SYNDICATE — візуальна система
 
@@ -56,24 +70,31 @@ ToolNG не ремонтує пристрої, не змінює драйвер�
 - [Проєктування GUI](docs/GUI_DESIGN.md)
 - [Система Duck UI](docs/DUCK_UI_SYSTEM.md)
 
+## NUN Mesh та пов'язані репозиторії
+
+<p align="center"><img src="assets/nun-mesh.svg" alt="NUN Mesh architecture diagram showing independent repositories connected by versioned contracts" width="960"></p>
+[SAMBU](https://github.com/bboroski/SAMBU) · [ToolNG](https://github.com/bboroski/ToolNG) · [ReaperCripple](https://github.com/bboroski/ReaperCripple) · [Kloz](https://github.com/bboroski/Kloz) · [CO](https://github.com/bboroski/CO) · [SaintSI](https://github.com/bboroski/SaintSI) · [Klipot](https://github.com/bboroski/Klipot) · [NUN](https://github.com/bboroski/NUN) · [NUNLauncher](https://github.com/bboroski/NUNLauncher)
+
+Репозиторії зберігають власні назви, код, API, цикли випуску та межі відповідальності. Інтеграція означає узгоджені контракти, а не автоматичне злиття незалежних runtime.
+
+## Дизайн і документація
+Базовий інтерфейсний напрям цього проєкту — **NEON SYNDICATE**: чорні поверхні, жовтий акцент для дій і станів, читабельна типографіка, доступний контраст, клавіатурна навігація та підтримка reduced motion. Деталі дивіться в [design/DUCK_UI_SYSTEM.md](design/DUCK_UI_SYSTEM.md), якщо файл присутній у цьому репозиторії.
+
 ## Ліцензія
 MIT
 
 ---
+**Створено з любов'ю до інженерії, системності та людей.**
 
-## Статус інтеграцій
+## Федерація Hellduck
 
-- Репозиторій зберігає власні API, збірку, тести та цикл випуску; міжпроєктна взаємодія відбувається через явні версіоновані контракти.
-- STaas (SaaS integration control plane) і MoonTreach (CI/test acceleration) розвиваються окремими Pull Requests. Їх не слід вважати можливостями `main` або production-ready до злиття та проходження обов'язкових перевірок.
-- Правила федерації та інтеграції: [Hellduck Integration Playbook](https://github.com/bboroski/Hellduck/blob/main/docs/INTEGRATION_PLAYBOOK.md).
+Цей репозиторій входить до федерації [Hellduck](https://github.com/bboroski/Hellduck) — спільного каталогу проєктів, контрактних зв’язків і станів інтеграції. Вихідний код, API, тести та цикл випуску залишаються відповідальністю цього репозиторію; Hellduck індексує зв’язки й не завантажує та не виконує код учасників. Практичні сценарії взаємодії, типи адаптерів і межі сумісності: [Integration Playbook](https://github.com/bboroski/Hellduck/blob/main/docs/INTEGRATION_PLAYBOOK.md).
 
-## Інженерний стандарт
-Індекс аудиту, тестових воріт, безпеки, супроводу та критеріїв інтеграції: [Engineering Improvement Index](docs/ENGINEERING_IMPROVEMENT_INDEX.md).
 
-## Інтеграційні межі
-Зберігайте незалежні API, runtime та цикли випуску; інтегруйте через версіоновані контракти. Практичні правила взаємодії: [Hellduck Integration Playbook](https://github.com/bboroski/Hellduck/blob/main/docs/INTEGRATION_PLAYBOOK.md).
+## Anti-Teradayn Protocol
 
----
-**「在天愿作比翼鸟，在地愿为连理枝。」**
+Repository-specific engineering controls, seven-phase validation, typed-steaming rules, and acceptance checklist: [docs/ANTI_TERADAYN_PROTOCOL.md](docs/ANTI_TERADAYN_PROTOCOL.md).
 
-*«У небі — птахами-нерозлучниками, на землі — гілками одного дерева».*
+## Engineering improvement index
+
+[Repository-specific engineering roadmap and verification boundaries](docs/ENGINEERING_IMPROVEMENT_INDEX.md).
