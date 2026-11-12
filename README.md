@@ -3,7 +3,7 @@
 <p align="center"><strong>Windows Device Evidence Probe</strong></p>
 <p align="center"><img src="https://img.shields.io/badge/STATUS-WINDOWS%20DESKTOP%20UTILITY%20%C2%B7%20HOST-SIDE%20DIAGNOSTICS-FFD600?style=for-the-badge&labelColor=111111" alt="Windows desktop utility · host-side diagnostics"></p>
 <p align="center"><a href="README.md">🇺🇦 Українська</a> · <a href="README.en.md">🇬🇧 English</a> · <a href="README.ru.md">🇷🇺 Русский</a></p>
-<sub>Оновлено: 2026-11-11</sub>
+<sub>Оновлено: 2026-11-12</sub>
 
 
 ## NEON SYNDICATE — візуальна система
@@ -60,6 +60,12 @@ ToolNG не ремонтує пристрої, не змінює драйвер�
 MIT
 
 ---
+
+## Статус інтеграцій
+
+- Репозиторій зберігає власні API, збірку, тести та цикл випуску; міжпроєктна взаємодія відбувається через явні версіоновані контракти.
+- STaas (SaaS integration control plane) і MoonTreach (CI/test acceleration) розвиваються окремими Pull Requests. Їх не слід вважати можливостями `main` або production-ready до злиття та проходження обов'язкових перевірок.
+- Правила федерації та інтеграції: [Hellduck Integration Playbook](https://github.com/bboroski/Hellduck/blob/main/docs/INTEGRATION_PLAYBOOK.md).
 
 ## Інженерний стандарт
 Індекс аудиту, тестових воріт, безпеки, супроводу та критеріїв інтеграції: [Engineering Improvement Index](docs/ENGINEERING_IMPROVEMENT_INDEX.md).
