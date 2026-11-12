@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "repository": "bboroski/ToolNG",
+  "default_base": "main",
+  "fallback": "all",
+  "fleet": [
+    "bboroski/SAMBU",
+    "bboroski/ToolNG",
+    "bboroski/ReaperCripple",
+    "bboroski/Kloz",
+    "bboroski/CO",
+    "bboroski/SaintSI",
+    "bboroski/Klipot",
+    "bboroski/NUN",
+    "bboroski/NUNLauncher",
+    "bboroski/Fragile-Baby",
+    "bboroski/Luci",
+    "bboroski/Hellduck",
+    "bboroski/9circ"
+  ],
+  "suites": [
+    {
+      "id": "toolng-cmake",
+      "description": "Build the Windows host utility and run repository checks",
+      "paths": [
+        "**/*.c",
+        "**/*.h",
+        "**/*.cpp",
+        "**/*.hpp",
+        "**/*.S",
+        "**/*.s",
+        "**/*.cmake",
+        "**/CMakeLists.txt",
+        "CMakeLists.txt",
+        "Makefile",
+        "**/Makefile",
+        "**/*.ld",
+        "**/*.mk",
+        "one.py",
+        "**/one.py"
+      ],
+      "steps": [
+        {
+          "name": "Configure CMake",
+          "command": [
+            "cmake",
+            "-S",
+            ".",
+            "-B",
+            "build",
+            "-A",
+            "x64"
+          ],
+          "cwd": "."
+        },
+        {
+          "name": "Build Release",
+          "command": [
+            "cmake",
+            "--build",
+            "build",
+            "--config",
+            "Release",
+            "--parallel"
+          ],
+          "cwd": "."
+        },
+        {
+          "name": "Run repository checks",
+          "command": [
+            "python",
+            "one.py",
+            "check"
+          ],
+          "cwd": "."
+        }
+      ],
+      "runs_on": "windows-latest",
+      "timeout_seconds": 1800
+    }
+  ],
+  "policy": {
+    "auto_merge": false,
+    "required_checks_must_pass": true,
+    "draft_prs_block_merge": true,
+    "merge_conflicts_block_merge": true,
+    "never_bypass_branch_protection": true,
+    "no_suite_means_unverified": true
+  }
+}
