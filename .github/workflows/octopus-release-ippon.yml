@@ -1,0 +1,96 @@
+name: Octopus Ippon Release — ToolNG
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: octopus-ippon-toolng-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-package:
+    name: Project-specific validation and source package
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Windows build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Compile Windows application
+        run: cmake --build build --config Release --parallel
+      - name: Run repository contract checks
+        run: python one.py check
+      - name: Stage source release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git archive --format=tar.gz --output "dist/ToolNG-${GITHUB_SHA}.tar.gz" HEAD
+          if [ -d build ] && [ "$(find build -type f | wc -l)" -gt 0 ]; then
+            tar -czf "dist/ToolNG-build-${GITHUB_SHA}.tar.gz" build
+          fi
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/sbom.spdx.json
+          upload-artifact: false
+      - name: Generate SHA-256 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum *.tar.gz sbom.spdx.json > SHA256SUMS
+      - name: Attest source and build artifacts
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
+      - name: Upload immutable release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolng-release-evidence
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 45
+
+  publish:
+    name: Publish versioned GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download verified release evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: toolng-release-evidence
+          path: dist
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "ToolNG ${{ github.ref_name }}"
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist/*
