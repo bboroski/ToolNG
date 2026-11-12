@@ -1,0 +1,51 @@
+{
+  "schema_version": "moontreach.repository.v1",
+  "repository": "bboroski/ToolNG",
+  "always_run": [
+    "toolng-check"
+  ],
+  "fallback_on_unmapped": true,
+  "full_suite_on_merge_group": true,
+  "max_changed_files": 250,
+  "commands": {
+    "toolng-check": {
+      "argv": [
+        "python",
+        "one.py",
+        "check"
+      ],
+      "timeout_seconds": 1800
+    }
+  },
+  "rules": [
+    {
+      "id": "portable-core-and-tests",
+      "paths": [
+        "src/**",
+        "tests/**",
+        "CMakeLists.txt",
+        "**/CMakeLists.txt",
+        "one.py",
+        "scripts/**"
+      ],
+      "checks": [
+        "toolng-check"
+      ]
+    },
+    {
+      "id": "docs-and-policy",
+      "paths": [
+        "docs/**",
+        "README*",
+        ".github/**",
+        "moontreach.json"
+      ],
+      "checks": [
+        "toolng-check"
+      ]
+    }
+  ],
+  "fallback_checks": [
+    "toolng-check"
+  ]
+}
