@@ -1,8 +1,8 @@
 # Production Release Standard
 
-**Repository:** bboroski/ToolNG  
-**Default branch:** `main`  
-**Project profile:** C/C++ project with CMake plus Python maintenance tooling  
+**Repository:** bboroski/ToolNG
+**Default branch:** `main`
+**Project profile:** C/C++ project with CMake plus Python maintenance tooling
 **Existing workflow inventory:** 8 workflow file(s) were visible at the time this baseline was prepared.
 
 ## Purpose and scope
