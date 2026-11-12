@@ -36,7 +36,7 @@ int main(void)
     assert(ledger.dropped == 5u);
     count = toolng_signal_ledger_snapshot(&ledger, snapshot, TOOLNG_LEDGER_CAPACITY);
     assert(count == TOOLNG_LEDGER_CAPACITY);
-    assert(snapshot[0].sequence == 8u);
+    assert(snapshot[0].sequence == 6u);
     puts("bounded event history tests passed");
     return 0;
 }
