@@ -1,0 +1,105 @@
+{
+  "schema_version": "bboroski.modular-monolith-profile.v1",
+  "project": "ToolNG",
+  "maturity": "host-diagnostics",
+  "architecture": {
+    "mode": "modular-monolith",
+    "scope": "Windows desktop diagnostics shell with a portable native C policy/evidence core and optional Swift backend.",
+    "runtime_boundary": "Windows host application; portable core remains separately testable.",
+    "composition_rule": "Keep device discovery, evidence normalization, guidance and reporting as bounded modules behind explicit read-only interfaces."
+  },
+  "entrypoints": [
+    {
+      "path": "src/main.c",
+      "kind": "windows-native-entry"
+    },
+    {
+      "path": "swift-backend/Sources/ToolNGBackendServer/main.swift",
+      "kind": "optional-backend-entry"
+    }
+  ],
+  "components": [
+    {
+      "id": "device-platform",
+      "responsibility": "Host-side PnP/USB and service observation.",
+      "status": "implemented",
+      "integration": "in-process"
+    },
+    {
+      "id": "evidence-engine",
+      "responsibility": "Normalize observations and preserve unknown versus failed states.",
+      "status": "implemented",
+      "integration": "in-process"
+    },
+    {
+      "id": "operator-guidance",
+      "responsibility": "Explain evidence quality and safe next steps.",
+      "status": "implemented",
+      "integration": "in-process"
+    },
+    {
+      "id": "local-reporting",
+      "responsibility": "Generate local diagnostic reports.",
+      "status": "partial",
+      "integration": "in-process"
+    },
+    {
+      "id": "swift-backend",
+      "responsibility": "Optional backend boundary; not required by the portable C core.",
+      "status": "partial",
+      "integration": "versioned-contract"
+    }
+  ],
+  "dependencies": [
+    {
+      "project": "SAMBU",
+      "relationship": "selected native policy rules ported into C17; not Python runtime embedding",
+      "runtime_dependency": false
+    },
+    {
+      "project": "Klipot",
+      "relationship": "documentation and discovery metadata",
+      "runtime_dependency": false
+    }
+  ],
+  "preserved_boundaries": [
+    "All hardware observation is read-only by default.",
+    "Unknown, unavailable, incomplete and failed evidence remain distinct.",
+    "Windows-specific UI and device access remain host-targeted."
+  ],
+  "forbidden_composition": [
+    "No silent device or driver mutation.",
+    "No cloud upload of diagnostic reports by default.",
+    "No implicit privilege transfer from the UI to helper processes."
+  ],
+  "build_profiles": [
+    {
+      "id": "windows-native",
+      "status": "declared",
+      "commands": [
+        "cmake -S . -B build",
+        "cmake --build build --config Release"
+      ],
+      "evidence": [
+        "CMakeLists.txt",
+        "src/main.c",
+        "tests"
+      ]
+    },
+    {
+      "id": "swift-backend",
+      "status": "declared",
+      "commands": [
+        "cd swift-backend && swift test"
+      ],
+      "evidence": [
+        "swift-backend/Package.swift",
+        "swift-backend/Tests"
+      ]
+    }
+  ],
+  "gaps": [
+    "Run Windows-host build and device-enumeration tests on supported Windows versions.",
+    "Prove packaging, signing and optional backend interoperability separately."
+  ]
+}
