@@ -1,0 +1,23 @@
+{
+  "schema_version": "jm.adapter-contracts.v1",
+  "repository": "bboroski/ToolNG",
+  "module_id": "toolng-diagnostics",
+  "contracts": [
+    {
+      "id": "sambu-policy-port-v1",
+      "provider_module_id": "sambu-core",
+      "provider": "bboroski/SAMBU",
+      "kind": "native-policy-port",
+      "status": "implemented",
+      "contract_version": "1",
+      "local_paths": [
+        "src/toolng_workflow.c",
+        "src/toolng_engine.c"
+      ],
+      "provider_paths": [
+        "sambu.module.json"
+      ],
+      "notes": "Native C17 policy/workflow port; does not embed or execute the SAMBU Python runtime."
+    }
+  ]
+}
