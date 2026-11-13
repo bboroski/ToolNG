@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "architecture": "NUN Mesh Multi-Axis Layer Fabric (MALF)",
+  "repository": "bboroski/ToolNG",
+  "role": "Read-only Windows device and host evidence diagnostics",
+  "maturity": "C17/Win32 desktop utility; real device and OS scenarios require Windows target evidence.",
+  "layers": [
+    {
+      "id": "L0",
+      "name": "Experience",
+      "responsibility": "CLI, GUI and operator experience; presentation only."
+    },
+    {
+      "id": "L1",
+      "name": "Interface contracts",
+      "responsibility": "APIs, ABIs, schemas, events and versioned messages."
+    },
+    {
+      "id": "L2",
+      "name": "Application orchestration",
+      "responsibility": "Use cases, workflow ordering, cancellation and transaction boundaries."
+    },
+    {
+      "id": "L3",
+      "name": "Domain kernel",
+      "responsibility": "Core models, invariants and deterministic algorithms."
+    },
+    {
+      "id": "L4",
+      "name": "Policy and capabilities",
+      "responsibility": "Authorization, safety gates, resource limits and allowed operations."
+    },
+    {
+      "id": "L5",
+      "name": "Ports and contracts",
+      "responsibility": "Abstract clocks, storage, devices, networks, compilers and platform services."
+    },
+    {
+      "id": "L6",
+      "name": "Adapters and platform",
+      "responsibility": "Concrete OS, board, browser, hardware and external-service implementations."
+    },
+    {
+      "id": "L7",
+      "name": "State and data",
+      "responsibility": "Schemas, registries, persistence, caches, artifacts and provenance."
+    },
+    {
+      "id": "L8",
+      "name": "Runtime and delivery",
+      "responsibility": "Build, boot, process composition, packaging, deployment and recovery."
+    },
+    {
+      "id": "L9",
+      "name": "Assurance and evidence",
+      "responsibility": "Tests, static analysis, benchmarks, diagnostics and qualification evidence."
+    }
+  ],
+  "placement": [
+    {
+      "layer": "L0",
+      "area": "Operator experience",
+      "components": [
+        "Win32 UI",
+        "device views",
+        "local reports"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L1",
+      "area": "Diagnostic contracts",
+      "components": [
+        "C interfaces",
+        "diagnostic records",
+        "report schema"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L2",
+      "area": "Read-only workflows",
+      "components": [
+        "device scan",
+        "backup marker inspection",
+        "event history"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L3",
+      "area": "Evidence domain",
+      "components": [
+        "PnP/USB observations",
+        "service signals",
+        "backup markers",
+        "readiness model"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L4",
+      "area": "Read-only safety policy",
+      "components": [
+        "read-only gate",
+        "redaction",
+        "operator guidance"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L5",
+      "area": "Observation ports",
+      "components": [
+        "device observer port",
+        "event source port",
+        "report store port"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L6",
+      "area": "Windows adapters",
+      "components": [
+        "Win32 APIs",
+        "SetupAPI/CM",
+        "filesystem adapter"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L7",
+      "area": "Local evidence state",
+      "components": [
+        "local reports",
+        "bounded buffer",
+        "settings"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L8",
+      "area": "Windows delivery",
+      "components": [
+        "CMake",
+        "Windows executable",
+        "packaging"
+      ],
+      "status": "mapped-from-repository-scope"
+    },
+    {
+      "layer": "L9",
+      "area": "Diagnostics assurance",
+      "components": [
+        "CTest",
+        "Windows CI",
+        "device qualification matrix"
+      ],
+      "status": "mapped-from-repository-scope"
+    }
+  ],
+  "vertical_slices": [
+    {
+      "id": "slice-1",
+      "title": "Device inventory",
+      "flow": "UI request → scan workflow → observation ports → Win32 adapter → normalized evidence → redacted report."
+    },
+    {
+      "id": "slice-2",
+      "title": "Readiness assessment",
+      "flow": "Signals → completeness policy → separate confidence and coverage → explainable guidance."
+    },
+    {
+      "id": "slice-3",
+      "title": "Event history",
+      "flow": "OS event source → bounded collector → normalize/redact → local store → operator timeline."
+    }
+  ],
+  "dependency_rules": [
+    "outer-surfaces-depend-on-application-contracts",
+    "application-depends-on-domain-policy-and-ports",
+    "adapters-implement-ports-not-the-reverse",
+    "state-access-through-versioned-storage-ports",
+    "runtime-composes-inner-layers",
+    "cross-repository-use-requires-versioned-contract"
+  ],
+  "cross_cutting": [
+    "security-and-trust",
+    "resilience-and-bounds",
+    "compatibility-and-versioning",
+    "observability-and-provenance",
+    "accessibility-where-applicable",
+    "measured-performance"
+  ],
+  "guardrails": "ToolNG remains read-only. No hidden repair, driver/service changes, activation-lock bypass, private backup parsing or automatic cloud upload. Signal absence is not a confirmed negative; insufficient permission reduces coverage.",
+  "status_note": "This is an architecture contract, not proof that mapped capabilities are implemented. Verify source, test and target evidence."
+}
